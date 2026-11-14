@@ -1,0 +1,20 @@
+基线（不注入任何变量）：audit=memory  limiter=memory  metrics=prometheus  runner=sim  storage=json
+基线业务流：任务终态=succeeded
+
+换件实测：5 个槽位 / 共 11 次独立启动
+
+[OK  ] storage   = json        health=ok               2.6s  任务终态=succeeded
+[OK  ] storage   = memory      health=no_persistence   2.6s  任务终态=succeeded
+[OK  ] runner    = sim         health=simulated        2.6s  任务终态=succeeded
+[OK  ] runner    = process     health=ok               2.9s  任务终态=succeeded
+[OK  ] audit     = file        health=ok               2.6s  任务终态=succeeded
+[OK  ] audit     = memory      health=no_persistence   2.5s  任务终态=succeeded
+[OK  ] limiter   = memory      health=ok               2.5s  任务终态=succeeded
+[OK  ] limiter   = noop        health=not_enforcing    2.5s  任务终态=succeeded
+[OK  ] metrics   = prometheus  health=ok               2.5s  任务终态=succeeded
+[OK  ] metrics   = json        health=ok               2.5s  任务终态=succeeded
+[OK  ] metrics   = noop        health=not_recording    2.5s  任务终态=succeeded
+
+==============================================================================
+合计 11 次换件 | 通过 11 | 失败 0
+==============================================================================

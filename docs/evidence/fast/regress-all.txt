@@ -1,0 +1,21 @@
+# 全量回归（regress_all.py）
+生成时间: 2026-11-12 22:20:34
+
+0 编译与二进制新鲜度              rc=0      0.6s  编译完成 0.4s | 二进制与源码同版本：exe=21:39:39 最新源码=21:39:04(src\api\handlers\task.rs)
+1 单元测试 cargo test        rc=0      6.0s  test result: ok. 155 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.11s | test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s | test r
+2 冒烟 json 后端             rc=0     10.5s  [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}} | 合计 156 项 | 通过 156 | 失败 0 | [2m2026-11-12T14:18:37.649
+3 冒烟 memory 后端           rc=0      9.6s  [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}} | 合计 156 项 | 通过 156 | 失败 0 | [2m2026-11-12T14:18:48.153
+4 契约一致性                  rc=0      0.1s  结果: 全部一致（字段集合 / 可选性 / 枚举取值），0 处不一致
+5 OpenAPI 与 TS 同步        rc=0      0.1s  CHECK: 一致
+6 OpenAPI 未漂移            rc=0      0.1s  CHECK: 一致 | paths=28 operations=32 schemas=43
+7 TS 契约文档一致              rc=0      0.1s  结果: 一致 25 | 有差异 0 | 查无同名 0
+8 执行端口实测                 rc=0      4.2s  [OK  ] R2a 提交任务 201  -> 实际=201 {'id': '4e9d71e7-f7cd-451f-9cba-ddf6552202df', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam | 合计 15 项 | 通过 15 
+9 可插拔部件矩阵                rc=0     25.0s  矩阵合计 86 项 | 通过 86 | 失败 0
+10 换件演练与静态守护             rc=0     35.3s  [OK  ] D3 模块化静态守护全通过  -> 合计 15 项 | 通过 15 | 失败 0 | 换件演练：22 项 | 通过 22 | 失败 0
+11 审计启动自检                rc=0      3.1s  合计 15 项 | 通过 15 | 失败 0
+12 需求覆盖对齐                rc=0      0.1s  结论：通过 —— 六部分文档对首个提示词逐条有落点，能力 id 全覆盖，设计公理锚点在位
+13 防幻觉打点实测               rc=0      2.6s  [OK  ] H1                     写入长记忆 3  rc=201 | [OK  ] H1                     写入长记忆 4  rc=201 | 合计 13 项 | 通过 13 | 失败 0
+14 真实响应形状 vs schema      rc=0      3.7s  响应形状检查：37 通过 / 0 失败 / 0 跳过，共 37 项 | 结论：所有 JSON 端点的真实响应形状与 docs/openapi.json 一致。
+15 多节点集群双进程(fast)        rc=0     23.1s  [OK  ] C3 A 侧集群合计 == B 实际提交数（跨节点汇总不是拍脑袋）  -> totals.tasks.total=3 期望=3 | [OK  ] C7 进程收到 Ctrl+Break 后正常退出（rc=0，不是被强杀）  -> rc=0 | 合计 41 项 | 通过 41 | 失败 0
+
+合计 16 道门禁 | 通过 16 | 失败 0

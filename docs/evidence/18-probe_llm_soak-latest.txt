@@ -1,0 +1,65 @@
+# 18 模型路径真采用
+生成时间: 2026-11-14 16:49:54
+命令由 regress_all.py 编排执行，rc=0，耗时 111.7s
+（原始输出如下，未做删改）
+======================================================================
+== 多轮压测 ==  模型 minicpm5-2b:f16  二进制 C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+   worker 解释器 D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\python.exe
+   数据目录 C:\Users\94355\Desktop\新建文件夹(7)\target\soak
+   /readyz OK
+
+   3 个账号令牌就绪（按用户轮转，避让 60 次/小时的提交限流；TTL 30 分钟，自动续期）
+   计划 7 轮：模型 3 / 快 2 / 坏输入 2
+
+   ⚠ fast 轮数 2 < 用例数 14：末尾目标不会被覆盖
+   ⚠ model 轮数 3 < 用例数 4：末尾目标不会被覆盖
+   ⚠ guard 轮数 2 < 用例数 6：末尾用例不会被覆盖
+[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 43.17s tok=516 OK
+[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 30.29s tok=476 OK
+[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 31.3s tok=512 OK
+[4/7] fast  planning      succeeded  0.39s OK
+[5/7] fast  planning      succeeded  0.35s OK
+[6/7] guard 空目标必须 400            HTTP 422 OK
+[7/7] guard 过短目标必须 400           HTTP 422 OK
+
+== 全局断言 ==
+
+== 限流能力探针（60 次/账号）==
+   PASS  前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60
+   [G1] PASS  正常轮次全部 succeeded：5/5
+   [G2] PASS  模型轮次 tokens>0：3/3
+   [G3] PASS  模型产出被采用（outline_source=model 且 model.used=true）：3/3
+   [G4] PASS  快轮次路由与形状全对：2/2
+   [G5] PASS  坏输入全部被拒：2/2
+   [G6] PASS  5xx 计数 = 0
+   [G7] PASS  任务台账 5 条 vs 建单 5 条（分账号 {'soak_owner': 2, 'soak_u2': 2, 'soak_u3': 1}）
+   [G8] PASS  限流到位（60 次后必 429 且带 Retry-After）：前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60
+
+== 统计 ==
+   rounds_total             7
+   model_rounds             3
+   fast_rounds              2
+   model_elapsed_avg_s      34.9
+   model_elapsed_min_s      30.3
+   model_elapsed_max_s      43.2
+   model_tokens_avg         501.3
+   model_tokens_min         476
+   model_tokens_max         516
+   fast_elapsed_avg_s       0.37
+   model_adopted_rounds     3
+   auth_refreshes           0
+   accounts                 ['soak_owner', 'soak_u2', 'soak_u3']
+   throttled_rounds         0
+   throttle_wait_s          0
+   rate_limit_probe         {'ok': True, 'detail': '前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60'}
+   route_hits               {'super-agent': 10, 'doc-agent': 3, 'guard-agent': 5, 'planner-agent': 2}
+
+== 模型轮次逐轮 ==
+   #1   43.17s tok= 516 doc_tok= 303 attempts=1 succeeded  采用
+   #2   30.29s tok= 476 doc_tok= 237 attempts=1 succeeded  采用
+   #3    31.3s tok= 512 doc_tok= 279 attempts=1 succeeded  采用
+
+结论： 全绿
+   证据： C:\Users\94355\Desktop\新建文件夹(7)\docs\evidence\soak-gate18-latest.json
+
+

@@ -1,0 +1,73 @@
+# 15 多节点集群双进程(fast)
+生成时间: 2026-11-12 22:20:34
+命令由 regress_all.py 编排执行，rc=0，耗时 23.1s
+（原始输出如下，未做删改）
+======================================================================
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy
+共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy\shared-cluster
+被测二进制: C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+心跳 TTL=5s  周期=1s  清理线=30s
+
+--- C1 单节点起步 ---
+[OK  ] C1 首用户拿到 owner 角色（否则读不了 /cluster）  -> role=owner
+[OK  ] C1 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C1 只有自己一个节点  -> 实际=1 期望=[1]
+[OK  ] C1 自己是 source=local  -> source=local
+[OK  ] C1 自己的 node_id 用的是 SA_NODE_ID  -> node_id=node-a
+[OK  ] C1 单节点时 offline_nodes=0  -> offline_nodes=0
+[OK  ] C1 心跳文件已落盘  -> node-a.json
+[OK  ] C1 目录里此刻只有自己一份心跳（peer 的心跳不该凭空出现）  -> 实际=1 期望=[1]
+
+--- C2 双节点互通 ---
+[OK  ] C2 A 侧 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C2 B 侧 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C2 A 看见 2 个节点  -> 实际=2 期望=[2]
+[OK  ] C2 B 看见 2 个节点  -> 实际=2 期望=[2]
+[OK  ] C2 A 的列表里自己排第一（刷新不该换位置）  -> 首位=node-a/local
+[OK  ] C2 B 的列表里自己排第一  -> 首位=node-b/local
+[OK  ] C2 A 把 B 认成 peer（不是 local）  -> source=peer
+[OK  ] C2 A 侧看到的 B 不 stale  -> stale=False
+[OK  ] C2 peer 节点带 updated_at（看板才能显示'几秒前'）  -> updated_at=2026-11-12T14:20:18.634813Z
+[OK  ] C2 汇总节点数=2  -> 实际=2 期望=[2]
+[OK  ] C2 汇总 offline_nodes=0  -> offline_nodes=0
+[OK  ] C2 totals.agents_total == 各节点求和  -> 汇总=18 明细和=18
+[OK  ] C2 totals.async_capacity == 各节点求和  -> 汇总=16 明细和=16
+[OK  ] C2 totals.tasks.total == 各节点求和  -> 汇总=0 明细和=0
+
+--- C3 跨节点负载在 A 侧可见 ---
+[OK  ] C3 提交前 A 侧集群任务总数=0（干净基线）  -> 实际=0 期望=[0]
+[OK  ] C3 B 上 3 个任务全部 201
+[OK  ] C3 A 侧看到 B 的 tasks.total 反映了 3 个任务  -> B.tasks.total=3
+[OK  ] C3 A 侧集群合计 == B 实际提交数（跨节点汇总不是拍脑袋）  -> totals.tasks.total=3 期望=3
+[OK  ] C3 A 自己的 tasks.total 仍是 0（别人的活不该记在自己头上）  -> A.tasks.total=0
+
+--- C4 心跳实时性：一个周期内数字跟着涨 ---
+[OK  ] C4 总数从 3 涨到 5（心跳把新负载带过来了）  -> totals.tasks.total=5 期望=5
+[OK  ] C4 B 的 updated_at 被推进（不是一份永远不变的旧快照）  -> 旧=2026-11-12 14:20:20.636166+00:00 新=2026-11-12 14:20:23.635818+00:00
+
+--- C5 崩溃掉线：标 stale，且不污染汇总 ---
+[OK  ] C5 强杀后 B 的心跳文件还在（没人来得及删，正是要验的情形）  -> node-b.json
+[OK  ] C5 B 仍然可见但已标 stale（'某某节点 8 秒前失联'比凭空消失有用）  -> stale=True
+[OK  ] C5 totals.offline_nodes=1（集群缩水一眼可见）  -> offline_nodes=1
+[OK  ] C5 totals.nodes 仍为 2（含离线）  -> 实际=2 期望=[2]
+[OK  ] C5 离线的 B 不计入 totals.tasks.total（陈旧值不该让'在跑几个'永远不下降）  -> totals.tasks.total=0 期望=0（B 离线后它的 5 个任务不再计入）
+[OK  ] C5 离线的 B 不计入 totals.agents_total  -> totals.agents_total=9 在线节点和=9
+
+--- C6 遗物清理 ---
+[SKIP] 按要求跳过 6×TTL 清理等待
+
+--- C7 优雅退出：Ctrl+Break 后心跳文件立刻消失 ---
+[OK  ] C7 进程收到 Ctrl+Break 后正常退出（rc=0，不是被强杀）  -> rc=0
+[OK  ] C7 退出时删掉了自己的心跳文件（不必让同伴等 TTL）  -> node-a.json
+
+--- C8 SA_CLUSTER=off 的进程 ---
+[OK  ] C8 关闭心跳时 /cluster 仍返回 200（接口不因开关消失）  -> 实际=200 期望=[200]
+[OK  ] C8 只报自己一个节点（不读别人的心跳）  -> nodes=['node-off']
+[OK  ] C8 关闭后不在共享目录留下任何文件  -> node-off.json
+[OK  ] C8 也看不见共享目录里已有的心跳（on/off 是彻底的两条路）  -> totals.nodes=1
+
+====================================================================
+合计 41 项 | 通过 41 | 失败 0
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy（可用 --keep 保留以便复查）
+
+

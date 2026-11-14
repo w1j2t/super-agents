@@ -1,0 +1,1146 @@
+===== 0 编译与二进制新鲜度 (rc=0) =====
+编译完成 0.3s
+二进制与源码同版本：exe=15:18:50 指纹 f33514180ba7…
+
+
+
+===== 1 单元测试 cargo test (rc=0) =====
+
+running 174 tests
+....................................................................................... 87/174
+....................................................................................... 174/174
+
+test result: ok. 174 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.10s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+warning: struct `FakeRunner` is never constructed
+   --> src\ports.rs:205:12
+    |
+205 |     struct FakeRunner(&'static str);
+    |            ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+
+
+===== 2 冒烟 json 后端 (rc=0) =====
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01b 存储后端可识别  ->  storage=json durable=True
+[OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
+[OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
+[OK  ] S04 readyz 返回 schema_version=1  ->  实际=1
+[OK  ] S05 /metrics 无凭据必须 401（不是裸奔）  ->  实际=401 | {"code": "unauthorized", "message": "缺少 Authorization 请求头"}
+[OK  ] S06 /metrics 带 SA_METRICS_TOKEN 返回 200  ->  实际=200
+[OK  ] S07 /metrics Content-Type 是 Prometheus 文本  ->  实际=text/plain; version=0.0.4; charset=utf-8
+[OK  ] S08 /metrics 正文含 sa_uptime_seconds  ->  正文前 60 字='# HELP sa_uptime_seconds 服务运行时长（秒）\n# TYPE sa_uptime_seconds '
+[OK  ] S09 /metrics 错误静态令牌必须 401  ->  实际=401
+[OK  ] S10 首个注册用户 201  ->  实际=201
+[OK  ] S11 首个用户角色是 owner  ->  实际=owner
+[OK  ] S12 注册响应带 onboarding_status=not_started  ->  实际=not_started
+[OK  ] S13 令牌有效期 expires_in>0  ->  实际=1800
+[OK  ] S14 重复用户名被拒  ->  实际=409 | {"code": "conflict", "message": "用户名已被占用"}
+[OK  ] S15 弱密码被拒（422）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"password": "密码至少 10 个字符"}}
+[OK  ] S16 正确密码登录 200  ->  实际=200
+[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-14T08:44:45.364498700Z
+[OK  ] S18 错误密码 401  ->  实际=401 | {"code": "unauthorized", "message": "账号或密码不正确"}
+[OK  ] S19 带令牌取 /auth/me 200  ->  实际=200
+[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_569524cf
+[OK  ] S21 无令牌访问 /auth/me 必须 401  ->  实际=401
+[OK  ] S22 用 refresh_token 冒充 access_token 必须 401（类型校验）  ->  实际=401
+[OK  ] S23 刷新令牌 200  ->  实际=200
+[OK  ] S24 刷新后 refresh_token 轮换（新旧不同）
+[OK  ] S25 旧 refresh_token 复用必须 401（轮换即作废）  ->  实际=401 | 这是防重放的关键
+[OK  ] S26 onboarding 总览 200  ->  实际=200
+[OK  ] S27 初始状态 not_started  ->  实际=not_started
+[OK  ] S28 必做步骤数=5  ->  实际=5
+[OK  ] S29 步骤清单 6 条（含非必做）  ->  实际=6
+[OK  ] S30 完成 welcome 200  ->  实际=200
+[OK  ] S31 首次完成 changed=true  ->  实际=True
+[OK  ] S32 重复完成 changed=false（幂等）  ->  实际=False
+[OK  ] S33 未知步骤 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"key": "未知教
+[OK  ] S34 跳过教程 200  ->  实际=200
+[OK  ] S35 跳过后 skipped=true  ->  实际=True
+[OK  ] S36 重置教程 200  ->  实际=200
+[OK  ] S37 重置后回到 not_started  ->  实际=not_started
+[OK  ] S38 新建记忆 201  ->  实际=201
+[OK  ] S39 新建时 created=true  ->  实际=True
+[OK  ] S40 返回 entry.version=1  ->  实际=1
+[OK  ] S41 同 key 再提交 200（覆盖而非新建）  ->  实际=200 | 实际=200
+[OK  ] S42 覆盖时 created=false 且 version=2  ->  created=False version=2
+[OK  ] S43 记忆列表 200  ->  实际=200
+[OK  ] S44 列表包含刚写入的 key  ->  共 1 条
+[OK  ] S44b 记忆 q 关键字过滤命中  ->  共 1 条
+[OK  ] S44c 记忆 q 过滤能排除  ->  共 0 条
+[OK  ] S44d scope=private 过滤真生效  ->  共 1 条
+[OK  ] S44f 关键词能命中 tags（不只是 key/content）  ->  命中 1 条
+[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['76fb53ab-1325-4bfc-962b-ba6c5528c6db'] / ['2861ec60-18a5-4595-a032-59b3cd3a2f50']
+[OK  ] S45 记忆详情 200  ->  实际=200
+[OK  ] S46 详情内容是 v2  ->  实际=v2
+[OK  ] S47 更新记忆 200  ->  实际=200
+[OK  ] S48 更新后 version=3  ->  实际=3
+[OK  ] S49 非法 scope 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"scope": "可选 private / shared /
+[OK  ] S50 删除记忆 204  ->  实际=204 | 实际=204
+[OK  ] S51 删除后详情 404  ->  实际=404 | 实际=404
+[OK  ] S52 子 agent 目录 200  ->  实际=200
+[OK  ] S53 目录非空且含 super-agent  ->  共 14 个
+[OK  ] S54 agent 详情 200  ->  实际=200
+[OK  ] S55 未知 agent 404  ->  实际=404 | {"code": "not_found", "message": "未找到 agent：nope"}
+[OK  ] S56 能力目录 200  ->  实际=200
+[OK  ] S57 能力目录非空  ->  共 26 项
+[OK  ] S58 未知 capability 404  ->  实际=404
+[OK  ] S59 提交任务 201  ->  实际=201
+[OK  ] S60 任务同步执行完（status=succeeded）  ->  实际=succeeded
+[OK  ] S61 任务带计划 plan 且非空  ->  步骤数=4
+[OK  ] S62 计划里每步都有 agent_id  ->  示例=super-agent
+[OK  ] S63 任务详情 200  ->  实际=200
+[OK  ] S64 任务 trace 200  ->  实际=200
+[OK  ] S65 trace 非空且含 execute 阶段  ->  条目数=8
+[OK  ] S66 trace 累计 tokens>0  ->  累计=6196
+[OK  ] S67 任务列表 200  ->  实际=200
+[OK  ] S68 列表包含刚提交的任务  ->  共 1 个
+[OK  ] S68b status=succeeded 过滤真生效  ->  共 1 条
+[OK  ] S68c 过滤结果仍含刚提交任务
+[OK  ] S68d status=failed 不会混入成功任务  ->  共 0 条
+[OK  ] S68e 非法 status 被 422 拒绝（不是静默忽略）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"status": "可选 queued / running 
+[OK  ] S68f 任务 q 关键字过滤命中  ->  共 1 条
+[OK  ] S68g 任务 q 过滤能排除  ->  共 0 条
+[OK  ] S68h task_type=coding 过滤真生效  ->  共 1 条
+[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['e77f5791-fe9b-4bd7-b224-969b17a2e7eb'] / ['f2760551-76ec-440a-99b7-7e705036263f']
+[OK  ] S69 空目标被拒 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"goal": "任务目标至少 4 个字符"}}
+[OK  ] S70 未知任务 404  ->  实际=404 | {"code": "not_found", "message": "任务不存在"}
+[OK  ] S71a 预算低于下限（100<200）被 422 拒绝  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"budget_tokens": "预算过低（最少 200）"
+[OK  ] S71b 预算 200 触发 aborted_budget（不是静默降级放行）  ->  实际=aborted_budget | 实际状态=aborted_budget
+[OK  ] S71c 中止时 result_summary 写明原因  ->  summary 含『预算』字样
+[OK  ] S71d 中止任务能被 status=aborted_budget 过滤出来（非空且状态一致）  ->  共 1 条
+[OK  ] S72 第二个用户注册 201  ->  实际=201
+[OK  ] S73 第二个用户角色是 member  ->  实际=member
+[OK  ] S74 member 读他人任务被拒（404 或 403）  ->  实际=403 期望=[403, 404] | {"code": "forbidden", "message": "无权访问他人的任务"}
+[OK  ] S75 member 可提交自己的任务 201  ->  实际=201
+[OK  ] S76 member 访问管理员概览被拒（403 或 422）  ->  实际=403 期望=[403, 422] | {"code": "forbidden", "message": "角色 member 缺少权限 admin"} ← 若返回 422 说明越权与校验仍共用错误码
+[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "77c7941e-ca4a-4d8e-bf80-7af21b2e143d", "scope": "shared", "owner_
+[OK  ] S77c member 写 system 记忆必须 403  ->  实际=403 | {"code": "forbidden", "message": "角色 member 缺少权限 memory_write_system"}
+[OK  ] S77d member 看不到 owner 的私有记忆  ->  返回 0 条
+[OK  ] S78 管理员概览 200  ->  实际=200
+[OK  ] S79 概览里 agents_total 与 agent 目录一致  ->  概览=14 目录=14
+[OK  ] S79b 七个垂直域已上线、collab 与运维 agent 已撤并  ->  目录=['code-agent', 'data-agent', 'doc-agent', 'finance-agent', 'game-agent', 'guard-agent', 'ideation-agent', 'legal-agent', 'market-agent', 'narrative-agent', 'planner-agent', 'qa-agent', 'research-agent', 'super-agent']
+[OK  ] S80 概览里 capabilities_total 与目录一致  ->  概览=26 目录=26
+[OK  ] S80b 概览报出当前审计部件（可插拔可视化）  ->  实际=memory
+[OK  ] S80c 概览报出当前执行部件（可插拔可视化）  ->  实际=sim
+[OK  ] S81 审计日志 200  ->  实际=200
+[OK  ] S82 审计日志非空（鉴权/任务都留痕）  ->  共 26 条，其中拒绝 1 条
+[OK  ] S82b decision=deny 过滤真生效（只看被拒）  ->  共 1 条
+[OK  ] S82c decision=allow 过滤真生效  ->  共 25 条
+[OK  ] S82d 非法 decision 被 422 拒绝（与任务/记忆列表口径一致）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"decision": "可选 allow / deny"}}
+[OK  ] S82e 审计分页 has_more 字段可信  ->  total=26 has_more=True
+[OK  ] S83 metrics 输出注册计数器（sa_registrations_total）  ->  由 services/auth.rs 打点
+[OK  ] S83b metrics 输出执行后端标签（证明 StepRunner 已接线）  ->  orchestration/executor.rs
+[OK  ] S83c metrics 输出任务启动计数器
+[OK  ] S83d sa_http_requests_total 已接线（有真实生产调用点，不再是死指标）  ->  共 44 条序列
+[OK  ] S83e 计数标签按状态码分桶（能看出 200/401/404 分别多少）  ->  样本=['sa_http_requests_total{route="/api/v1/agents",method="GET",status="200"} 1', 'sa_http_requests_total{route="/api/v1/agents/nope",method="GET",status="404"} 1']
+[OK  ] S83f 路由标签已折叠（不含 uuid 原值，避免监控序列爆炸）  ->  含 :id 折叠
+[OK  ] S83g 404 兜底也被计数（前端写错路径能查到）  ->  S12 已制造过 404
+[OK  ] S84 登出 200  ->  实际=200
+[OK  ] S85 登出撤销了会话（revoked_sessions>=1）  ->  实际=1
+[OK  ] S86 登出后该 refresh_token 失效（401）  ->  实际=401
+[OK  ] S93 分页 limit=0 明确 422 而非静默改成 1  ->  实际=422
+[OK  ] S94 分页越界错误回报允许范围（1..=200）  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "允许范围 1..=200，不传则默认 50；收到 0"}}
+[OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}}
+[OK  ] S96 超上限 limit 明确 422 并回报收到值  ->  实际=422
+[OK  ] S97 async 提交返回 202/201 且状态为 queued  ->  实际=202 status=queued
+[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "7197cc25-1175-450e-b18c-43e45c1d4ff4", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
+[OK  ] S98b 取消请求写进了 trace（phase=cancel/requested）  ->  cancel 条目=1
+[OK  ] S99 取消后任务最终收敛为 cancelled（不是 succeeded/failed）  ->  实际终态=cancelled
+[OK  ] S99b 取消任务的 result_summary 讲清了原因  ->  任务「slow-step 异步任务用于验证取消真能生效」执行已取消（类型 coding，共 4 步）。
+终止原因：任务已被用户取消，第 0 层起未执行
+执行明细
+[OK  ] S99c 已取消任务能被 status=cancelled 过滤出来  ->  共 1 条
+[OK  ] S99d 对已终结任务再取消返回 409（不返回 200 骗人）  ->  实际=409 {"code": "conflict", "message": "任务已结束（cancelled），无法取消；如需重跑请重新提交"}
+[OK  ] S99e 取消不存在的任务返回 404  ->  实际=404
+[OK  ] S99f 他人无法取消我的任务（403/404）  ->  实际=403
+[OK  ] S99h 写穿落盘计数器已接线且真的刷过盘（sa_store_write_through_total > 0）  ->  实际=19.0
+[OK  ] S99g 同步任务跑完后取消返回 409（语义诚实）  ->  实际=409
+[OK  ] S100 SSE 测试用户注册成功（拿到独立令牌）  ->  实际=201
+[OK  ] S100b 事件流用的异步任务已受理  ->  实际=202
+[OK  ] S101 SSE 建连成功且媒体类型是 text/event-stream  ->  实际状态=200 Content-Type=text/event-stream
+[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "671cf37c-3650-46ea-94f1-9c1631339347", "status": "running", "at": "2026-11-14T08:44:52.665998200Z
+[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 18, 19]
+[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'running', 'succeeded']
+[OK  ] S101e 事件流最终推送终态且与服务端状态一致  ->  末帧状态=succeeded
+[OK  ] S101f 终态之后服务端主动 EOF（不挂住连接）  ->  读到 HTTP EOF
+[OK  ] S101g 已终结任务订阅：先给快照再立刻 EOF  ->  实际状态=200 帧数=1 EOF=True
+[OK  ] S102 未带令牌订阅事件流被 401 拒绝（长连接同样要鉴权）  ->  实际=401
+[OK  ] S102b 他人无法订阅我的任务事件流（403/404）  ->  实际=403
+[OK  ] S102c 订阅不存在任务的事件流返回 404  ->  实际=404
+[OK  ] S103 执行中的任务取消返回 202（立旗）  ->  实际=202
+[OK  ] S103b 取消后事件流推送 cancelled（不是只给个 202 就完事）  ->  状态序列=['running', 'cancelled']
+[OK  ] S103c 取消收敛后事件流主动 EOF  ->  帧数=2 EOF=True
+[OK  ] S103d 事件流说的 cancelled 与详情接口一致（无两套真相）  ->  详情状态=cancelled
+[OK  ] S104 /metrics 暴露 SSE 丢事件计数器（慢消费者可被观测）  ->  实际状态=200
+[OK  ] S104b /metrics 暴露当前 SSE 订阅数（连接已全部结束时应为 0）  ->  实际=0
+[OK  ] S87 连续提交最终命中 429（限流生效）  ->  成功 53 次后命中
+[OK  ] S88 429 带 Retry-After 头（前端可据此退避）  ->  Retry-After=53
+[OK  ] S89 命中前的成功次数不超过 60  ->  实际成功=53（配额 60/h，前面已计入若干次）
+[OK  ] S90 限流按用户隔离（他人不受影响）  ->  实际=201 | 实际=201
+[OK  ] S91 限流计数器已接线（sa_task_submit_rate_limited_total 出现）
+[OK  ] S92 已限流用户即使请求非法也先返回 429（限流先于校验）  ->  实际=429（源码 task.rs 把限流放在校验之前，属于已知行为）
+
+================================================================
+合计 157 项 | 通过 157 | 失败 0
+
+服务日志尾部：
+[2m2026-11-14T08:44:43.013785Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794645882\db.json
+[2m2026-11-14T08:44:43.013970Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
+[2m2026-11-14T08:44:43.014002Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
+[2m2026-11-14T08:44:43.014471Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
+[2m2026-11-14T08:44:43.014509Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
+[2m2026-11-14T08:44:43.014519Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
+[2m2026-11-14T08:44:43.014563Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794645882\cluster [3mnode_id[0m[2m=[0mWLM-26156 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-14T08:44:43.017178Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
+[2m2026-11-14T08:44:48.346279Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m61af153c-62ce-4adc-a267-561539107bce [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m61af153c-62ce-4adc-a267-561539107bce [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
+[2m2026-11-14T08:44:50.735517Z[0m [31mERROR[0m 写穿落盘失败 [3merror[0m[2m=[0m存储读取失败: 系统找不到指定的文件。 (os error 2)
+[2m2026-11-14T08:44:50.736975Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m61af153c-62ce-4adc-a267-561539107bce [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m7197cc25-1175-450e-b18c-43e45c1d4ff4 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0mec765193-8e60-430e-9a5e-3051b1167c91
+[2m2026-11-14T08:44:54.538812Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mbdf3c75d-b2e8-4b6d-8cf2-d1474050ec65 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0mf3908015-d692-4c49-bd7f-6acea992b282 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0maaf36335-a5e5-4e94-9073-c8b8de01c344
+================================================================
+
+
+
+===== 3 冒烟 memory 后端 (rc=0) =====
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01b 存储后端可识别  ->  storage=memory durable=False
+[OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
+[OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
+[OK  ] S04 readyz 返回 schema_version=1  ->  实际=1
+[OK  ] S05 /metrics 无凭据必须 401（不是裸奔）  ->  实际=401 | {"code": "unauthorized", "message": "缺少 Authorization 请求头"}
+[OK  ] S06 /metrics 带 SA_METRICS_TOKEN 返回 200  ->  实际=200
+[OK  ] S07 /metrics Content-Type 是 Prometheus 文本  ->  实际=text/plain; version=0.0.4; charset=utf-8
+[OK  ] S08 /metrics 正文含 sa_uptime_seconds  ->  正文前 60 字='# HELP sa_uptime_seconds 服务运行时长（秒）\n# TYPE sa_uptime_seconds '
+[OK  ] S09 /metrics 错误静态令牌必须 401  ->  实际=401
+[OK  ] S10 首个注册用户 201  ->  实际=201
+[OK  ] S11 首个用户角色是 owner  ->  实际=owner
+[OK  ] S12 注册响应带 onboarding_status=not_started  ->  实际=not_started
+[OK  ] S13 令牌有效期 expires_in>0  ->  实际=1800
+[OK  ] S14 重复用户名被拒  ->  实际=409 | {"code": "conflict", "message": "用户名已被占用"}
+[OK  ] S15 弱密码被拒（422）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"password": "密码至少 10 个字符"}}
+[OK  ] S16 正确密码登录 200  ->  实际=200
+[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-14T08:44:58.241795400Z
+[OK  ] S18 错误密码 401  ->  实际=401 | {"code": "unauthorized", "message": "账号或密码不正确"}
+[OK  ] S19 带令牌取 /auth/me 200  ->  实际=200
+[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_ffa92d72
+[OK  ] S21 无令牌访问 /auth/me 必须 401  ->  实际=401
+[OK  ] S22 用 refresh_token 冒充 access_token 必须 401（类型校验）  ->  实际=401
+[OK  ] S23 刷新令牌 200  ->  实际=200
+[OK  ] S24 刷新后 refresh_token 轮换（新旧不同）
+[OK  ] S25 旧 refresh_token 复用必须 401（轮换即作废）  ->  实际=401 | 这是防重放的关键
+[OK  ] S26 onboarding 总览 200  ->  实际=200
+[OK  ] S27 初始状态 not_started  ->  实际=not_started
+[OK  ] S28 必做步骤数=5  ->  实际=5
+[OK  ] S29 步骤清单 6 条（含非必做）  ->  实际=6
+[OK  ] S30 完成 welcome 200  ->  实际=200
+[OK  ] S31 首次完成 changed=true  ->  实际=True
+[OK  ] S32 重复完成 changed=false（幂等）  ->  实际=False
+[OK  ] S33 未知步骤 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"key": "未知教
+[OK  ] S34 跳过教程 200  ->  实际=200
+[OK  ] S35 跳过后 skipped=true  ->  实际=True
+[OK  ] S36 重置教程 200  ->  实际=200
+[OK  ] S37 重置后回到 not_started  ->  实际=not_started
+[OK  ] S38 新建记忆 201  ->  实际=201
+[OK  ] S39 新建时 created=true  ->  实际=True
+[OK  ] S40 返回 entry.version=1  ->  实际=1
+[OK  ] S41 同 key 再提交 200（覆盖而非新建）  ->  实际=200 | 实际=200
+[OK  ] S42 覆盖时 created=false 且 version=2  ->  created=False version=2
+[OK  ] S43 记忆列表 200  ->  实际=200
+[OK  ] S44 列表包含刚写入的 key  ->  共 1 条
+[OK  ] S44b 记忆 q 关键字过滤命中  ->  共 1 条
+[OK  ] S44c 记忆 q 过滤能排除  ->  共 0 条
+[OK  ] S44d scope=private 过滤真生效  ->  共 1 条
+[OK  ] S44f 关键词能命中 tags（不只是 key/content）  ->  命中 1 条
+[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['47535f1a-9428-45a2-993b-f92b2630f5d0'] / ['ef10780c-030f-4842-83e6-afd41a120c07']
+[OK  ] S45 记忆详情 200  ->  实际=200
+[OK  ] S46 详情内容是 v2  ->  实际=v2
+[OK  ] S47 更新记忆 200  ->  实际=200
+[OK  ] S48 更新后 version=3  ->  实际=3
+[OK  ] S49 非法 scope 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"scope": "可选 private / shared /
+[OK  ] S50 删除记忆 204  ->  实际=204 | 实际=204
+[OK  ] S51 删除后详情 404  ->  实际=404 | 实际=404
+[OK  ] S52 子 agent 目录 200  ->  实际=200
+[OK  ] S53 目录非空且含 super-agent  ->  共 14 个
+[OK  ] S54 agent 详情 200  ->  实际=200
+[OK  ] S55 未知 agent 404  ->  实际=404 | {"code": "not_found", "message": "未找到 agent：nope"}
+[OK  ] S56 能力目录 200  ->  实际=200
+[OK  ] S57 能力目录非空  ->  共 26 项
+[OK  ] S58 未知 capability 404  ->  实际=404
+[OK  ] S59 提交任务 201  ->  实际=201
+[OK  ] S60 任务同步执行完（status=succeeded）  ->  实际=succeeded
+[OK  ] S61 任务带计划 plan 且非空  ->  步骤数=4
+[OK  ] S62 计划里每步都有 agent_id  ->  示例=super-agent
+[OK  ] S63 任务详情 200  ->  实际=200
+[OK  ] S64 任务 trace 200  ->  实际=200
+[OK  ] S65 trace 非空且含 execute 阶段  ->  条目数=8
+[OK  ] S66 trace 累计 tokens>0  ->  累计=6032
+[OK  ] S67 任务列表 200  ->  实际=200
+[OK  ] S68 列表包含刚提交的任务  ->  共 1 个
+[OK  ] S68b status=succeeded 过滤真生效  ->  共 1 条
+[OK  ] S68c 过滤结果仍含刚提交任务
+[OK  ] S68d status=failed 不会混入成功任务  ->  共 0 条
+[OK  ] S68e 非法 status 被 422 拒绝（不是静默忽略）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"status": "可选 queued / running 
+[OK  ] S68f 任务 q 关键字过滤命中  ->  共 1 条
+[OK  ] S68g 任务 q 过滤能排除  ->  共 0 条
+[OK  ] S68h task_type=coding 过滤真生效  ->  共 1 条
+[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['2e860211-5e0f-4acd-a206-adae6833087d'] / ['9b03e9d7-ad9a-4d80-a00b-8aff76e35573']
+[OK  ] S69 空目标被拒 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"goal": "任务目标至少 4 个字符"}}
+[OK  ] S70 未知任务 404  ->  实际=404 | {"code": "not_found", "message": "任务不存在"}
+[OK  ] S71a 预算低于下限（100<200）被 422 拒绝  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"budget_tokens": "预算过低（最少 200）"
+[OK  ] S71b 预算 200 触发 aborted_budget（不是静默降级放行）  ->  实际=aborted_budget | 实际状态=aborted_budget
+[OK  ] S71c 中止时 result_summary 写明原因  ->  summary 含『预算』字样
+[OK  ] S71d 中止任务能被 status=aborted_budget 过滤出来（非空且状态一致）  ->  共 1 条
+[OK  ] S72 第二个用户注册 201  ->  实际=201
+[OK  ] S73 第二个用户角色是 member  ->  实际=member
+[OK  ] S74 member 读他人任务被拒（404 或 403）  ->  实际=403 期望=[403, 404] | {"code": "forbidden", "message": "无权访问他人的任务"}
+[OK  ] S75 member 可提交自己的任务 201  ->  实际=201
+[OK  ] S76 member 访问管理员概览被拒（403 或 422）  ->  实际=403 期望=[403, 422] | {"code": "forbidden", "message": "角色 member 缺少权限 admin"} ← 若返回 422 说明越权与校验仍共用错误码
+[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "fcb98c1f-a937-4e0c-81b5-aec9e1b492bb", "scope": "shared", "owner_
+[OK  ] S77c member 写 system 记忆必须 403  ->  实际=403 | {"code": "forbidden", "message": "角色 member 缺少权限 memory_write_system"}
+[OK  ] S77d member 看不到 owner 的私有记忆  ->  返回 0 条
+[OK  ] S78 管理员概览 200  ->  实际=200
+[OK  ] S79 概览里 agents_total 与 agent 目录一致  ->  概览=14 目录=14
+[OK  ] S79b 七个垂直域已上线、collab 与运维 agent 已撤并  ->  目录=['code-agent', 'data-agent', 'doc-agent', 'finance-agent', 'game-agent', 'guard-agent', 'ideation-agent', 'legal-agent', 'market-agent', 'narrative-agent', 'planner-agent', 'qa-agent', 'research-agent', 'super-agent']
+[OK  ] S80 概览里 capabilities_total 与目录一致  ->  概览=26 目录=26
+[OK  ] S80b 概览报出当前审计部件（可插拔可视化）  ->  实际=memory
+[OK  ] S80c 概览报出当前执行部件（可插拔可视化）  ->  实际=sim
+[OK  ] S81 审计日志 200  ->  实际=200
+[OK  ] S82 审计日志非空（鉴权/任务都留痕）  ->  共 26 条，其中拒绝 1 条
+[OK  ] S82b decision=deny 过滤真生效（只看被拒）  ->  共 1 条
+[OK  ] S82c decision=allow 过滤真生效  ->  共 25 条
+[OK  ] S82d 非法 decision 被 422 拒绝（与任务/记忆列表口径一致）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"decision": "可选 allow / deny"}}
+[OK  ] S82e 审计分页 has_more 字段可信  ->  total=26 has_more=True
+[OK  ] S83 metrics 输出注册计数器（sa_registrations_total）  ->  由 services/auth.rs 打点
+[OK  ] S83b metrics 输出执行后端标签（证明 StepRunner 已接线）  ->  orchestration/executor.rs
+[OK  ] S83c metrics 输出任务启动计数器
+[OK  ] S83d sa_http_requests_total 已接线（有真实生产调用点，不再是死指标）  ->  共 44 条序列
+[OK  ] S83e 计数标签按状态码分桶（能看出 200/401/404 分别多少）  ->  样本=['sa_http_requests_total{route="/api/v1/agents",method="GET",status="200"} 1', 'sa_http_requests_total{route="/api/v1/agents/nope",method="GET",status="404"} 1']
+[OK  ] S83f 路由标签已折叠（不含 uuid 原值，避免监控序列爆炸）  ->  含 :id 折叠
+[OK  ] S83g 404 兜底也被计数（前端写错路径能查到）  ->  S12 已制造过 404
+[OK  ] S84 登出 200  ->  实际=200
+[OK  ] S85 登出撤销了会话（revoked_sessions>=1）  ->  实际=1
+[OK  ] S86 登出后该 refresh_token 失效（401）  ->  实际=401
+[OK  ] S93 分页 limit=0 明确 422 而非静默改成 1  ->  实际=422
+[OK  ] S94 分页越界错误回报允许范围（1..=200）  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "允许范围 1..=200，不传则默认 50；收到 0"}}
+[OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}}
+[OK  ] S96 超上限 limit 明确 422 并回报收到值  ->  实际=422
+[OK  ] S97 async 提交返回 202/201 且状态为 queued  ->  实际=202 status=queued
+[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "34f6e15b-12cb-46cb-b0f0-0cad3a296261", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
+[OK  ] S98b 取消请求写进了 trace（phase=cancel/requested）  ->  cancel 条目=1
+[OK  ] S99 取消后任务最终收敛为 cancelled（不是 succeeded/failed）  ->  实际终态=cancelled
+[OK  ] S99b 取消任务的 result_summary 讲清了原因  ->  任务「slow-step 异步任务用于验证取消真能生效」执行已取消（类型 coding，共 4 步）。
+终止原因：任务已被用户取消，第 1 层起未执行
+执行明细
+[OK  ] S99c 已取消任务能被 status=cancelled 过滤出来  ->  共 1 条
+[OK  ] S99d 对已终结任务再取消返回 409（不返回 200 骗人）  ->  实际=409 {"code": "conflict", "message": "任务已结束（cancelled），无法取消；如需重跑请重新提交"}
+[OK  ] S99e 取消不存在的任务返回 404  ->  实际=404
+[OK  ] S99f 他人无法取消我的任务（403/404）  ->  实际=403
+[OK  ] S99h 写穿落盘计数器已接线且真的刷过盘（sa_store_write_through_total > 0）  ->  实际=20.0
+[OK  ] S99g 同步任务跑完后取消返回 409（语义诚实）  ->  实际=409
+[OK  ] S100 SSE 测试用户注册成功（拿到独立令牌）  ->  实际=201
+[OK  ] S100b 事件流用的异步任务已受理  ->  实际=202
+[OK  ] S101 SSE 建连成功且媒体类型是 text/event-stream  ->  实际状态=200 Content-Type=text/event-stream
+[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "cb560035-3218-42e3-ad76-30b78f2a3972", "status": "running", "at": "2026-11-14T08:45:02.811181500Z
+[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 19]
+[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'succeeded']
+[OK  ] S101e 事件流最终推送终态且与服务端状态一致  ->  末帧状态=succeeded
+[OK  ] S101f 终态之后服务端主动 EOF（不挂住连接）  ->  读到 HTTP EOF
+[OK  ] S101g 已终结任务订阅：先给快照再立刻 EOF  ->  实际状态=200 帧数=1 EOF=True
+[OK  ] S102 未带令牌订阅事件流被 401 拒绝（长连接同样要鉴权）  ->  实际=401
+[OK  ] S102b 他人无法订阅我的任务事件流（403/404）  ->  实际=403
+[OK  ] S102c 订阅不存在任务的事件流返回 404  ->  实际=404
+[OK  ] S103 执行中的任务取消返回 202（立旗）  ->  实际=202
+[OK  ] S103b 取消后事件流推送 cancelled（不是只给个 202 就完事）  ->  状态序列=['running', 'cancelled']
+[OK  ] S103c 取消收敛后事件流主动 EOF  ->  帧数=2 EOF=True
+[OK  ] S103d 事件流说的 cancelled 与详情接口一致（无两套真相）  ->  详情状态=cancelled
+[OK  ] S104 /metrics 暴露 SSE 丢事件计数器（慢消费者可被观测）  ->  实际状态=200
+[OK  ] S104b /metrics 暴露当前 SSE 订阅数（连接已全部结束时应为 0）  ->  实际=0
+[OK  ] S87 连续提交最终命中 429（限流生效）  ->  成功 53 次后命中
+[OK  ] S88 429 带 Retry-After 头（前端可据此退避）  ->  Retry-After=56
+[OK  ] S89 命中前的成功次数不超过 60  ->  实际成功=53（配额 60/h，前面已计入若干次）
+[OK  ] S90 限流按用户隔离（他人不受影响）  ->  实际=201 | 实际=201
+[OK  ] S91 限流计数器已接线（sa_task_submit_rate_limited_total 出现）
+[OK  ] S92 已限流用户即使请求非法也先返回 429（限流先于校验）  ->  实际=429（源码 task.rs 把限流放在校验之前，属于已知行为）
+
+================================================================
+合计 157 项 | 通过 157 | 失败 0
+
+服务日志尾部：
+[2m2026-11-14T08:44:55.819510Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794645895\secret.key
+[2m2026-11-14T08:44:55.819953Z[0m [33m WARN[0m 当前为纯内存后端：进程退出即清空数据，仅用于压测/演示 [3mstorage[0m[2m=[0mmemory
+[2m2026-11-14T08:44:55.820095Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
+[2m2026-11-14T08:44:55.820119Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
+[2m2026-11-14T08:44:55.820581Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
+[2m2026-11-14T08:44:55.820627Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
+[2m2026-11-14T08:44:55.820659Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
+[2m2026-11-14T08:44:55.820714Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794645895\cluster [3mnode_id[0m[2m=[0mWLM-23788 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-14T08:44:55.823540Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18097 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mmemory [3mrunner[0m[2m=[0msim
+[2m2026-11-14T08:45:00.152361Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m7b7918de-4bfe-48cc-b416-f600014dca88 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m7b7918de-4bfe-48cc-b416-f600014dca88 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
+[2m2026-11-14T08:45:01.769617Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m7b7918de-4bfe-48cc-b416-f600014dca88 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m34f6e15b-12cb-46cb-b0f0-0cad3a296261 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m2bc426eb-41b2-42c7-9eda-ee0cd63006d1
+[2m2026-11-14T08:45:04.651495Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m806d1f0b-c753-42f4-8cab-4ee6584ce47b [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0maae29a35-43da-4457-abd9-2c7e2547d8d3 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m3f6b083f-b852-46b1-bd14-c9d23369f43d
+================================================================
+
+
+
+===== 4 契约一致性 (rc=0) =====
+==============================================================
+检查 struct schema: 42 个 | 枚举 schema: 8 个
+跳过（源码无同名）: 1 个
+--------------------------------------------------------------
+结果: 全部一致（字段集合 / 可选性 / 枚举取值），0 处不一致
+局限: 不比对类型描述等价性；Vec/bool 视为天然可选（与 serde 行为一致）。
+
+
+
+===== 5 OpenAPI 与 TS 同步 (rc=0) =====
+CHECK: 一致
+
+
+
+===== 6 OpenAPI 未漂移 (rc=0) =====
+CHECK: 一致 | paths=29 operations=33 schemas=51
+
+
+
+===== 7 TS 契约文档一致 (rc=0) =====
+源码结构体: 91 个 | 文档 interface: 25 个
+
+
+结果: 一致 25 | 有差异 0 | 查无同名 0
+
+
+
+===== 8 执行端口实测 (rc=0) =====
+[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-piesyyu4\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
+[OK  ] R1b 账号初始化
+[OK  ] R2a 提交任务 201  -> 实际=201 {'id': '5f98bec5-1061-416e-af45-ec31613bd7ba', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
+[OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-4D0EFF008F 命中=True
+[OK  ] R2c 全部步骤成功且回填了 agent/step 环境变量  -> 步骤数=4 成功=4
+[OK  ] R2d 任务状态 succeeded  -> 实际=succeeded
+[OK  ] R3a 指标可抓取 200  -> 实际=200
+[OK  ] R3b 指标 backend 标签为 process  -> 含 backend="process"
+[OK  ] R3c 治理指标照旧上报
+[OK  ] R3d trace 仍按阶段落账且 token>0  -> 条目=8 tokens=202
+[OK  ] R4a 缺脚本的步骤被判失败（不假成功）  -> 失败步骤=4
+[OK  ] R4b 失败原因写明脚本缺失/可重试  -> 未找到该 agent 的脚本（支持 cmd/bat/ps1/py）: super-agent 前置第 1 步未成功，本步不执行（避免用半截产物继续推理） 前置第 2 步未成功，本步不执行（避免用半截产物继续推理） 前置第 3 步未成功，本步不执行（避免用半截产物继续推理）
+[OK  ] R4c 任务整体不是 succeeded  -> 实际=failed
+[OK  ] R5a process 后端缺 SA_RUNNER_DIR 时拒绝启动  -> 退出码=1
+[OK  ] R5b 非法 SA_RUNNER 值被拒（不是忽略）  -> 退出码=1
+--------------------------------------------------------------
+合计 15 项 | 通过 15 | 失败 0
+临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-piesyyu4
+
+Exception in thread Exception in thread Thread-1 (_readerthread)Thread-2 (_readerthread):
+:
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+        self.run()self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+        buffer.append(fh.read())buffer.append(fh.read())
+
+                               ^ ^ ^ ^ ^ ^^^^^^^^
+^UnicodeDecodeError^^^^: 
+'gbk' codec can't decode byte 0x9a in position 46: illegal multibyte sequence
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence
+Exception in thread Exception in thread Thread-3 (_readerthread)Thread-4 (_readerthread):
+:
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+        self.run()self.run()
+
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  buffer.append(fh.read())
+      ^^^ ^  ^   ^   ^ ^     ^ 
+^UnicodeDecodeError^: ^'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence
+^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaf in position 31: illegal multibyte sequence
+
+
+===== 9 可插拔部件矩阵 (rc=0) =====
+
+===== A 全默认 | 无额外环境变量 =====
+[OK  ] A 全默认 | 实例就绪
+[OK  ] A 全默认 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] A 全默认 | 登录  ->  实际=200
+[OK  ] A 全默认 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] A 全默认 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] A 全默认 | 显式设置的部件真的生效（视图取自实例）  ->  {}
+[OK  ] A 全默认 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] A 全默认 | 记忆写入  ->  实际=201
+[OK  ] A 全默认 | 记忆读回  ->  实际=200 命中=True
+[OK  ] A 全默认 | 指标端点可用  ->  实际=200
+[OK  ] A 全默认 | 写穿验证前置：任务已创建  ->  实际=201
+[OK  ] A 全默认 | 重启后账号仍在（json 落盘生效）  ->  实际=200
+[OK  ] A 全默认 | 重启后任务仍在  ->  实际=200
+[OK  ] A 全默认 | 写穿生效：提交后零等待强杀，重启后任务仍在（不是 404）  ->  实际=200
+
+===== B 存储换内存 | {'SA_STORAGE': 'memory'} =====
+[OK  ] B 存储换内存 | 实例就绪
+[OK  ] B 存储换内存 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] B 存储换内存 | 登录  ->  实际=200
+[OK  ] B 存储换内存 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] B 存储换内存 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] B 存储换内存 | 显式设置的部件真的生效（视图取自实例）  ->  {'storage': 'memory'}
+[OK  ] B 存储换内存 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] B 存储换内存 | 记忆写入  ->  实际=201
+[OK  ] B 存储换内存 | 记忆读回  ->  实际=200 命中=True
+[OK  ] B 存储换内存 | 指标端点可用  ->  实际=200
+
+===== C 审计换内存 | {'SA_AUDIT': 'memory'} =====
+[OK  ] C 审计换内存 | 实例就绪
+[OK  ] C 审计换内存 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] C 审计换内存 | 登录  ->  实际=200
+[OK  ] C 审计换内存 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] C 审计换内存 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] C 审计换内存 | 显式设置的部件真的生效（视图取自实例）  ->  {'audit': 'memory'}
+[OK  ] C 审计换内存 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] C 审计换内存 | 记忆写入  ->  实际=201
+[OK  ] C 审计换内存 | 记忆读回  ->  实际=200 命中=True
+[OK  ] C 审计换内存 | 指标端点可用  ->  实际=200
+
+===== D 审计换文件 | {'SA_AUDIT': 'file'} =====
+[OK  ] D 审计换文件 | 实例就绪
+[OK  ] D 审计换文件 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] D 审计换文件 | 登录  ->  实际=200
+[OK  ] D 审计换文件 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] D 审计换文件 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] D 审计换文件 | 显式设置的部件真的生效（视图取自实例）  ->  {'audit': 'file'}
+[OK  ] D 审计换文件 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] D 审计换文件 | 记忆写入  ->  实际=201
+[OK  ] D 审计换文件 | 记忆读回  ->  实际=200 命中=True
+[OK  ] D 审计换文件 | 指标端点可用  ->  实际=200
+
+===== E 限流换空实现 | {'SA_LIMITER': 'noop'} =====
+[OK  ] E 限流换空实现 | 实例就绪
+[OK  ] E 限流换空实现 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] E 限流换空实现 | 登录  ->  实际=200
+[OK  ] E 限流换空实现 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] E 限流换空实现 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] E 限流换空实现 | 显式设置的部件真的生效（视图取自实例）  ->  {'limiter': 'noop'}
+[OK  ] E 限流换空实现 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] E 限流换空实现 | 记忆写入  ->  实际=201
+[OK  ] E 限流换空实现 | 记忆读回  ->  实际=200 命中=True
+[OK  ] E 限流换空实现 | 指标端点可用  ->  实际=200
+
+===== F 指标换空实现 | {'SA_METRICS_EXPORT': 'noop'} =====
+[OK  ] F 指标换空实现 | 实例就绪
+[OK  ] F 指标换空实现 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] F 指标换空实现 | 登录  ->  实际=200
+[OK  ] F 指标换空实现 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] F 指标换空实现 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] F 指标换空实现 | 显式设置的部件真的生效（视图取自实例）  ->  {'metrics': 'noop'}
+[OK  ] F 指标换空实现 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] F 指标换空实现 | 记忆写入  ->  实际=201
+[OK  ] F 指标换空实现 | 记忆读回  ->  实际=200 命中=True
+[OK  ] F 指标换空实现 | 指标端点可用  ->  实际=200
+
+===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794645909\\runner-scripts'} =====
+[OK  ] G 执行换真实脚本 | 实例就绪
+[OK  ] G 执行换真实脚本 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] G 执行换真实脚本 | 登录  ->  实际=200
+[OK  ] G 执行换真实脚本 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] G 执行换真实脚本 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] G 执行换真实脚本 | 显式设置的部件真的生效（视图取自实例）  ->  {'runner': 'process'}
+[OK  ] G 执行换真实脚本 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] G 执行换真实脚本 | 记忆写入  ->  实际=201
+[OK  ] G 执行换真实脚本 | 记忆读回  ->  实际=200 命中=True
+[OK  ] G 执行换真实脚本 | 指标端点可用  ->  实际=200
+
+===== H 四件同时换 | {'SA_STORAGE': 'memory', 'SA_AUDIT': 'memory', 'SA_LIMITER': 'noop', 'SA_METRICS_EXPORT': 'noop'} =====
+[OK  ] H 四件同时换 | 实例就绪
+[OK  ] H 四件同时换 | 注册（首个用户 = owner）  ->  实际=201
+[OK  ] H 四件同时换 | 登录  ->  实际=200
+[OK  ] H 四件同时换 | 部件视图 200 且 5 个槽位齐全  ->  实际=200 槽位=5
+[OK  ] H 四件同时换 | 每个槽位 active 都在自己的 available 清单内  ->  异常槽位=[]
+[OK  ] H 四件同时换 | 显式设置的部件真的生效（视图取自实例）  ->  {'storage': 'memory', 'audit': 'memory', 'limiter': 'noop', 'metrics': 'noop'}
+[OK  ] H 四件同时换 | 提交任务跑通且未被判失败  ->  实际=201 status=succeeded
+[OK  ] H 四件同时换 | 记忆写入  ->  实际=201
+[OK  ] H 四件同时换 | 记忆读回  ->  实际=200 命中=True
+[OK  ] H 四件同时换 | 指标端点可用  ->  实际=200
+
+===== I 配额调到 2/h | {'SA_TASK_SUBMIT_QUOTA_PER_HOUR': '2'} =====
+[OK  ] I 配额调到 2/h | 配额定 2/h 时第 3 次提交被 429 挡住  ->  实际=[201, 201, 429]
+[OK  ] I 配额调到 2/h | 429 文案里的数字与配置一致（说的就是 2）  ->  任务提交过于频繁：限额为每用户每小时 2 次，请在 1800 秒后重试
+
+======================================================================
+矩阵合计 86 项 | 通过 86 | 失败 0
+======================================================================
+
+
+
+===== 10 换件演练与静态守护 (rc=0) =====
+
+[D1] 存储部件互换：json ↔ memory，上层是否无感
+[OK  ] D1a 两种存储后端都能起服务并跑完整序列  -> json ok / memory ok
+[OK  ] D1b 请求条数一致  -> 18 vs 18
+[OK  ] D1c 状态码序列完全一致（接口行为不随存储改变）  -> 18/18 一致
+[OK  ] D1d 响应结构签名完全一致（字段集合不随存储改变）  -> 18/18 一致
+
+[D2] 执行部件互换：sim ↔ process，治理链路是否与后端解耦
+[OK  ] D2a 两种执行后端都能跑完任务  -> ok
+[OK  ] D2b 任务终态一致  -> succeeded vs succeeded
+[OK  ] D2c 计划步骤名与顺序一致  -> ['intent_and_boundary', 'main:code-agent', 'compliance_review', 'synthesis'] vs ['intent_and_boundary', 'main:code-agent', 'compliance_review', 'synthesis']
+[OK  ] D2d 每步权限档位一致（治理判定不依赖后端）  -> ['cross_agent', 'write', 'read', 'write'] vs ['cross_agent', 'write', 'read', 'write']
+[OK  ] D2e trace 事件类型序列一致（审计口径不依赖后端）  -> 9 vs 9 条
+[OK  ] D2f 两种后端都记了 token 用量（预算不会被换件绕过）  -> sim=True process=True
+[OK  ] D2g 步骤结果字段集合一致（前端不必按后端分支）  -> ['agent_id', 'attempts', 'error', 'index', 'model_profile', 'name', 'output', 'success', 'tokens'] vs ['agent_id', 'attempts', 'error', 'index', 'model_profile', 'name', 'output', 'success', 'tokens']
+
+[D4] 审计部件互换：memory ↔ file，安全台账是否与后端解耦
+[OK  ] D4a 两种审计后端都能起服务并跑完整序列  -> memory ok / file ok
+[OK  ] D4b 请求条数一致  -> 18 vs 18
+[OK  ] D4c 状态码序列完全一致（换审计后端不改接口行为）  -> 18/18 一致
+[OK  ] D4d 响应结构签名完全一致（字段集合不随审计后端改变）  -> 18/18 一致
+[OK  ] D4e overview 报出当前审计部件身份（运维可核对）  -> memory 模式='memory' / file 模式='file'
+[OK  ] D4f file 审计后端确实落盘且每行都是合法 JSON  -> 文件=True 行数=8 非法行=0
+[OK  ] D4i 硬杀后重启，历史台账仍可查询（file 后端真可追溯）  -> 重启前=2 条 / 重启后=3 条 / 同一 token 仍有效=True
+[OK  ] D4j SA_FLUSH_INTERVAL_MS 生效（写入 0.25s 后硬杀不丢账号）  -> 重启前=5 条 / 重启后=6 条
+[OK  ] D4g SA_AUDIT=非法值 时启动失败（不静默降级到内存）  -> 退出码=1（预期非 0）
+[OK  ] D4h SA_AUDIT_FILE 指向目录 时启动失败（明确报错，不假装成功）  -> 退出码=1（预期非 0）
+
+[D3] 静态守护：业务层有没有偷偷依赖具体后端
+[OK  ] D3 模块化静态守护全通过  -> 合计 15 项 | 通过 15 | 失败 0
+
+======================================================================
+换件演练：22 项 | 通过 22 | 失败 0
+======================================================================
+
+
+
+===== 11 审计启动自检 (rc=0) =====
+工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-u_i34a8x
+[OK  ] A file 后端 | 实例启动并就绪  ->  端口 18131
+[OK  ] A file 后端 | /readyz 如实报告审计状态  ->  {"backend": "file", "degraded": false, "degraded_reason": null, "durable": true}
+[OK  ] A file 后端 | 注册 owner 账号  ->  实际=201
+[OK  ] A file 后端 | 审计 API 能查到启动记录  ->  实际=200 命中=1
+[OK  ] A file 后端 | 启动记录不被计入拒绝数  ->  denied=0
+[OK  ] A file 后端 | audit.jsonl 里存在 boot 行  ->  命中=1 文件=audit.jsonl
+[OK  ] A file 后端 | boot 行内容完整（system/allow/路径可读）  ->  actor=system decision=allow
+[OK  ] A file 后端 | 重启后就绪
+[OK  ] A file 后端 | 每次启动都留下一条 boot（重启可追溯）  ->  累计=2
+[OK  ] A file 后端 | 两条 boot 是不同事件（id 不重复）  ->  唯一 id=2
+[OK  ] B 拒绝启动 | 不可用路径下进程拒绝启动  ->  退出码=1
+[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-u_i34a8x\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
+[OK  ] C memory 后端 | 实例就绪
+[OK  ] C memory 后端 | 如实报告不落盘（durable=false / degraded=false）  ->  {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}
+[OK  ] C memory 后端 | 内存后端不产生 audit.jsonl
+
+==========================================================================
+合计 15 项 | 通过 15 | 失败 0
+
+
+
+===== 12 需求覆盖对齐 (rc=0) =====
+首个提示词覆盖对齐（门禁 12）
+------------------------------------------------------------------------
+  [OK     ] 需求基线                       docs/00-prompt-original.md   2131 字
+  [OK     ] 第 1 部分 总体定位                01-overview.md               9/9
+  [OK     ] 第 2 部分 能力清单                02-capability-catalog.md     7/7
+  [OK     ] 第 3 部分 分工协作                03-division-of-labor.md      5/5
+  [OK     ] 第 4 部分 交互规范                04-interaction-spec.md       3/3
+  [OK     ] 第 5 部分 边界处理                05-boundary-handling.md      7/7
+  [OK     ] 第 6 部分 验收标准                06-acceptance-criteria.md    6/6
+  [OK     ] 能力 id 覆盖                   02-capability-catalog.md     26/26
+  [OK     ] 设计公理 A1~A6                 01-overview.md               6/6
+------------------------------------------------------------------------
+结论：通过 —— 六部分文档对首个提示词逐条有落点，能力 id 全覆盖，设计公理锚点在位
+
+
+
+===== 13 防幻觉打点实测 (rc=0) =====
+[OK  ] H0                     服务就绪  http://127.0.0.1:58101
+[OK  ] H0                     注册  rc=201
+[OK  ] H0                     登录  token 已取得
+[OK  ] H1                     写入长记忆 0  rc=201
+[OK  ] H1                     写入长记忆 1  rc=201
+[OK  ] H1                     写入长记忆 2  rc=201
+[OK  ] H1                     写入长记忆 3  rc=201
+[OK  ] H1                     写入长记忆 4  rc=201
+[OK  ] H1                     提交任务  status=succeeded agreement=0.74
+[OK  ] H2                     抓取 /metrics  3497 字节
+[OK  ] H2                     sa_hallucination_flags_total 存在  值=1.0
+[OK  ] H3                     打点值 >= 1  值=1.0
+[OK  ] H3                     同任务上下文确实被截断  sa_context_truncations_total=1.0（排除巧合有值）
+
+说明：该指标统计执行链可客观判定的证据缺口（截断/失败步/低一致性），
+      语义级幻觉判定属 guard-agent 复核职责，二者不混为一谈。
+
+合计 13 项 | 通过 13 | 失败 0
+
+
+
+===== 14 真实响应形状 vs schema (rc=0) =====
+[OK  ] R00 服务就绪（/readyz ready=true）
+[OK  ] R01 POST /auth/register 形状 vs AuthResult  ->  POST /api/v1/auth/register status=201 形状一致
+[OK  ] R02 POST /auth/login 形状 vs AuthResult（account 传 username）  ->  POST /api/v1/auth/login status=200 形状一致
+[OK  ] R02b POST /auth/login 形状 vs AuthResult（account 传 email）  ->  POST /api/v1/auth/login status=200 形状一致
+[OK  ] R02c 拿到 access_token / refresh_token
+[OK  ] R03 GET /auth/me 形状 vs UserView  ->  GET /api/v1/auth/me status=200 形状一致
+[OK  ] R04 POST /auth/refresh 形状 vs AuthResult  ->  POST /api/v1/auth/refresh status=200 形状一致
+[OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
+[OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/c074e64e-2b3a-40f9-9dce-0db34a219dd2 status=200 形状一致
+[OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
+[OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/c074e64e-2b3a-40f9-9dce-0db34a219dd2/trace status=200 形状一致
+[OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
+[OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/9960d68c-c39a-423c-9aa9-c16d888ea41a/cancel status=202 形状一致
+[OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
+[OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
+[OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
+[OK  ] R13 GET /agents/{id} 200 + AgentView 形状  ->  GET /api/v1/agents/super-agent status=200 形状一致
+[OK  ] R14 GET /capabilities 200 + CapabilityView[] 形状  ->  GET /api/v1/capabilities status=200 形状一致
+[OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
+[OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
+[OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/185e3f70-23d5-48e4-8474-441ae7bf2dfb status=200 形状一致
+[OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
+[OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
+[OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
+[OK  ] R22 GET /observability/audit 200 + AuditList 形状  ->  GET /api/v1/observability/audit?limit=5 status=200 形状一致
+[OK  ] R23 GET /observability/components 200 + ComponentList 形状  ->  GET /api/v1/observability/components status=200 形状一致
+[OK  ] R31 GET /observability/alerts 200 + AlertList 形状  ->  GET /api/v1/observability/alerts status=200 形状一致
+[OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
+[OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
+[OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/fdc5bdf0-fd17-4d15-b2de-4bf3ee75a30f status=404 形状一致
+[OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
+[OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
+[OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致
+----------------------------------------------------------------------
+响应形状检查：40 通过 / 0 失败 / 0 跳过，共 40 项
+结论：所有 JSON 端点的真实响应形状与 docs/openapi.json 一致。
+
+
+
+===== 15 多节点集群双进程 (rc=0) =====
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-pdrfqr6g
+共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-pdrfqr6g\shared-cluster
+被测二进制: C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+心跳 TTL=5s  周期=1s  清理线=30s
+
+--- C1 单节点起步 ---
+[OK  ] C1 首用户拿到 owner 角色（否则读不了 /cluster）  -> role=owner
+[OK  ] C1 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C1 只有自己一个节点  -> 实际=1 期望=[1]
+[OK  ] C1 自己是 source=local  -> source=local
+[OK  ] C1 自己的 node_id 用的是 SA_NODE_ID  -> node_id=node-a
+[OK  ] C1 单节点时 offline_nodes=0  -> offline_nodes=0
+[OK  ] C1 心跳文件已落盘  -> node-a.json
+[OK  ] C1 目录里此刻只有自己一份心跳（peer 的心跳不该凭空出现）  -> 实际=1 期望=[1]
+
+--- C2 双节点互通 ---
+[OK  ] C2 A 侧 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C2 B 侧 /cluster 返回 200  -> 实际=200 期望=[200]
+[OK  ] C2 A 看见 2 个节点  -> 实际=2 期望=[2]
+[OK  ] C2 B 看见 2 个节点  -> 实际=2 期望=[2]
+[OK  ] C2 A 的列表里自己排第一（刷新不该换位置）  -> 首位=node-a/local
+[OK  ] C2 B 的列表里自己排第一  -> 首位=node-b/local
+[OK  ] C2 A 把 B 认成 peer（不是 local）  -> source=peer
+[OK  ] C2 A 侧看到的 B 不 stale  -> stale=False
+[OK  ] C2 peer 节点带 updated_at（看板才能显示'几秒前'）  -> updated_at=2026-11-14T08:46:25.208599600Z
+[OK  ] C2 汇总节点数=2  -> 实际=2 期望=[2]
+[OK  ] C2 汇总 offline_nodes=0  -> offline_nodes=0
+[OK  ] C2 totals.agents_total == 各节点求和  -> 汇总=28 明细和=28
+[OK  ] C2 totals.async_capacity == 各节点求和  -> 汇总=16 明细和=16
+[OK  ] C2 totals.tasks.total == 各节点求和  -> 汇总=0 明细和=0
+
+--- C3 跨节点负载在 A 侧可见 ---
+[OK  ] C3 提交前 A 侧集群任务总数=0（干净基线）  -> 实际=0 期望=[0]
+[OK  ] C3 B 上 3 个任务全部 201
+[OK  ] C3 A 侧看到 B 的 tasks.total 反映了 3 个任务  -> B.tasks.total=3
+[OK  ] C3 A 侧集群合计 == B 实际提交数（跨节点汇总不是拍脑袋）  -> totals.tasks.total=3 期望=3
+[OK  ] C3 A 自己的 tasks.total 仍是 0（别人的活不该记在自己头上）  -> A.tasks.total=0
+
+--- C4 心跳实时性：一个周期内数字跟着涨 ---
+[OK  ] C4 总数从 3 涨到 5（心跳把新负载带过来了）  -> totals.tasks.total=5 期望=5
+[OK  ] C4 B 的 updated_at 被推进（不是一份永远不变的旧快照）  -> 旧=2026-11-14 08:46:27.207830+00:00 新=2026-11-14 08:46:30.208029+00:00
+
+--- C5 崩溃掉线：标 stale，且不污染汇总 ---
+[OK  ] C5 强杀后 B 的心跳文件还在（没人来得及删，正是要验的情形）  -> node-b.json
+[OK  ] C5 B 仍然可见但已标 stale（'某某节点 8 秒前失联'比凭空消失有用）  -> stale=True
+[OK  ] C5 totals.offline_nodes=1（集群缩水一眼可见）  -> offline_nodes=1
+[OK  ] C5 totals.nodes 仍为 2（含离线）  -> 实际=2 期望=[2]
+[OK  ] C5 离线的 B 不计入 totals.tasks.total（陈旧值不该让'在跑几个'永远不下降）  -> totals.tasks.total=0 期望=0（B 离线后它的 5 个任务不再计入）
+[OK  ] C5 离线的 B 不计入 totals.agents_total  -> totals.agents_total=14 在线节点和=14
+
+--- C6 遗物清理 ---
+[OK  ] C6 超过 6×TTL 的孤儿心跳文件被物理删除  -> node-b.json
+[OK  ] C6 节点从列表里消失，只剩在线的那台  -> nodes=['node-a']
+[OK  ] C6 清理后汇总节点数=1  -> 实际=1 期望=[1]
+
+--- C7 优雅退出：Ctrl+Break 后心跳文件立刻消失 ---
+[OK  ] C7 进程收到 Ctrl+Break 后正常退出（rc=0，不是被强杀）  -> rc=0
+[OK  ] C7 退出时删掉了自己的心跳文件（不必让同伴等 TTL）  -> node-a.json
+
+--- C8 SA_CLUSTER=off 的进程 ---
+[OK  ] C8 关闭心跳时 /cluster 仍返回 200（接口不因开关消失）  -> 实际=200 期望=[200]
+[OK  ] C8 只报自己一个节点（不读别人的心跳）  -> nodes=['node-off']
+[OK  ] C8 关闭后不在共享目录留下任何文件  -> node-off.json
+[OK  ] C8 也看不见共享目录里已有的心跳（on/off 是彻底的两条路）  -> totals.nodes=1
+
+====================================================================
+合计 44 项 | 通过 44 | 失败 0
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-pdrfqr6g（可用 --keep 保留以便复查）
+
+
+
+===== 16 worker 分词质量 (rc=0) =====
+==========================================================================
+[OK  ] 01 帮我写一份把大模型引入本地小模型的试点报告，不要引入外部依赖  -> 试点报告 / 大模型 / 小模型 / 依赖 / 外部
+[OK  ] 02 把接口说明重写成中文，控制在 800 字以内  -> 800 / 中文 / 接口 / 控制 / 说明
+[OK  ] 03 把上周的会议纪要汇总成周报，发给团队  -> 会议 / 周报 / 团队 / 纪要
+[OK  ] 04 更新文档里的接口说明，字段名要和源码一致  -> 接口说明 / 更新文档 / 源码一致 / 字段
+[OK  ] 05 规划多 agents 集群的下一步，先做任务分发再做产物回传  -> 下一步 / 任务 / 规划 / 集群
+[OK  ] 06 整理一下手机里的照片，按天归档到子文件夹  -> 子文件夹 / 归档 / 手机 / 整理 / 照片
+[OK  ] 07 给订单表加一个主键，顺便完成数据库迁移  -> 数据库 / 主键 / 订单 / 迁移
+[OK  ] 08 把本周的报销单汇总一下，按项目分类  -> 报销 / 汇总 / 项目
+[OK  ] 09 每天九点提醒我备份一下工程目录  -> 工程目录 / 九点 / 备份
+[OK  ] 10 分析这次蓝屏的转储文件，找出最可能的驱动问题  -> 转储文件 / 驱动问题 / 分析 / 蓝屏
+[OK  ] 11 排查高并发下的超时问题  -> 超时问题 / 并发 / 排查
+[OK  ] 12 查一下 minicpm5-2b 在本机的显存占用  -> 显存 / 本机
+[OK  ] 13 确认审计日志真的落盘了，不是只在内存里  -> 内存 / 审计 / 日志 / 确认 / 落盘
+[OK  ] 14 通过 Remote-SSH 连到集群，重启一下推理服务  -> 推理服务 / 重启 / 集群
+[OK  ] 15 评估三台机器能不能跑起来这个游戏  -> 跑起来 / 机器 / 游戏 / 评估
+[OK  ] 16 对比 2B 与 14B 模型在本机 CPU 上的耗时  -> 14B / CPU / 2B / 对比 / 本机
+[OK  ] 17 挑三个候选方案，列出优缺点  -> 候选 / 方案 / 缺点
+[OK  ] 18 写一个清理脚本，不要动线上数据，只清本地缓存  -> 清理脚本 / 数据 / 本地 / 缓存
+[OK  ] 19 这个方案不能覆盖历史数据，需要补一个回填脚本  -> 回填脚本 / 数据 / 方案 / 覆盖
+[OK  ] 20 给 SSE 加断点续传，避免断线后丢事件  -> SSE / 事件 / 断点 / 断线 / 续传
+[OK  ] 21 统一两个接口的字段口径，避免前端反复改  -> 字段口径 / 前端 / 接口 / 统一
+[OK  ] 22 先跑一遍冒烟测试；再跑全量门禁；最后把证据归档  -> 冒烟测试 / 证据归档 / 先跑 / 最后 / 门禁
+[OK  ] 23 用 Godot 做一个 3D 修仙游戏的原型，先搭地形  -> 3D / 原型 / 地形 / 游戏
+[OK  ] 24 搭一个本地离线语音输入工具，识别中英文  -> 工具 / 本地 / 离线 / 语音 / 输入
+[OK  ] 25 给我搞一个能把 PDF 转成图片的小工具  -> PDF / 小工具 / 图片
+==========================================================================
+合计 25 例 | 通过 25 | 失败 0
+结论：分词输出无脏词、must 全在
+
+
+
+===== 17 异步受理与缺省 (rc=0) =====
+       数据目录 C:\Users\94355\AppData\Local\Temp\sa-async-probe-9a6sx69b
+       服务日志 C:\Users\94355\AppData\Local\Temp\sa-async-probe-9a6sx69b-server.log
+       服务地址 http://127.0.0.1:34996
+       slow-step 每步 800ms
+[OK  ] A0 服务就绪（/readyz ready=true）
+[OK  ] A0b 注册并拿到令牌  ->  status=201
+       A1 缺省提交：status=202 耗时=0.01s 返回状态=queued 分支头=async
+[OK  ] A1 缺省提交即异步受理（202 + queued，不等执行完）  ->  status=202 返回状态=queued 耗时=0.01s
+[OK  ] A1b 缺省提交的耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.01s（一步 800ms）
+[OK  ] A1c 响应头 X-SA-Exec-Mode 自证走了 async 分支  ->  X-SA-Exec-Mode=async
+[OK  ] A1d 202 带 Location 指向该任务资源（RFC 9110 对 202 的要求）  ->  Location=/api/v1/tasks/e3c8e2a6-80a5-4881-bd21-4aa14e2ee7ff task_id=e3c8e2a6-80a5-4881-bd21-4aa14e2ee7ff
+[OK  ] A1e 显式 mode=sync 仍返回 201 + 终态  ->  status=201 返回状态=succeeded
+[OK  ] A1f 显式 sync 的分支头为 sync  ->  X-SA-Exec-Mode=sync
+[OK  ] A2 mode=async 返回 202 且状态 queued  ->  status=202 返回状态=queued 耗时=0.01s
+[OK  ] A2b 受理耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.01s（一步 800ms，四步约 3.2s）
+[OK  ] A3 异步任务最终收敛到 succeeded  ->  终态=succeeded 轮询=17 次 耗时=3.30s
+[OK  ] A4 事件流收到帧  ->  帧数=2 事件名=['status']
+[OK  ] A4b 事件流出现 running 中间态（不是只有首尾两帧）  ->  状态序列=['running', 'succeeded']
+[OK  ] A4c seq 严格递增且不重复  ->  seq 序列=[0, 14]
+[OK  ] A5 顶到并发上限时返回 429  ->  受理 3 条 / 被拒 3 条（上限 3）：[429, 429, 429]
+       429 文案：后台执行队列已满（上限 3 个并发任务），请稍后重试；已提交内容未消耗任何预算
+[OK  ] A5b 被拒的提交没有留下永远停在 queued 的幽灵任务  ->  疑似幽灵 0 条
+[OK  ] A6 取消异步任务返回 202（立旗，不假装已完成）  ->  status=202
+[OK  ] A6b 取消后收敛为 cancelled  ->  终态=cancelled 耗时=0.00s
+       A7 首连收到 3 帧 状态=['running', 'running', 'succeeded'] 锚点=40
+[OK  ] A7 重连带 Last-Event-ID 真的走了续传分支（sa_sse_replay_total 增长，未退化成快照）  ->  replay 0.0→1.0 gap 0.0→0.0 续传 1 帧 seq=[41]
+[OK  ] A7b 续传补到断线之后的事件，且首帧 seq 严格大于 Last-Event-ID（不重发已收到的）  ->  首帧 seq=41 Last-Event-ID=40 共 1 帧
+[OK  ] A7c 续传不重推 seq=0 快照（那是首次连接才有的待遇）  ->  seq 序列=[41]
+[OK  ] A7d 非法 Last-Event-ID 退回首次连接（给 seq=0 快照，且不计入 sa_sse_replay_gap_total）  ->  首帧 seq=[0] gap None→None
+[OK  ] A7e 任务已终态后重连：立刻拿到终态快照（不用回查 detail），且不空等挂连接  ->  首帧 seq=[0] status=['succeeded'] 耗时=0.00s
+[OK  ] A7f 锚点超前且无帧可补时不挂连接（快速 EOF），不白占一个订阅位  ->  帧数=0 EOF 耗时=0.01s
+[OK  ] A7g 锚点=最后一帧且任务已终态：秒回 EOF，不挂住连接（原误报路径的正向断言）  ->  锚点=41 帧数=0 seq=[] EOF 耗时=0.01s
+       数据目录已保留（未自动清理）：C:\Users\94355\AppData\Local\Temp\sa-async-probe-9a6sx69b
+       服务日志：C:\Users\94355\AppData\Local\Temp\sa-async-probe-9a6sx69b-server.log
+==============================================================================
+合计 25 项 | 通过 25 | 失败 0
+
+
+
+===== 18 模型路径真采用 (rc=0) =====
+== 多轮压测 ==  模型 minicpm5-2b:f16  二进制 C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+   worker 解释器 D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\python.exe
+   数据目录 C:\Users\94355\Desktop\新建文件夹(7)\target\soak
+   /readyz OK
+
+   3 个账号令牌就绪（按用户轮转，避让 60 次/小时的提交限流；TTL 30 分钟，自动续期）
+   计划 7 轮：模型 3 / 快 2 / 坏输入 2
+
+   ⚠ fast 轮数 2 < 用例数 14：末尾目标不会被覆盖
+   ⚠ model 轮数 3 < 用例数 4：末尾目标不会被覆盖
+   ⚠ guard 轮数 2 < 用例数 6：末尾用例不会被覆盖
+[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 43.17s tok=516 OK
+[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 30.29s tok=476 OK
+[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 31.3s tok=512 OK
+[4/7] fast  planning      succeeded  0.39s OK
+[5/7] fast  planning      succeeded  0.35s OK
+[6/7] guard 空目标必须 400            HTTP 422 OK
+[7/7] guard 过短目标必须 400           HTTP 422 OK
+
+== 全局断言 ==
+
+== 限流能力探针（60 次/账号）==
+   PASS  前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60
+   [G1] PASS  正常轮次全部 succeeded：5/5
+   [G2] PASS  模型轮次 tokens>0：3/3
+   [G3] PASS  模型产出被采用（outline_source=model 且 model.used=true）：3/3
+   [G4] PASS  快轮次路由与形状全对：2/2
+   [G5] PASS  坏输入全部被拒：2/2
+   [G6] PASS  5xx 计数 = 0
+   [G7] PASS  任务台账 5 条 vs 建单 5 条（分账号 {'soak_owner': 2, 'soak_u2': 2, 'soak_u3': 1}）
+   [G8] PASS  限流到位（60 次后必 429 且带 Retry-After）：前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60
+
+== 统计 ==
+   rounds_total             7
+   model_rounds             3
+   fast_rounds              2
+   model_elapsed_avg_s      34.9
+   model_elapsed_min_s      30.3
+   model_elapsed_max_s      43.2
+   model_tokens_avg         501.3
+   model_tokens_min         476
+   model_tokens_max         516
+   fast_elapsed_avg_s       0.37
+   model_adopted_rounds     3
+   auth_refreshes           0
+   accounts                 ['soak_owner', 'soak_u2', 'soak_u3']
+   throttled_rounds         0
+   throttle_wait_s          0
+   rate_limit_probe         {'ok': True, 'detail': '前 60 次内提前出现 429 的位置 无；第 61 次 HTTP=429；Retry-After=60'}
+   route_hits               {'super-agent': 10, 'doc-agent': 3, 'guard-agent': 5, 'planner-agent': 2}
+
+== 模型轮次逐轮 ==
+   #1   43.17s tok= 516 doc_tok= 303 attempts=1 succeeded  采用
+   #2   30.29s tok= 476 doc_tok= 237 attempts=1 succeeded  采用
+   #3    31.3s tok= 512 doc_tok= 279 attempts=1 succeeded  采用
+
+结论： 全绿
+   证据： C:\Users\94355\Desktop\新建文件夹(7)\docs\evidence\soak-gate18-latest.json
+
+
+
+===== 19 可观测告警行为 (rc=0) =====
+       二进制 C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe（2026-11-14 15:18:50）
+       [A-default] 端口 21982 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\A-default-server.log
+[OK  ] A0 服务就绪（/readyz ready=true）
+[OK  ] A0b 注册管理员与普通成员  ->  status=201/201
+[OK  ] A1 无流量时无告警  ->  status=200 count=0
+[OK  ] A2 策略回显（5 条规则 / dedup 300s / storm 5）  ->  rules=5 dedup=300 storm=5
+[OK  ] A2b 严重级别口径（3 条 critical / 2 条 warning）  ->  {"http_5xx_ratio": "critical", "task_failure_ratio": "warning", "rate_limited_spike": "warning", "authz_denied_spike": "critical", "circuit_open": "critical"}
+[OK  ] A3 预算超支任务收敛为 aborted_budget  ->  ['aborted_budget', 'aborted_budget', 'aborted_budget']
+[OK  ] A4 配额用光后提交被限流（429×2）  ->  [429, 429]
+[OK  ] A5 越权访问管理面被拒（403×2）  ->  [403, 403]
+[OK  ] A6 sa_authz_denied_total 有真实落点（≥2）  ->  值=2
+[OK  ] A7 首抓命中三条规则（fired=3）  ->  status=200 fired=3 active=['authz_denied_spike', 'rate_limited_spike', 'task_failure_ratio']
+[OK  ] A7b 限流告警数值正确（observed=2 / threshold=1 / hits=1）  ->  observed=2.0 threshold=1.0 hits=1
+[OK  ] A7c 失败率告警数值正确（observed=1.0=100% / threshold=0.01）  ->  observed=1.0 threshold=0.01
+[OK  ] A7d 告警带可读归因文字  ->  提交限流累计 2 次，达到阈值 1
+[OK  ] A8 去重窗口内不重复发（fired=0,0）  ->  [0, 0]
+[OK  ] A8b 被压制条目逐个记录（deduped=3,3）  ->  [3, 3]
+[OK  ] A8c 命中次数继续累加（hits 1→2→3）  ->  [1, 2, 3]
+[OK  ] A8d 抑制总数与活跃数口径一致（suppressed=9 / active=3，共 3 次窗口内抓取）  ->  suppressed=9 active=3 fired=3
+[OK  ] A9 sa_alerts_total 按 severity 落点（warning=8 / critical=4 = 4 轮 × 2+1）  ->  warning=8 critical=4
+[OK  ] A9b sa_alerts_deduped_total 落点（=9，与 stats.suppressed_total 一致）  ->  指标=9 stats=9
+[OK  ] A9c 命中＝发出＋压制 守恒（12 = 3 + 9）  ->  12 vs 3 + 9
+[OK  ] A10 auto_action 反映真实兜底机制（budget_downgrade）  ->  {"kind": "budget_downgrade", "detail": "预算超支已触发降档（sa_budget_downgrades_total 可核对）"}
+       [B-refire] 端口 22001 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\B-refire-server.log
+[OK  ] B0 服务就绪
+[OK  ] B0b 造出一次限流（第二次提交 429）  ->  [202, 429, 429]
+[OK  ] B1 首抓发出（fired=1）  ->  fired=1
+[OK  ] B2 窗口内再抓被压制（fired=0）  ->  fired=0
+[OK  ] B3 窗口过期后复发（fired=1）  ->  fired=1
+[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-14T08:49:21.683907900+00:00
+[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-14T08:49:21.683907900+00:00 -> 2026-11-14T08:49:23.098810200+00:00
+[OK  ] B4c 命中累计到 3 次（hits=3）  ->  hits=3
+       [C-storm] 端口 28079 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261114-164917\C-storm-server.log
+[OK  ] C0 服务就绪
+[OK  ] C0b 同时造出非严重（429）与严重（403）触发源  ->  [202, 429, 429] / [403, 403]
+[OK  ] C1 风暴时只发严重告警（active 只剩 authz_denied_spike）  ->  active=['authz_denied_spike']
+[OK  ] C1b 非严重告警被折叠计数（aggregated≥1 / fired=1）  ->  aggregated=1 fired=1
+[OK  ] C1c 聚合总数体现在 stats（aggregated_total≥1）  ->  值=1
+[OK  ] C2 sa_alerts_aggregated_total 落点（≥1）  ->  值=1
+[OK  ] C2b 风暴下再抓不重复发（fired=0，只有严重项持续在线）  ->  fired=0 active=['authz_denied_spike']
+
+合计 36 项断言：通过 36，失败 0
+
+
+
+===== 20 主题取词质量 (rc=0) =====
+[PASS] narrative 帮我理一下万炉第三章的伏笔，反派动机是不是站得住    
+[PASS] narrative 这段剧情的主线推进太慢，人物动机也说不通        
+[PASS] narrative 世界观设定跟旧设定冲突了，帮我校一遍          
+[PASS] market    对标两款竞品做个市场分析，再给个定价建议        
+[PASS] market    这个产品投放选哪个渠道，回本周期怎么算         
+[PASS] market    《暗黑破坏神》和《流放之路》的定价对比         
+[PASS] qa        这批接口改完，帮我列验收标准和回归范围         
+[PASS] qa        上线前跑一遍冒烟，缺陷按级别分一下           
+[PASS] qa        梳理万炉第三章的剧情                  
+[PASS] guard     批一下                         
+[PASS] guard     把上周所有改动都过一遍然后按重要性排个序再给我一份完  
+[PASS] guard                                 
+
+选题用例 12 条 | 通过 12 | 失败 0
+结论：全部通过
+
+
+
+===== 21 垂直域判据 (rc=0) =====
+==============================================================================
+[PASS] 01 [A] narrative 设定自洽三问
+[PASS] 02 [A] narrative 动机链四段
+[PASS] 03 [A] narrative 伏笔四态
+[PASS] 04 [A] market 竞品矩阵五维
+[PASS] 05 [A] market 定位三问
+[PASS] 06 [A] market 定价阶梯 ≥3 档
+[PASS] 07 [A] qa 用例三张表都有内容
+[PASS] 08 [A] qa 缺陷四级
+[PASS] 09 [A] qa 模糊词全部转成指标
+[PASS] 10 [B] narrative 抱怨「没回收」要判收线不改判成没埋
+[PASS] 11 [B] narrative 抱怨「凭空变强」要判未埋先收
+[PASS] 12 [B] narrative 反派目标要追问动机自证
+[PASS] 13 [B] market 「很多」要抓成空洞断言
+[PASS] 14 [B] market 并列竞品一个都不能漏
+[PASS] 15 [B] qa 「改了接口契约」要扩到调用方回归
+[PASS] 16 [C] market 收到纯叙事目标不编竞品
+[PASS] 17 [C] market 收到验收目标不编空洞断言
+[PASS] 18 [C] qa 收到叙事目标不硬转指标
+[PASS] 19 [C] qa 收到市场目标不编回归范围
+[PASS] 20 [C] narrative 收到市场目标不编伏笔台账
+[PASS] 21 [C] narrative 收到验收目标不编动机缺口
+[PASS] 22 [D] narrative 主题精确=万炉
+[PASS] 23 [D] market 主题精确=幻兽帕鲁
+[PASS] 24 [D] qa 主题精确=接口契约
+==============================================================================
+分组：A 9/9 | B 6/6 | C 6/6 | D 3/3
+合计 24 项 | 通过 24 | 失败 0
+结论：三域专属判据齐全、该抓的都抓到、跨域不乱答、主题精确。
+
+
+
+===== 22 CLI 外壳行为 (rc=0) =====
+门禁 22 · CLI 外壳行为探针
+被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-16
+--------------------------------------------------------------------
+[PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
+[PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
+[PASS] A  A3 未知子命令被拒绝不当 serve            rc=2 首行=error: unrecognized subcommand 'nosuchcmd'
+[PASS] A  A4 --version 输出版本号             rc=0 输出=super-agents 1.0.0
+[PASS] C  C1 --json stdout 是纯 JSON       可解析
+[PASS] C  C2 必需字段齐全                      齐
+[PASS] C  C3 名单与顺序固定                     一致
+[PASS] C  C4 level 取值封闭                  ok/warn/skip/error
+[PASS] C  C5 文本与 JSON 同数同码               JSON 10 项/rc=0，文本 rc=0
+[PASS] C  C6 文本标签与 JSON 逐项一致             10 项逐项对上
+[PASS] B  B1 无参启动 /healthz 200           HTTP=200 就绪
+[PASS] B  B2 无参进程保持前台                    存活=True
+[PASS] B  B3 退出后端口释放                     端口 18310 已释放
+[PASS] B  B4 显式 serve 同样可用               HTTP=200 就绪
+[PASS] D  D1 干净环境 rc=0                   rc=0
+[PASS] D  D2 --strict 仅在有 WARN 时 rc=1    WARN=1 rc=1
+[PASS] D  D3 模型端点半配 rc=2 且报 ERR          rc=2 命中=True
+[PASS] D  D4 process 缺 SA_RUNNER_DIR rc=2 rc=2 命中=True
+[PASS] D  D5 端口被他人占用 rc=2                rc=2 命中=True
+[PASS] D  D6 端口被本服务占 → SKIP 且 rc=0       rc=0 命中=True
+[PASS] D  D7 诊断后端口空闲、不落业务文件              端口空闲=True 多出文件=无
+[PASS] D  D8 密钥过短 rc=2 且不 panic          rc=2 ERR命中=True panic=False
+--------------------------------------------------------------------
+合计 22 项 | 通过 22 | 失败 0
+
+
+
+===== 23 CLI 客户端行为 (rc=0) =====
+门禁 23 · CLI 客户端子命令探针
+被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-18
+------------------------------------------------------------------------------
+[BOOT] 服务：就绪（就绪）
+[BOOT] 注册：token=288 位
+[PASS] A  A1 --help 列出 serve                     rc=0 命中=True
+[PASS] A  A1 --help 列出 doctor                    rc=0 命中=True
+[PASS] A  A1 --help 列出 login                     rc=0 命中=True
+[PASS] A  A1 --help 列出 logout                    rc=0 命中=True
+[PASS] A  A1 --help 列出 submit                    rc=0 命中=True
+[PASS] A  A1 --help 列出 ls                        rc=0 命中=True
+[PASS] A  A1 --help 列出 show                      rc=0 命中=True
+[PASS] A  A2 help 说明哪些需要服务在跑                     命中=True
+[PASS] A  A3 login 参数齐（缺 无）                      rc=0 缺=[]
+[PASS] A  A3 submit 参数齐（缺 无）                     rc=0 缺=[]
+[PASS] A  A3 ls 参数齐（缺 无）                         rc=0 缺=[]
+[PASS] A  A3 show 参数齐（缺 无）                       rc=0 缺=[]
+[PASS] B  B1 login rc=0                          rc=0
+[PASS] B  B2 login 中文未乱码                         登录成功：CLI HTTP 探针（owner）
+[PASS] B  B3 令牌文件恰两行 access/refresh              行数=2 acc=288 ref=289
+[PASS] B  B4 access 长度像真 JWT                     len=288
+[PASS] B  B5 重复 login 覆盖不追加                      行数=2
+[PASS] B  B6 login 无账号不挂死                        rc=1 提示=用户名或邮箱：没有账号。用 --account，或先设 SA_ACCOUNT
+[PASS] C  C0 起始令牌齐                               acc=288 ref=289
+[PASS] C  C1 access 坏 → 自动刷新后成功                  rc=0
+[PASS] C  C2 刷新后 access 已更换                      len 288→288
+[PASS] C  C3 刷新后 refresh 也更换并落盘                  changed=True
+[PASS] C  C4 文件里不再留旧 refresh                     ok=True
+[PASS] C  C5 access+refresh 双坏 → rc=3            rc=3
+[PASS] C  C6 双坏提示去登录                             命中=True
+[PASS] C  C7 --token 绕过坏文件                       rc=0
+[PASS] C  C8 SA_TOKEN 环境变量直传                     rc=0
+[PASS] C  C9 重新登录恢复                              rc=0
+[PASS] C  C10 8 进程并发刷新全成功                        第1轮[0, 0, 0, 0, 0, 0, 0, 0] | 第2轮[0, 0, 0, 0, 0, 0, 0, 0] | 第3轮[0, 0, 0, 0, 0, 0, 0, 0]
+[PASS] C  C11 并发后单跑仍正常                           rc=0
+[PASS] D  D1 submit(sync) rc=0                   rc=0
+[PASS] D  D2 submit 回显含 HTTP 状态                  已提交 HTTP 201
+[PASS] D  D3 submit 中文 goal 不改字                  命中=True
+[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=4040bbce
+[PASS] D  D5 ls rc=0                             rc=0
+[PASS] D  D6 ls 表头存在                             id                                   状态 
+[PASS] D  D7 表头与数据行按显示宽度逐列对齐                     
+[PASS] D  D8 全行 id 都是完整 UUID                     完整数=2
+[PASS] D  D9 输出无替换符与问号                           问号=False 替换符=False
+[PASS] D  D10 页脚标了 UTC 口径                        共 2 条，本页 2 条（limit=5 offset=0；时间为 UTC）
+[PASS] D  D11 ls --json 可解析且字段齐                  rc=0 解析=True
+[PASS] D  D12 --status 过滤生效                      rc=0 状态集=['succeeded']
+[PASS] D  D13 --q 中文关键词能过滤                       rc=0 命中水果=True 命中hello=False
+[PASS] D  D14 show rc=0                          rc=0
+[PASS] D  D15 show 时间标 (UTC)                     命中=True
+[PASS] D  D16 show 不存在 rc=2                      rc=2
+[PASS] D  D17 show 不存在说人话                        没有这个任务：00000000-0000-4000-8000-000000000000
+[PASS] E  E1 连不上服务 ls rc=1                       rc=1
+[PASS] E  E1 连不上服务 show rc=1                     rc=1
+[PASS] E  E1 连不上服务 submit rc=1                   rc=1
+[PASS] E  E2 连不上给了可读提示                           连不上 127.0.0.1:19100：由于目标计算机积极拒绝，无法连接。 (os error 10061)
+[PASS] E  E3 doctor 不碰令牌文件                       变=False
+[PASS] E  E4 ls 不改服务端数据                          total 2→2
+------------------------------------------------------------------------------
+合计 53 项 | 通过 53 | 失败 0
+

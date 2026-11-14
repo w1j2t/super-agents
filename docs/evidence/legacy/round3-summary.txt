@@ -1,0 +1,46 @@
+========================================================================
+round3 全量验证汇总  2026-11-09 20:07:12
+主机: Windows 11 (26200) | 工具链: stable-x86_64-pc-windows-gnu
+工作区: C:\Users\94355\Desktop\新建文件夹(7)（含中文，故编译在 ASCII 副本中进行）
+========================================================================
+
+--- ① 契约生成物 openapi.json 与源码是否漂移 ---
+$ python scripts/gen-openapi.py --check
+rc=0
+  CHECK: 一致 | paths=24 operations=28 schemas=50
+
+--- ② openapi schema ⇄ 源码 struct（字段/可选性/枚举） ---
+$ python scripts/check-openapi.py
+rc=0
+  检查 struct schema: 40 个 | 枚举 schema: 9 个
+  结果: 全部一致（字段集合 / 可选性 / 枚举取值），0 处不一致
+
+--- ③ 40 号文档 interface ⇄ 源码 struct ---
+$ python scripts/check-contract.py
+rc=0
+  源码结构体: 56 个 | 文档 interface: 21 个
+  结果: 一致 21 | 有差异 0 | 查无同名 0
+
+--- ④ TS 类型生成物是否漂移 ---
+$ python scripts/gen-ts-types.py --check
+rc=0
+  CHECK: 一致
+
+--- ⑤ 单元测试（在 ASCII 副本中执行） ---
+$ cargo +stable-x86_64-pc-windows-gnu test --lib
+rc=0
+  test error::tests::maps_status_and_codes ... ok
+  test error::tests::validation_details_are_exposed ... ok
+  test error::tests::internal_detail_is_not_leaked ... ok
+  test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+------------------------------------------------------------------------
+①②③④ 一致性检查 rc = [0, 0, 0, 0]  → 全部 0
+⑤ 单元测试 rc = 0  → 55 passed; 0 failed; 0 ignored
+⑥ 端到端冒烟 → 见 docs/evidence/smoke-latest.txt：合计 98 项 | 通过 98 | 失败 0
+
+附注（真实踩坑，供核对者参考）：
+  在中文路径工作区内直接 cargo test 会失败于 serde_derive / axum-macros 的 proc-macro 构建
+  （MinGW ld 无法处理含中文与括号的路径）。因此所有编译验证均在 %LOCALAPPDATA%\sa-build 这个纯 ASCII 副本里做，
+  源码改动后用覆盖式同步（copytree dirs_exist_ok）推过去，不使用删除重建。
+========================================================================

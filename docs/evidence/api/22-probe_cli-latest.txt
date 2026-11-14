@@ -1,0 +1,35 @@
+# 22 CLI 外壳行为
+生成时间: 2026-11-14 14:43:47
+命令由 regress_all.py 编排执行，rc=0，耗时 4.9s
+（原始输出如下，未做删改）
+======================================================================
+门禁 22 · CLI 外壳行为探针
+被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-7
+--------------------------------------------------------------------
+[PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
+[PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
+[PASS] A  A3 未知子命令被拒绝不当 serve            rc=2 首行=error: unrecognized subcommand 'nosuchcmd'
+[PASS] A  A4 --version 输出版本号             rc=0 输出=super-agents 1.0.0
+[PASS] C  C1 --json stdout 是纯 JSON       可解析
+[PASS] C  C2 必需字段齐全                      齐
+[PASS] C  C3 名单与顺序固定                     一致
+[PASS] C  C4 level 取值封闭                  ok/warn/skip/error
+[PASS] C  C5 文本与 JSON 同数同码               JSON 10 项/rc=0，文本 rc=0
+[PASS] C  C6 文本标签与 JSON 逐项一致             10 项逐项对上
+[PASS] B  B1 无参启动 /healthz 200           HTTP=200 就绪
+[PASS] B  B2 无参进程保持前台                    存活=True
+[PASS] B  B3 退出后端口释放                     端口 18310 已释放
+[PASS] B  B4 显式 serve 同样可用               HTTP=200 就绪
+[PASS] D  D1 干净环境 rc=0                   rc=0
+[PASS] D  D2 --strict 仅在有 WARN 时 rc=1    WARN=1 rc=1
+[PASS] D  D3 模型端点半配 rc=2 且报 ERR          rc=2 命中=True
+[PASS] D  D4 process 缺 SA_RUNNER_DIR rc=2 rc=2 命中=True
+[PASS] D  D5 端口被他人占用 rc=2                rc=2 命中=True
+[PASS] D  D6 端口被本服务占 → SKIP 且 rc=0       rc=0 命中=True
+[PASS] D  D7 诊断后端口空闲、不落业务文件              端口空闲=True 多出文件=无
+[PASS] D  D8 密钥过短 rc=2 且不 panic          rc=2 ERR命中=True panic=False
+--------------------------------------------------------------------
+合计 22 项 | 通过 22 | 失败 0
+
+

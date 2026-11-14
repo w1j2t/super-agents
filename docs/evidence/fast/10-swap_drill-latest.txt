@@ -1,0 +1,41 @@
+# 10 换件演练与静态守护
+生成时间: 2026-11-12 22:20:34
+命令由 regress_all.py 编排执行，rc=0，耗时 35.3s
+（原始输出如下，未做删改）
+======================================================================
+
+[D1] 存储部件互换：json ↔ memory，上层是否无感
+[OK  ] D1a 两种存储后端都能起服务并跑完整序列  -> json ok / memory ok
+[OK  ] D1b 请求条数一致  -> 18 vs 18
+[OK  ] D1c 状态码序列完全一致（接口行为不随存储改变）  -> 18/18 一致
+[OK  ] D1d 响应结构签名完全一致（字段集合不随存储改变）  -> 18/18 一致
+
+[D2] 执行部件互换：sim ↔ process，治理链路是否与后端解耦
+[OK  ] D2a 两种执行后端都能跑完任务  -> ok
+[OK  ] D2b 任务终态一致  -> succeeded vs succeeded
+[OK  ] D2c 计划步骤名与顺序一致  -> ['intent_and_boundary', 'main:code-agent', 'compliance_review', 'synthesis'] vs ['intent_and_boundary', 'main:code-agent', 'compliance_review', 'synthesis']
+[OK  ] D2d 每步权限档位一致（治理判定不依赖后端）  -> ['cross_agent', 'write', 'read', 'write'] vs ['cross_agent', 'write', 'read', 'write']
+[OK  ] D2e trace 事件类型序列一致（审计口径不依赖后端）  -> 9 vs 9 条
+[OK  ] D2f 两种后端都记了 token 用量（预算不会被换件绕过）  -> sim=True process=True
+[OK  ] D2g 步骤结果字段集合一致（前端不必按后端分支）  -> ['agent_id', 'attempts', 'error', 'index', 'model_profile', 'name', 'output', 'success', 'tokens'] vs ['agent_id', 'attempts', 'error', 'index', 'model_profile', 'name', 'output', 'success', 'tokens']
+
+[D4] 审计部件互换：memory ↔ file，安全台账是否与后端解耦
+[OK  ] D4a 两种审计后端都能起服务并跑完整序列  -> memory ok / file ok
+[OK  ] D4b 请求条数一致  -> 18 vs 18
+[OK  ] D4c 状态码序列完全一致（换审计后端不改接口行为）  -> 18/18 一致
+[OK  ] D4d 响应结构签名完全一致（字段集合不随审计后端改变）  -> 18/18 一致
+[OK  ] D4e overview 报出当前审计部件身份（运维可核对）  -> memory 模式='memory' / file 模式='file'
+[OK  ] D4f file 审计后端确实落盘且每行都是合法 JSON  -> 文件=True 行数=8 非法行=0
+[OK  ] D4i 硬杀后重启，历史台账仍可查询（file 后端真可追溯）  -> 重启前=2 条 / 重启后=3 条 / 同一 token 仍有效=True
+[OK  ] D4j SA_FLUSH_INTERVAL_MS 生效（写入 0.25s 后硬杀不丢账号）  -> 重启前=5 条 / 重启后=6 条
+[OK  ] D4g SA_AUDIT=非法值 时启动失败（不静默降级到内存）  -> 退出码=1（预期非 0）
+[OK  ] D4h SA_AUDIT_FILE 指向目录 时启动失败（明确报错，不假装成功）  -> 退出码=1（预期非 0）
+
+[D3] 静态守护：业务层有没有偷偷依赖具体后端
+[OK  ] D3 模块化静态守护全通过  -> 合计 15 项 | 通过 15 | 失败 0
+
+======================================================================
+换件演练：22 项 | 通过 22 | 失败 0
+======================================================================
+
+

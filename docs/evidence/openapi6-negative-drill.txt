@@ -1,0 +1,27 @@
+门禁 6（OpenAPI 未漂移）负向演练
+时间：2026-11-14 16:49:49
+正本：C:\Users\94355\Desktop\新建文件夹(7)\scripts\gen-openapi.py
+
+方法：复制 gen-openapi.py 到 target/drill/ 副本，ROOT 重定向指向正本项目，
+      对 RESPONSE_SCHEMA_OVERRIDE 做三种变异后跑 --check，看门禁是否按预期转红。
+      --check 只读，副本不写任何文件；正本一行未动。
+
+判据：A 清空登记表 → rc=1；B 键写回 tuple → rc=2 + [FATAL]；C 键拼错 → rc=1。
+
+[PASS] P0 正本已登记 post /api/v1/tasks
+[PASS] P1 副本已建立 | C:\Users\94355\Desktop\新建文件夹(7)\target\drill\oapi6_20261114_164948__g_oqk28（2 个文件）
+[PASS] P2 ROOT 重定向成功 | 副本读真源码 + 真 docs/openapi.json
+[PASS] B0 基线（副本原样）与正本一致 | RC=0 | CHECK: 一致 | paths=29 operations=33 schemas=51
+[PASS] A 清空登记表 → 必须转红(rc=1) | RC=1 | CHECK: 有差异（请重新生成） | paths=29 operations=33 schemas=51
+[PASS] B 键写回 tuple → 必须启动即 FATAL(rc=2) | RC=2 | [FATAL] RESPONSE_SCHEMA_OVERRIDE 键格式不合法，会被静默忽略：[(('post', '/api/v1/tasks'), '键不是字符串（曾经写成 tuple 就是这类）')]
+[PASS] C 键拼错路径 → 表现为差异(rc=1) | RC=1 | CHECK: 有差异（请重新生成） | paths=29 operations=33 schemas=51
+
+合计 7 项 | 通过 7 | 失败 0
+结论：全部按预期
+
+由此确认的三件事：
+1. 门禁 6 有判定力——登记表一旦失效，它立刻转红，不是恒绿的摆设。
+2. “写错却静默忽略”这条路已被堵死——键格式非法时启动即 rc=2，
+   而不是等到某天门禁莫名变绿才回头查。
+3. 自检只管格式、不管存在性：键拼错路径不会 FATAL，只会表现为差异。
+   这是刻意的取舍——存在性该由真实路由表说话，硬编码第二份路由只会再造一个漂移源。

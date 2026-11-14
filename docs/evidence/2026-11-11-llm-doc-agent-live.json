@@ -1,0 +1,151 @@
+{
+ "id": "30d3a9a1-7d7d-43ef-a5f1-87f93e6b90ab",
+ "goal": "写一份把 worker 接入本地小模型的试点报告，说明接入的模型、接线方式和实测数据",
+ "task_type": "writing",
+ "status": "succeeded",
+ "plan": [
+  {
+   "index": 0,
+   "name": "intent_and_boundary",
+   "agent_id": "super-agent",
+   "model_profile": "standard",
+   "permission": "cross_agent",
+   "est_tokens": 900,
+   "sandbox": false
+  },
+  {
+   "index": 1,
+   "name": "main:doc-agent",
+   "agent_id": "doc-agent",
+   "model_profile": "standard",
+   "permission": "write",
+   "est_tokens": 3600,
+   "sandbox": true
+  },
+  {
+   "index": 2,
+   "name": "compliance_review",
+   "agent_id": "guard-agent",
+   "model_profile": "standard",
+   "permission": "read",
+   "est_tokens": 500,
+   "sandbox": false
+  },
+  {
+   "index": 3,
+   "name": "synthesis",
+   "agent_id": "super-agent",
+   "model_profile": "standard",
+   "permission": "write",
+   "est_tokens": 800,
+   "sandbox": false
+  }
+ ],
+ "results": [
+  {
+   "index": 0,
+   "agent_id": "super-agent",
+   "name": "intent_and_boundary",
+   "success": true,
+   "model_profile": "standard",
+   "tokens": 94,
+   "attempts": 1,
+   "output": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r\n[[SA]]{\"ok\":true,\"goal_chars\":42,\"sentences\":1,\"keywords\":[\"说明接入的模型\",\"worker\",\"入本地小\",\"写一份把\",\"和实测数\",\"地小模型\",\"型的试点\",\"实测数据\"],\"constraints\":[],\"deliverables\":[\"写一份把 worker 接入本地小模型的试点报告，说明接入的模型、接线方式和实测数据\"],\"task_type\":\"writing\",\"elapsed_ms\":1,\"agent\":\"super-agent\",\"task_id\":\"30d3a9a1-7d7d-43ef-a5f1-87f93e6b90ab\",\"step\":\"0\",\"attempt\":\"1\"}\r\n",
+   "error": null
+  },
+  {
+   "index": 1,
+   "agent_id": "doc-agent",
+   "name": "main:doc-agent",
+   "success": true,
+   "model_profile": "standard",
+   "tokens": 278,
+   "attempts": 1,
+   "output": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「一份把 worker 接入本地小模型的试点报告，」，耗时 111.8s。\r\n[[SA]]{\"ok\":true,\"title\":\"一份把 worker 接入本地小模型的试点报告，\",\"keywords\":[\"说明接入的模型\",\"worker\",\"入本地小\",\"写一份把\",\"和实测数\",\"地小模型\"],\"outline\":[{\"h2\":\"试点背景与模型接入\",\"what_to_write\":\"明确接入的本地小模型名称及版本号；记录 worker 与本地小模型之间的网络连接状态\",\"points\":[\"明确接入的本地小模型名称及版本号\",\"记录 worker 与本地小模型之间的网络连接状态\"]},{\"h2\":\"接线方式与配置\",\"what_to_write\":\"配置 worker 的输入输出数据格式映射规则；验证 worker 接口的端口绑定与协议握手成功率\",\"points\":[\"配置 worker 的输入输出数据格式映射规则\",\"验证 worker 接口的端口绑定与协议握手成功率\"]},{\"h2\":\"实测数据采集\",\"what_to_write\":\"记录本地小模型处理请求的响应时间数据；采集 worker 端本地小模型推理的吞吐量数据\",\"points\":[\"记录本地小模型处理请求的响应时间数据\",\"采集 worker 端本地小模型推理的吞吐量数据\"]},{\"h2\":\"数据分析与结论\",\"what_to_write\":\"对比接入本地小模型前后的任务完成率变化；总结实测数据中发现的性能瓶颈及解决方法\",\"points\":[\"对比接入本地小模型前后的任务完成率变化\",\"总结实测数据中发现的性能瓶颈及解决方法\"]}],\"outline_source\":\"model\",\"model\":{\"used\":true,\"model\":\"minicpm5-2b:f16\",\"reason\":\"\",\"attempts\":1,\"elapsed_ms\":111809,\"reasoning_chars\":2090,\"completion_tokens\":1122,\"warnings\":[]},\"style_rules\":[\"结论先行，一段一个观点\",\"数字必须带单位与口径\",\"不确定的内容标注「待确认」，不写成断言\"],\"elapsed_ms\":111809,\"agent\":\"doc-agent\",\"task_id\":\"30d3a9a1-7d7d-43ef-a5f1-87f93e6b90ab\",\"step\":\"1\",\"attempt\":\"1\"}\r\n",
+   "error": null
+  },
+  {
+   "index": 2,
+   "agent_id": "guard-agent",
+   "name": "compliance_review",
+   "success": true,
+   "model_profile": "standard",
+   "tokens": 63,
+   "attempts": 1,
+   "output": "风险扫描通过：未命中敏感信息形态与处置类意图。\r\n[[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门\",\"elapsed_ms\":1,\"agent\":\"guard-agent\",\"task_id\":\"30d3a9a1-7d7d-43ef-a5f1-87f93e6b90ab\",\"step\":\"2\",\"attempt\":\"1\"}\r\n",
+   "error": null
+  },
+  {
+   "index": 3,
+   "agent_id": "super-agent",
+   "name": "synthesis",
+   "success": true,
+   "model_profile": "standard",
+   "tokens": 94,
+   "attempts": 1,
+   "output": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r\n[[SA]]{\"ok\":true,\"goal_chars\":42,\"sentences\":1,\"keywords\":[\"说明接入的模型\",\"worker\",\"入本地小\",\"写一份把\",\"和实测数\",\"地小模型\",\"型的试点\",\"实测数据\"],\"constraints\":[],\"deliverables\":[\"写一份把 worker 接入本地小模型的试点报告，说明接入的模型、接线方式和实测数据\"],\"task_type\":\"writing\",\"elapsed_ms\":0,\"agent\":\"super-agent\",\"task_id\":\"30d3a9a1-7d7d-43ef-a5f1-87f93e6b90ab\",\"step\":\"3\",\"attempt\":\"1\"}\r\n",
+   "error": null
+  }
+ ],
+ "result_summary": "任务「写一份把 worker 接入本地小模型的试点报告，说明接入的模型、接线方式和实测数据」执行成功（类型 writing，共 4 步）。\n执行明细：\n- ✓ [super-agent] intent_and_boundary（standard，94 tokens）\n- ✓ [doc-agent] main:doc-agent（standard，278 tokens）\n- ✓ [guard-agent] compliance_review（standard，63 tokens）\n- ✓ [super-agent] synthesis（standard，94 tokens）\n成本：529 tokens；一致性评分 0.89；引用记忆 0 条。",
+ "tokens_used": 529,
+ "budget_tokens": 6960,
+ "model_profile": "standard",
+ "agreement_score": 0.89,
+ "created_at": "2026-11-11T11:10:05.670057400Z",
+ "updated_at": "2026-11-11T11:11:57.921367700Z",
+ "finished_at": "2026-11-11T11:11:57.919839700Z",
+ "trace": [
+  {
+   "at": "2026-11-11T11:10:05.742692300Z",
+   "step_index": 0,
+   "agent_id": "super-agent",
+   "phase": "execute",
+   "outcome": "ok",
+   "detail": "第 1 次尝试成功",
+   "attempt": 1,
+   "tokens": 94
+  },
+  {
+   "at": "2026-11-11T11:11:57.711605900Z",
+   "step_index": 1,
+   "agent_id": "doc-agent",
+   "phase": "sandbox",
+   "outcome": "started",
+   "detail": "沙箱画像 sandbox-doc-rw",
+   "attempt": 1,
+   "tokens": 0
+  },
+  {
+   "at": "2026-11-11T11:11:57.711635300Z",
+   "step_index": 1,
+   "agent_id": "doc-agent",
+   "phase": "execute",
+   "outcome": "ok",
+   "detail": "第 1 次尝试成功",
+   "attempt": 1,
+   "tokens": 278
+  },
+  {
+   "at": "2026-11-11T11:11:57.825568200Z",
+   "step_index": 2,
+   "agent_id": "guard-agent",
+   "phase": "execute",
+   "outcome": "ok",
+   "detail": "第 1 次尝试成功",
+   "attempt": 1,
+   "tokens": 63
+  },
+  {
+   "at": "2026-11-11T11:11:57.919712800Z",
+   "step_index": 3,
+   "agent_id": "super-agent",
+   "phase": "execute",
+   "outcome": "ok",
+   "detail": "第 1 次尝试成功",
+   "attempt": 1,
+   "tokens": 94
+  }
+ ],
+ "memory_refs": []
+}

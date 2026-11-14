@@ -1,0 +1,4 @@
+$ python scripts/gen-openapi.py --check
+rc=0
+
+CHECK: 一致 | paths=24 operations=28 schemas=50

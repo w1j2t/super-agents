@@ -1,0 +1,92 @@
+======================================================================
+门禁 6「OpenAPI 未漂移」转红 → 根因 → 修法 → 复绿  全记录
+时间：2026-11-13
+======================================================================
+
+一、现象
+----------------------------------------------------------------------
+$ python scripts\regress_all.py
+[FAIL] 6 OpenAPI 未漂移  CHECK: 有差异（请重新生成） | paths=28 operations=32 schemas=43
+
+其余 17 道全 PASS（1 单元测试 158 passed；2/3 冒烟各 156 项；14 真实响应形状 39/39；
+15 集群 44/44；16 分词 25/25；17 异步 24/24）。合计 18 道 | 通过 17 | 失败 1。
+
+二、定位（不猜，逐节点 diff）
+----------------------------------------------------------------------
+`gen-openapi.py --check` 只打印"有差异"，不打印差异明细（--check 分支直接返回）。
+于是另生成一份到临时文件再逐节点比对：
+
+$ python scripts\gen-openapi.py --out docs\evidence\_now_openapi.json
+已生成 ... | paths 28 条 | operations 32 个 | schemas 43 个 | 行数 4069
+（首轮 diff 时 4069 行；补了 RESPONSE_SCHEMA_OVERRIDE 与 x-stream 说明后为 4072 行。）
+
+比对结果：差异**仅 2 处**，都在同一个端点的响应体上——
+  /paths/~1api~1v1~1tasks/post/responses/201/content/application/json
+  /paths/~1api~1v1~1tasks/post/responses/202/content/application/json
+  仓库版：{"schema": {"$ref": "#/components/schemas/TaskDetail"}}
+  现算版：（该 key 缺失，即"无响应体"）
+
+三、根因（不是"有人手改了契约"）
+----------------------------------------------------------------------
+src/api/handlers/task.rs:
+  L401  async fn create(...) -> Result<Response, ApiError>
+  L383  fn task_response(status, task, mode) -> Response
+        = (status, headers, Json(detail_of(task))).into_response()
+  L435  sync 分支 → StatusCode::CREATED(201)
+  L520  async 分支 → StatusCode::ACCEPTED(202)
+
+scripts/gen-openapi.py L535-580：响应 schema 由**返回类型正则**推导。
+`Result<Response, ApiError>` 落到最后 `elif "IntoResponse" in ret or ret == "Response"` 分支，
+只加一句"响应体非 JSON"的注脚、不产出 schema —— 于是 201/202 被写成"无响应体"，
+而接口真实返回的是平铺 TaskDetail。真实形状由门禁 14 独立证实（39/39 通过，含 tasks 提交）。
+
+先排除了"镜像是另一版本"：scripts/gen-openapi.py、docs/openapi.json、
+scripts/probe_async_task.py、src/api/handlers/task.rs 四者在工作区与 build_sa1 镜像 md5 完全一致。
+
+同一处还发现一条过时声明：`/tasks/{id}/events` 的 x-stream 仍写
+`reconnectHeaderLastEventId: false`，与门禁 17 A7 系列的实测（续传已具备）矛盾。
+
+四、修法（不放宽门禁，把生成器的"看不见"补成"显式登记"）
+----------------------------------------------------------------------
+1) 新增常量表（放在 ERROR_DESC_OVERRIDE 之后）：
+     RESPONSE_SCHEMA_OVERRIDE = {
+         ("post", "/api/v1/tasks"): "TaskDetail",
+     }
+   注释写清：登记的是**已核实的真实形状**，附返回语句位置；新增条目须说明为什么。
+2) 生成器加分支：`elif route_key in RESPONSE_SCHEMA_OVERRIDE:` → 按登记名取 schema。
+3) x-stream 订正为 True，并补 reconnectHeaderName / reconnectReplayMetric /
+   reconnectGapMetric（sa_sse_replay_total / sa_sse_replay_gap_total），
+   SSE description 重写：每帧带 `id: <seq>`、续传只补锚点之后、不重推快照、
+   锚点非法退回首连、补发为空且终态立即 EOF、唯一退化场景是台账滚出窗口。
+
+判据没有放松：门禁 6 仍然是"docs/openapi.json 必须等于源码现算结果"，
+只是把"生成器认不出的形状"从"静默写错"改成"必须显式登记"。
+
+五、复绿
+----------------------------------------------------------------------
+$ python scripts\gen-openapi.py            → CHECK: 一致 | paths=28 operations=32 schemas=43（行数 4069→4072）
+$ python scripts\gen-openapi.py --check    → RC=0  CHECK: 一致
+$ python scripts\check-openapi.py          → RC=0  35 struct / 7 enum，0 处不一致
+$ python scripts\gen-ts-types.py --check   → RC=0  CHECK: 一致（schemas 未变，TS 无需重生成）
+$ python scripts\check-contract.py         → RC=0  一致 25 | 有差异 0 | 查无同名 0
+
+$ python scripts\regress_all.py            → RC=0，172s
+  合计 18 道门禁 | 通过 18 | 失败 0
+  其中 14 真实响应形状 vs schema：39 通过 / 0 失败（反向验证 TaskDetail 这个登记是对的）
+
+六、附带的文档订正
+----------------------------------------------------------------------
+1) docs/06 门禁表：原先 5 与 6 两行编号互换（脚本里 5=OpenAPI 与 TS 同步、6=OpenAPI 未漂移），
+   已按 regress_all.py 的真实序号对调；并补"第 6 道"的由来段（记录本次根因）。
+2) 门禁总数口径统一为 **18 道**（编号 0~17，门禁 0 也算一道；
+   regress_all 末行"合计 N 道门禁"即 len(results)）。此前一度误写 17 道，已在 06 标题处加注防再犯。
+3) docs/04 §5.3 补"断点续传 / 续传退化 / 契约守护"三行，前端照此实现即可。
+4) 桌面《Marvis-后端交接文档》整表刷新到本批次数据（158 单测 / 156 冒烟 / 18 道 / 门禁 17 = 24 项），
+   并把"没有 Last-Event-ID 断点续传"这类过时结论订正为已具备。
+
+七、留给后来人的一句话
+----------------------------------------------------------------------
+生成器与校验器同源时，"两边一起错"是结构性风险：门禁 4 比的是源码类型 ↔ 文档，
+门禁 6 比的是文档 ↔ 生成器，二者都是类型级。真正能证伪的只有门禁 14（真进程真响应）。
+所以遇到契约与实现打架，先看门禁 14 的姿势，再决定改文档还是改代码。
+======================================================================

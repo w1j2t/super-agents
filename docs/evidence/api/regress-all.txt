@@ -1,0 +1,25 @@
+# 全量回归（regress_all.py）
+生成时间: 2026-11-14 14:43:47
+
+0 编译与二进制新鲜度              rc=0      3.3s  编译完成 2.8s | 二进制与源码同版本：exe=12:56:20 指纹 915091f49ca1…（mtime 显示源码晚 Cargo.lock，系同步刷新，内容一致）
+1 单元测试 cargo test        rc=0      6.1s  test result: ok. 174 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.12s | test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s | test r
+2 冒烟 json 后端             rc=0     11.2s  [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}} | 合计 157 项 | 通过 157 | 失败 0 | [2m2026-11-14T06:42:39.571
+3 冒烟 memory 后端           rc=0     10.4s  [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}} | 合计 157 项 | 通过 157 | 失败 0 | [2m2026-11-14T06:42:50.789
+4 契约一致性                  rc=0      0.1s  结果: 全部一致（字段集合 / 可选性 / 枚举取值），0 处不一致
+5 OpenAPI 与 TS 同步        rc=0      0.1s  CHECK: 一致
+6 OpenAPI 未漂移            rc=0      0.1s  CHECK: 一致 | paths=29 operations=33 schemas=51
+7 TS 契约文档一致              rc=0      0.1s  结果: 一致 25 | 有差异 0 | 查无同名 0
+8 执行端口实测                 rc=0      4.2s  [OK  ] R2a 提交任务 201  -> 实际=201 {'id': '3266a1a7-9845-4427-b8c6-ab06efe7a17f', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam | 合计 15 项 | 通过 15 
+11 审计启动自检                rc=0      3.1s  合计 15 项 | 通过 15 | 失败 0
+12 需求覆盖对齐                rc=0      0.1s  结论：通过 —— 六部分文档对首个提示词逐条有落点，能力 id 全覆盖，设计公理锚点在位
+13 防幻觉打点实测               rc=0      2.8s  [OK  ] H1                     写入长记忆 3  rc=201 | [OK  ] H1                     写入长记忆 4  rc=201 | 合计 13 项 | 通过 13 | 失败 0
+14 真实响应形状 vs schema      rc=0      4.1s  响应形状检查：40 通过 / 0 失败 / 0 跳过，共 40 项 | 结论：所有 JSON 端点的真实响应形状与 docs/openapi.json 一致。
+16 worker 分词质量           rc=0      0.1s  [OK  ] 22 先跑一遍冒烟测试；再跑全量门禁；最后把证据归档  -> 冒烟测试 / 证据归档 / 先跑 / 最后 / 门禁 | 合计 25 例 | 通过 25 | 失败 0 | 结论：分词输出无脏词、must 全在
+17 异步受理与缺省               rc=0     18.3s  合计 25 项 | 通过 25 | 失败 0
+19 可观测告警行为               rc=0      8.6s  合计 36 项断言：通过 36，失败 0
+20 主题取词质量                rc=0      0.1s  [PASS] qa        上线前跑一遍冒烟，缺陷按级别分一下 | 选题用例 12 条 | 通过 12 | 失败 0 | 结论：全部通过
+22 CLI 外壳行为              rc=0      4.9s  [PASS] D  D6 端口被本服务占 → SKIP 且 rc=0       rc=0 命中=True | [PASS] D  D8 密钥过短 rc=2 且不 panic          rc=2 ERR命中=True panic=False | 合计 22 项 | 通过 22 | 失败 0
+
+合计 18 道门禁 | 通过 18 | 失败 0 | 跳过 0
+
+⚠ 本次为 --tier api，另有 5 道**未执行**（9、10、15、18、21）——这不是全绿结论，交付前须跑 --tier full。

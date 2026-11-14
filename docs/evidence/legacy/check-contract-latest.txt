@@ -1,0 +1,7 @@
+$ python scripts/check-contract.py
+rc=0
+
+源码结构体: 56 个 | 文档 interface: 21 个
+
+
+结果: 一致 21 | 有差异 0 | 查无同名 0

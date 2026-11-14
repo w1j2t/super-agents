@@ -1,0 +1,209 @@
+===== 0 编译与二进制新鲜度 (rc=0) =====
+编译完成 3.0s
+二进制与源码同版本：exe=12:56:20 指纹 915091f49ca1…（mtime 显示源码晚 Cargo.lock，系同步刷新，内容一致）
+
+
+
+===== 1 单元测试 cargo test (rc=0) =====
+
+running 174 tests
+....................................................................................... 87/174
+....................................................................................... 174/174
+
+test result: ok. 174 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.09s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+warning: struct `FakeRunner` is never constructed
+   --> src\ports.rs:205:12
+    |
+205 |     struct FakeRunner(&'static str);
+    |            ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+
+
+===== 4 契约一致性 (rc=0) =====
+==============================================================
+检查 struct schema: 42 个 | 枚举 schema: 8 个
+跳过（源码无同名）: 1 个
+--------------------------------------------------------------
+结果: 全部一致（字段集合 / 可选性 / 枚举取值），0 处不一致
+局限: 不比对类型描述等价性；Vec/bool 视为天然可选（与 serde 行为一致）。
+
+
+
+===== 5 OpenAPI 与 TS 同步 (rc=0) =====
+CHECK: 一致
+
+
+
+===== 6 OpenAPI 未漂移 (rc=0) =====
+CHECK: 一致 | paths=29 operations=33 schemas=51
+
+
+
+===== 7 TS 契约文档一致 (rc=0) =====
+源码结构体: 81 个 | 文档 interface: 25 个
+
+
+结果: 一致 25 | 有差异 0 | 查无同名 0
+
+
+
+===== 12 需求覆盖对齐 (rc=0) =====
+首个提示词覆盖对齐（门禁 12）
+------------------------------------------------------------------------
+  [OK     ] 需求基线                       docs/00-prompt-original.md   2131 字
+  [OK     ] 第 1 部分 总体定位                01-overview.md               9/9
+  [OK     ] 第 2 部分 能力清单                02-capability-catalog.md     7/7
+  [OK     ] 第 3 部分 分工协作                03-division-of-labor.md      5/5
+  [OK     ] 第 4 部分 交互规范                04-interaction-spec.md       3/3
+  [OK     ] 第 5 部分 边界处理                05-boundary-handling.md      7/7
+  [OK     ] 第 6 部分 验收标准                06-acceptance-criteria.md    6/6
+  [OK     ] 能力 id 覆盖                   02-capability-catalog.md     26/26
+  [OK     ] 设计公理 A1~A6                 01-overview.md               6/6
+------------------------------------------------------------------------
+结论：通过 —— 六部分文档对首个提示词逐条有落点，能力 id 全覆盖，设计公理锚点在位
+
+
+
+===== 14 真实响应形状 vs schema (rc=0) =====
+[OK  ] R00 服务就绪（/readyz ready=true）
+[OK  ] R01 POST /auth/register 形状 vs AuthResult  ->  POST /api/v1/auth/register status=201 形状一致
+[OK  ] R02 POST /auth/login 形状 vs AuthResult（account 传 username）  ->  POST /api/v1/auth/login status=200 形状一致
+[OK  ] R02b POST /auth/login 形状 vs AuthResult（account 传 email）  ->  POST /api/v1/auth/login status=200 形状一致
+[OK  ] R02c 拿到 access_token / refresh_token
+[OK  ] R03 GET /auth/me 形状 vs UserView  ->  GET /api/v1/auth/me status=200 形状一致
+[OK  ] R04 POST /auth/refresh 形状 vs AuthResult  ->  POST /api/v1/auth/refresh status=200 形状一致
+[OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
+[OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/db4d445b-9176-4fa2-8a80-0e86f483c368 status=200 形状一致
+[OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
+[OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/db4d445b-9176-4fa2-8a80-0e86f483c368/trace status=200 形状一致
+[OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
+[OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/5490069d-c8c6-48e4-a0ce-e9f72a0ae7fd/cancel status=202 形状一致
+[OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
+[OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
+[OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
+[OK  ] R13 GET /agents/{id} 200 + AgentView 形状  ->  GET /api/v1/agents/super-agent status=200 形状一致
+[OK  ] R14 GET /capabilities 200 + CapabilityView[] 形状  ->  GET /api/v1/capabilities status=200 形状一致
+[OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
+[OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
+[OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/6ff3b68e-04ff-4a32-9833-43aa79c87fe9 status=200 形状一致
+[OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
+[OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
+[OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
+[OK  ] R22 GET /observability/audit 200 + AuditList 形状  ->  GET /api/v1/observability/audit?limit=5 status=200 形状一致
+[OK  ] R23 GET /observability/components 200 + ComponentList 形状  ->  GET /api/v1/observability/components status=200 形状一致
+[OK  ] R31 GET /observability/alerts 200 + AlertList 形状  ->  GET /api/v1/observability/alerts status=200 形状一致
+[OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
+[OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
+[OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/e1fa0c88-a6de-4505-9240-3ec771250154 status=404 形状一致
+[OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
+[OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
+[OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致
+----------------------------------------------------------------------
+响应形状检查：40 通过 / 0 失败 / 0 跳过，共 40 项
+结论：所有 JSON 端点的真实响应形状与 docs/openapi.json 一致。
+
+
+
+===== 16 worker 分词质量 (rc=0) =====
+==========================================================================
+[OK  ] 01 帮我写一份把大模型引入本地小模型的试点报告，不要引入外部依赖  -> 试点报告 / 大模型 / 小模型 / 依赖 / 外部
+[OK  ] 02 把接口说明重写成中文，控制在 800 字以内  -> 800 / 中文 / 接口 / 控制 / 说明
+[OK  ] 03 把上周的会议纪要汇总成周报，发给团队  -> 会议 / 周报 / 团队 / 纪要
+[OK  ] 04 更新文档里的接口说明，字段名要和源码一致  -> 接口说明 / 更新文档 / 源码一致 / 字段
+[OK  ] 05 规划多 agents 集群的下一步，先做任务分发再做产物回传  -> 下一步 / 任务 / 规划 / 集群
+[OK  ] 06 整理一下手机里的照片，按天归档到子文件夹  -> 子文件夹 / 归档 / 手机 / 整理 / 照片
+[OK  ] 07 给订单表加一个主键，顺便完成数据库迁移  -> 数据库 / 主键 / 订单 / 迁移
+[OK  ] 08 把本周的报销单汇总一下，按项目分类  -> 报销 / 汇总 / 项目
+[OK  ] 09 每天九点提醒我备份一下工程目录  -> 工程目录 / 九点 / 备份
+[OK  ] 10 分析这次蓝屏的转储文件，找出最可能的驱动问题  -> 转储文件 / 驱动问题 / 分析 / 蓝屏
+[OK  ] 11 排查高并发下的超时问题  -> 超时问题 / 并发 / 排查
+[OK  ] 12 查一下 minicpm5-2b 在本机的显存占用  -> 显存 / 本机
+[OK  ] 13 确认审计日志真的落盘了，不是只在内存里  -> 内存 / 审计 / 日志 / 确认 / 落盘
+[OK  ] 14 通过 Remote-SSH 连到集群，重启一下推理服务  -> 推理服务 / 重启 / 集群
+[OK  ] 15 评估三台机器能不能跑起来这个游戏  -> 跑起来 / 机器 / 游戏 / 评估
+[OK  ] 16 对比 2B 与 14B 模型在本机 CPU 上的耗时  -> 14B / CPU / 2B / 对比 / 本机
+[OK  ] 17 挑三个候选方案，列出优缺点  -> 候选 / 方案 / 缺点
+[OK  ] 18 写一个清理脚本，不要动线上数据，只清本地缓存  -> 清理脚本 / 数据 / 本地 / 缓存
+[OK  ] 19 这个方案不能覆盖历史数据，需要补一个回填脚本  -> 回填脚本 / 数据 / 方案 / 覆盖
+[OK  ] 20 给 SSE 加断点续传，避免断线后丢事件  -> SSE / 事件 / 断点 / 断线 / 续传
+[OK  ] 21 统一两个接口的字段口径，避免前端反复改  -> 字段口径 / 前端 / 接口 / 统一
+[OK  ] 22 先跑一遍冒烟测试；再跑全量门禁；最后把证据归档  -> 冒烟测试 / 证据归档 / 先跑 / 最后 / 门禁
+[OK  ] 23 用 Godot 做一个 3D 修仙游戏的原型，先搭地形  -> 3D / 原型 / 地形 / 游戏
+[OK  ] 24 搭一个本地离线语音输入工具，识别中英文  -> 工具 / 本地 / 离线 / 语音 / 输入
+[OK  ] 25 给我搞一个能把 PDF 转成图片的小工具  -> PDF / 小工具 / 图片
+==========================================================================
+合计 25 例 | 通过 25 | 失败 0
+结论：分词输出无脏词、must 全在
+
+
+
+===== 20 主题取词质量 (rc=0) =====
+[PASS] narrative 帮我理一下万炉第三章的伏笔，反派动机是不是站得住    
+[PASS] narrative 这段剧情的主线推进太慢，人物动机也说不通        
+[PASS] narrative 世界观设定跟旧设定冲突了，帮我校一遍          
+[PASS] market    对标两款竞品做个市场分析，再给个定价建议        
+[PASS] market    这个产品投放选哪个渠道，回本周期怎么算         
+[PASS] market    《暗黑破坏神》和《流放之路》的定价对比         
+[PASS] qa        这批接口改完，帮我列验收标准和回归范围         
+[PASS] qa        上线前跑一遍冒烟，缺陷按级别分一下           
+[PASS] qa        梳理万炉第三章的剧情                  
+[PASS] guard     批一下                         
+[PASS] guard     把上周所有改动都过一遍然后按重要性排个序再给我一份完  
+[PASS] guard                                 
+
+选题用例 12 条 | 通过 12 | 失败 0
+结论：全部通过
+
+
+
+===== 22 CLI 外壳行为 (rc=0) =====
+门禁 22 · CLI 外壳行为探针
+被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-5
+--------------------------------------------------------------------
+[PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
+[PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
+[PASS] A  A3 未知子命令被拒绝不当 serve            rc=2 首行=error: unrecognized subcommand 'nosuchcmd'
+[PASS] A  A4 --version 输出版本号             rc=0 输出=super-agents 1.0.0
+[PASS] C  C1 --json stdout 是纯 JSON       可解析
+[PASS] C  C2 必需字段齐全                      齐
+[PASS] C  C3 名单与顺序固定                     一致
+[PASS] C  C4 level 取值封闭                  ok/warn/skip/error
+[PASS] C  C5 文本与 JSON 同数同码               JSON 10 项/rc=0，文本 rc=0
+[PASS] C  C6 文本标签与 JSON 逐项一致             10 项逐项对上
+[PASS] B  B1 无参启动 /healthz 200           HTTP=200 就绪
+[PASS] B  B2 无参进程保持前台                    存活=True
+[PASS] B  B3 退出后端口释放                     端口 18310 已释放
+[PASS] B  B4 显式 serve 同样可用               HTTP=200 就绪
+[PASS] D  D1 干净环境 rc=0                   rc=0
+[PASS] D  D2 --strict 仅在有 WARN 时 rc=1    WARN=1 rc=1
+[PASS] D  D3 模型端点半配 rc=2 且报 ERR          rc=2 命中=True
+[PASS] D  D4 process 缺 SA_RUNNER_DIR rc=2 rc=2 命中=True
+[PASS] D  D5 端口被他人占用 rc=2                rc=2 命中=True
+[PASS] D  D6 端口被本服务占 → SKIP 且 rc=0       rc=0 命中=True
+[PASS] D  D7 诊断后端口空闲、不落业务文件              端口空闲=True 多出文件=无
+[PASS] D  D8 密钥过短 rc=2 且不 panic          rc=2 ERR命中=True panic=False
+--------------------------------------------------------------------
+合计 22 项 | 通过 22 | 失败 0
+

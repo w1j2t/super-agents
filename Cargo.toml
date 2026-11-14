@@ -1,0 +1,56 @@
+[package]
+name = "personal-super-agents"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Personal Super Agents — backend only (auth, onboarding, agent orchestration, shared memory, capability matrix)"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "super-agents"
+path = "src/main.rs"
+
+[dependencies]
+# --- runtime / http ---
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
+axum = { version = "0.8", features = ["macros", "json", "query", "tokio", "http1"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "limit", "request-id"] }
+
+# --- serialization ---
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# --- async stream trait（SSE 需要；仅 trait 定义，极轻量）---
+futures-core = "0.3"
+
+# --- crypto (pure rust, no C toolchain needed) ---
+sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+getrandom = "0.2"
+
+# --- cli ---
+# 只为一个二进制服务：`serve` 是默认行为，`doctor` 等本地运维子命令挂在其下。
+# 为什么不手写参数解析：子命令会随打磨持续增加（doctor → submit → ls → show），
+# 手写的 match 一旦遇到 `--help`、拼错参数名、负数参数这类边角就开始漏，
+# 而漏掉的 CLI 错误会以"命令跑了但什么都没发生"的形式出现在运维现场。
+clap = { version = "4", features = ["derive"] }
+
+# --- misc ---
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

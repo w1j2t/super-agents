@@ -1,0 +1,121 @@
+{
+  "single": {
+    "nodes": [
+      {
+        "node_id": "node-a",
+        "role": "all-in-one",
+        "started_at": "2026-11-12T14:05:33.193941200Z",
+        "uptime_seconds": 3,
+        "step_concurrency": 1,
+        "async_running": 0,
+        "async_capacity": 8,
+        "sse_subscribers": 0,
+        "events_dropped": 0,
+        "agents_total": 9,
+        "tasks": {
+          "total": 0,
+          "queued": 0,
+          "running": 0,
+          "succeeded": 0,
+          "partially_succeeded": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "aborted_budget": 0
+        },
+        "source": "local",
+        "updated_at": "2026-11-12T14:05:36.876314300Z",
+        "stale": false
+      }
+    ],
+    "totals": {
+      "nodes": 1,
+      "offline_nodes": 0,
+      "agents_total": 9,
+      "async_running": 0,
+      "async_capacity": 8,
+      "sse_subscribers": 0,
+      "tasks": {
+        "total": 0,
+        "queued": 0,
+        "running": 0,
+        "succeeded": 0,
+        "partially_succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "aborted_budget": 0
+      }
+    }
+  },
+  "dual": {
+    "nodes": [
+      {
+        "node_id": "node-a",
+        "role": "all-in-one",
+        "started_at": "2026-11-12T14:05:33.193941200Z",
+        "uptime_seconds": 7,
+        "step_concurrency": 1,
+        "async_running": 0,
+        "async_capacity": 8,
+        "sse_subscribers": 0,
+        "events_dropped": 0,
+        "agents_total": 9,
+        "tasks": {
+          "total": 0,
+          "queued": 0,
+          "running": 0,
+          "succeeded": 0,
+          "partially_succeeded": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "aborted_budget": 0
+        },
+        "source": "local",
+        "updated_at": "2026-11-12T14:05:40.890981200Z",
+        "stale": false
+      },
+      {
+        "node_id": "node-b",
+        "role": "all-in-one",
+        "started_at": "2026-11-12T14:05:36.938840700Z",
+        "uptime_seconds": 3,
+        "step_concurrency": 1,
+        "async_running": 0,
+        "async_capacity": 8,
+        "sse_subscribers": 0,
+        "events_dropped": 0,
+        "agents_total": 9,
+        "tasks": {
+          "total": 1,
+          "queued": 0,
+          "running": 0,
+          "succeeded": 1,
+          "partially_succeeded": 0,
+          "failed": 0,
+          "cancelled": 0,
+          "aborted_budget": 0
+        },
+        "source": "peer",
+        "updated_at": "2026-11-12T14:05:39.959066700Z",
+        "stale": false
+      }
+    ],
+    "totals": {
+      "nodes": 2,
+      "offline_nodes": 0,
+      "agents_total": 18,
+      "async_running": 0,
+      "async_capacity": 16,
+      "sse_subscribers": 0,
+      "tasks": {
+        "total": 1,
+        "queued": 0,
+        "running": 0,
+        "succeeded": 1,
+        "partially_succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "aborted_budget": 0
+      }
+    }
+  }
+}

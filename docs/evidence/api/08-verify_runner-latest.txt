@@ -1,0 +1,65 @@
+# 8 执行端口实测
+生成时间: 2026-11-14 14:43:47
+命令由 regress_all.py 编排执行，rc=0，耗时 4.2s
+（原始输出如下，未做删改）
+======================================================================
+[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-50epp6r6\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
+[OK  ] R1b 账号初始化
+[OK  ] R2a 提交任务 201  -> 实际=201 {'id': '3266a1a7-9845-4427-b8c6-ab06efe7a17f', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
+[OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-E319E8632C 命中=True
+[OK  ] R2c 全部步骤成功且回填了 agent/step 环境变量  -> 步骤数=4 成功=4
+[OK  ] R2d 任务状态 succeeded  -> 实际=succeeded
+[OK  ] R3a 指标可抓取 200  -> 实际=200
+[OK  ] R3b 指标 backend 标签为 process  -> 含 backend="process"
+[OK  ] R3c 治理指标照旧上报
+[OK  ] R3d trace 仍按阶段落账且 token>0  -> 条目=8 tokens=202
+[OK  ] R4a 缺脚本的步骤被判失败（不假成功）  -> 失败步骤=4
+[OK  ] R4b 失败原因写明脚本缺失/可重试  -> 未找到该 agent 的脚本（支持 cmd/bat/ps1/py）: super-agent 前置第 1 步未成功，本步不执行（避免用半截产物继续推理） 前置第 2 步未成功，本步不执行（避免用半截产物继续推理） 前置第 3 步未成功，本步不执行（避免用半截产物继续推理）
+[OK  ] R4c 任务整体不是 succeeded  -> 实际=failed
+[OK  ] R5a process 后端缺 SA_RUNNER_DIR 时拒绝启动  -> 退出码=1
+[OK  ] R5b 非法 SA_RUNNER 值被拒（不是忽略）  -> 退出码=1
+--------------------------------------------------------------
+合计 15 项 | 通过 15 | 失败 0
+临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-50epp6r6
+
+Exception in thread Exception in thread Thread-2 (_readerthread)Thread-1 (_readerthread):
+:
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)    
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+        self._target(*self._args, **self._kwargs)buffer.append(fh.read())
+
+     File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+               ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0x9a in position 46: illegal multibyte sequence
+Exception in thread Exception in thread Thread-3 (_readerthread)Thread-4 (_readerthread):
+:
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+        self._target(*self._args, **self._kwargs)self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+      buffer.append(fh.read()) 
+                     ^^^^^ ^^^^
+       UnicodeDecodeError : 'gbk' codec can't decode byte 0xaf in position 31: illegal multibyte sequence
+   ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence
+

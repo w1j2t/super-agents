@@ -1,0 +1,5713 @@
+{
+ "model": "minicpm5-2b:f16",
+ "base": "http://127.0.0.1:11434/v1",
+ "exe": "C:\\Users\\94355\\Desktop\\build_sa1\\target-gnu\\debug\\super-agents.exe",
+ "exe_mtime": "2026-11-13 17:51:03",
+ "generated_at": "2026-11-13 21:08:42",
+ "checks": [
+  {
+   "id": "G1",
+   "ok": true,
+   "detail": "正常轮次全部 succeeded：36/36"
+  },
+  {
+   "id": "G2",
+   "ok": true,
+   "detail": "模型轮次 tokens>0：12/12"
+  },
+  {
+   "id": "G3",
+   "ok": true,
+   "detail": "模型产出被采用（outline_source=model 且 model.used=true）：12/12"
+  },
+  {
+   "id": "G4",
+   "ok": true,
+   "detail": "快轮次路由与形状全对：24/24"
+  },
+  {
+   "id": "G5",
+   "ok": true,
+   "detail": "坏输入全部被拒：6/6"
+  },
+  {
+   "id": "G6",
+   "ok": true,
+   "detail": "5xx 计数 = 0"
+  },
+  {
+   "id": "G7",
+   "ok": true,
+   "detail": "任务台账 36 条 vs 建单 36 条"
+  }
+ ],
+ "stats": {
+  "rounds_total": 42,
+  "model_rounds": 12,
+  "fast_rounds": 24,
+  "model_elapsed_avg_s": 30.1,
+  "model_elapsed_min_s": 22.2,
+  "model_elapsed_max_s": 35.3,
+  "model_tokens_avg": 501.1,
+  "model_tokens_min": 476,
+  "model_tokens_max": 522,
+  "fast_elapsed_avg_s": 0.35,
+  "model_adopted_rounds": 12,
+  "auth_refreshes": 0,
+  "route_hits": {
+   "super-agent": 72,
+   "doc-agent": 12,
+   "guard-agent": 36,
+   "planner-agent": 6,
+   "code-agent": 6,
+   "research-agent": 8,
+   "ideation-agent": 4,
+   "collab-agent": 4
+  },
+  "run_wall_s": 0.0
+ },
+ "rounds": [
+  {
+   "tag": "model",
+   "goal": "写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 35.3,
+   "task_id": "0db24f7f-394c-4936-a84c-f91bb4c6c6e5",
+   "task_status": "succeeded",
+   "tokens": 491,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "0db24f7f-394c-4936-a84c-f91bb4c6c6e5",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 278,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「单元测试覆盖率的周报」，耗时 34.9s。\r | [[SA]]{\"ok\":true,\"title\":\"单元测试覆盖率的周报\",\"keywords\":[\"周报\",\"新增\",",
+     "sa": {
+      "ok": true,
+      "title": "单元测试覆盖率的周报",
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "outline": [
+       {
+        "h2": "新增测试",
+        "what_to_write": "本周新增了 12 个测试用例，覆盖率提升至 85%。；本周新增了 3 个接口的回归测试，修复了 2 次超时问题。",
+        "points": [
+         "本周新增了 12 个测试用例，覆盖率提升至 85%。",
+         "本周新增了 3 个接口的回归测试，修复了 2 次超时问题。"
+        ]
+       },
+       {
+        "h2": "剩余风险",
+        "what_to_write": "当前仍有 5 个模块未覆盖，覆盖率仅达 80%。；本周计划在 15 天内完成剩余模块的覆盖。",
+        "points": [
+         "当前仍有 5 个模块未覆盖，覆盖率仅达 80%。",
+         "本周计划在 15 天内完成剩余模块的覆盖。"
+        ]
+       },
+       {
+        "h2": "其他说明",
+        "what_to_write": "请确保测试用例包含具体数据点，如用户 ID 12345。；请注意测试环境需保持稳定，避免引入新变量。",
+        "points": [
+         "请确保测试用例包含具体数据点，如用户 ID 12345。",
+         "请注意测试环境需保持稳定，避免引入新变量。"
+        ]
+       },
+       {
+        "h2": "总结与展望",
+        "what_to_write": "下周将重点关注高风险模块的覆盖率提升。；本月整体覆盖率目标为 95%。",
+        "points": [
+         "下周将重点关注高风险模块的覆盖率提升。",
+         "本月整体覆盖率目标为 95%。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 34860,
+       "reasoning_chars": 0,
+       "completion_tokens": 216,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 34862,
+      "agent": "doc-agent",
+      "task_id": "0db24f7f-394c-4936-a84c-f91bb4c6c6e5",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "0db24f7f-394c-4936-a84c-f91bb4c6c6e5",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "0db24f7f-394c-4936-a84c-f91bb4c6c6e5",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 30.04,
+   "task_id": "81c3b44f-67f6-4e5b-8cce-84858db4b48b",
+   "task_status": "succeeded",
+   "tokens": 496,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "81c3b44f-67f6-4e5b-8cce-84858db4b48b",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 257,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「小模型」，耗时 29.6s。\r | [[SA]]{\"ok\":true,\"title\":\"小模型\",\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\",\"小模",
+     "sa": {
+      "ok": true,
+      "title": "小模型",
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据"
+      ],
+      "outline": [
+       {
+        "h2": "引言",
+        "what_to_write": "接入小模型提升任务效率，节省 30% 的算力。；试点周期为 2 周，覆盖 3 个核心模块。",
+        "points": [
+         "接入小模型提升任务效率，节省 30% 的算力。",
+         "试点周期为 2 周，覆盖 3 个核心模块。"
+        ]
+       },
+       {
+        "h2": "接线方式",
+        "what_to_write": "通过 API 接口连接，耗时 1.5 秒。；数据传输量达 500MB。",
+        "points": [
+         "通过 API 接口连接，耗时 1.5 秒。",
+         "数据传输量达 500MB。"
+        ]
+       },
+       {
+        "h2": "实测数据",
+        "what_to_write": "模型推理速度提升 25%。；单次任务处理时间减少至 8 分钟。；累计节省算力 1200 小时。",
+        "points": [
+         "模型推理速度提升 25%。",
+         "单次任务处理时间减少至 8 分钟。",
+         "累计节省算力 1200 小时。"
+        ]
+       },
+       {
+        "h2": "总结",
+        "what_to_write": "小模型在试点中表现稳定。；建议后续扩展更多场景。",
+        "points": [
+         "小模型在试点中表现稳定。",
+         "建议后续扩展更多场景。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 29615,
+       "reasoning_chars": 0,
+       "completion_tokens": 184,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 29617,
+      "agent": "doc-agent",
+      "task_id": "81c3b44f-67f6-4e5b-8cce-84858db4b48b",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "81c3b44f-67f6-4e5b-8cce-84858db4b48b",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "81c3b44f-67f6-4e5b-8cce-84858db4b48b",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 27.31,
+   "task_id": "afb5eed8-cded-4528-a906-2fd1d87d84f0",
+   "task_status": "succeeded",
+   "tokens": 519,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "afb5eed8-cded-4528-a906-2fd1d87d84f0",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 286,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「后端上线前的检查清单文档」，耗时 26.9s。 质量提示：切题度低（8 条要点里仅 1 条提到主题词），疑似跑偏成通用骨架\r | [[SA]]{\"ok\":true,\"ti",
+     "sa": {
+      "ok": true,
+      "title": "后端上线前的检查清单文档",
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单"
+      ],
+      "outline": [
+       {
+        "h2": "认证模块",
+        "what_to_write": "验证用户名密码，测试 10 次登录失败情况。；确保 API 接口返回 401 错误码。",
+        "points": [
+         "验证用户名密码，测试 10 次登录失败情况。",
+         "确保 API 接口返回 401 错误码。"
+        ]
+       },
+       {
+        "h2": "限流策略",
+        "what_to_write": "在高峰期模拟请求，限制并发数至 50。；监控系统响应时间，确保不超过 2 秒。",
+        "points": [
+         "在高峰期模拟请求，限制并发数至 50。",
+         "监控系统响应时间，确保不超过 2 秒。"
+        ]
+       },
+       {
+        "h2": "审计日志",
+        "what_to_write": "记录所有操作日志，保留 30 天。；检查日志文件大小是否超过 100 MB。",
+        "points": [
+         "记录所有操作日志，保留 30 天。",
+         "检查日志文件大小是否超过 100 MB。"
+        ]
+       },
+       {
+        "h2": "安全加固",
+        "what_to_write": "配置防火墙规则，允许 80 和 443 端口。；部署 WAF 防护，防止 SQL 注入攻击。",
+        "points": [
+         "配置防火墙规则，允许 80 和 443 端口。",
+         "部署 WAF 防护，防止 SQL 注入攻击。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 26891,
+       "reasoning_chars": 0,
+       "completion_tokens": 170,
+       "constrained": true,
+       "warnings": [
+        "切题度低（8 条要点里仅 1 条提到主题词），疑似跑偏成通用骨架"
+       ],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 26892,
+      "agent": "doc-agent",
+      "task_id": "afb5eed8-cded-4528-a906-2fd1d87d84f0",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "afb5eed8-cded-4528-a906-2fd1d87d84f0",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "afb5eed8-cded-4528-a906-2fd1d87d84f0",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 32.36,
+   "task_id": "9e19d7ca-c96a-44c3-9f25-13be5460d8ad",
+   "task_status": "succeeded",
+   "tokens": 499,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "9e19d7ca-c96a-44c3-9f25-13be5460d8ad",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 274,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「多轮压测结论的汇报文档」，耗时 32.0s。\r | [[SA]]{\"ok\":true,\"title\":\"多轮压测结论的汇报文档\",\"keywords\":[\"结论边界\",\"",
+     "sa": {
+      "ok": true,
+      "title": "多轮压测结论的汇报文档",
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "outline": [
+       {
+        "h2": "样本量说明",
+        "what_to_write": "测试样本量为 1000 个用户，失败率达 15%。；测试样本量达到 1500 个用户，失败率降至 10%。",
+        "points": [
+         "测试样本量为 1000 个用户，失败率达 15%。",
+         "测试样本量达到 1500 个用户，失败率降至 10%。"
+        ]
+       },
+       {
+        "h2": "失败率分析",
+        "what_to_write": "单次请求失败率在 5% 左右。；单次请求失败率在 8% 时，系统开始告警。",
+        "points": [
+         "单次请求失败率在 5% 左右。",
+         "单次请求失败率在 8% 时，系统开始告警。"
+        ]
+       },
+       {
+        "h2": "结论边界说明",
+        "what_to_write": "当失败率超过 10%，系统应触发降级策略。；当失败率连续 3 次未恢复时，触发人工介入。",
+        "points": [
+         "当失败率超过 10%，系统应触发降级策略。",
+         "当失败率连续 3 次未恢复时，触发人工介入。"
+        ]
+       },
+       {
+        "h2": "执行建议",
+        "what_to_write": "增加样本量至 2000 个用户以提升统计精度。；每轮压测后需记录 30 分钟的响应时间数据。",
+        "points": [
+         "增加样本量至 2000 个用户以提升统计精度。",
+         "每轮压测后需记录 30 分钟的响应时间数据。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 31976,
+       "reasoning_chars": 0,
+       "completion_tokens": 214,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 31977,
+      "agent": "doc-agent",
+      "task_id": "9e19d7ca-c96a-44c3-9f25-13be5460d8ad",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "9e19d7ca-c96a-44c3-9f25-13be5460d8ad",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "9e19d7ca-c96a-44c3-9f25-13be5460d8ad",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 32.21,
+   "task_id": "bba97dbb-5444-4b0e-bf18-1fa6251b55c7",
+   "task_status": "succeeded",
+   "tokens": 490,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "bba97dbb-5444-4b0e-bf18-1fa6251b55c7",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 277,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「单元测试覆盖率的周报」，耗时 31.8s。\r | [[SA]]{\"ok\":true,\"title\":\"单元测试覆盖率的周报\",\"keywords\":[\"周报\",\"新增\",",
+     "sa": {
+      "ok": true,
+      "title": "单元测试覆盖率的周报",
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "outline": [
+       {
+        "h2": "新增测试",
+        "what_to_write": "本周新增了 12 个测试用例，覆盖率提升了 15%。；本周新增了 8 个测试用例，覆盖率提升了 10%。",
+        "points": [
+         "本周新增了 12 个测试用例，覆盖率提升了 15%。",
+         "本周新增了 8 个测试用例，覆盖率提升了 10%。"
+        ]
+       },
+       {
+        "h2": "剩余风险",
+        "what_to_write": "仍有 3 个模块的覆盖率低于 50%，需要关注。；仍有 2 个模块的覆盖率低于 60%，需要关注。",
+        "points": [
+         "仍有 3 个模块的覆盖率低于 50%，需要关注。",
+         "仍有 2 个模块的覆盖率低于 60%，需要关注。"
+        ]
+       },
+       {
+        "h2": "其他说明",
+        "what_to_write": "本周新增了 5 个测试用例，覆盖率提升了 8%。；本周新增了 4 个测试用例，覆盖率提升了 7%。",
+        "points": [
+         "本周新增了 5 个测试用例，覆盖率提升了 8%。",
+         "本周新增了 4 个测试用例，覆盖率提升了 7%。"
+        ]
+       },
+       {
+        "h2": "总结与计划",
+        "what_to_write": "下周将重点关注 3 个低覆盖模块。；下周将重点关注 2 个低覆盖模块。",
+        "points": [
+         "下周将重点关注 3 个低覆盖模块。",
+         "下周将重点关注 2 个低覆盖模块。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 31810,
+       "reasoning_chars": 0,
+       "completion_tokens": 219,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 31810,
+      "agent": "doc-agent",
+      "task_id": "bba97dbb-5444-4b0e-bf18-1fa6251b55c7",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "bba97dbb-5444-4b0e-bf18-1fa6251b55c7",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "bba97dbb-5444-4b0e-bf18-1fa6251b55c7",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 22.22,
+   "task_id": "bedfa9fc-8347-429b-8474-b0c325b11637",
+   "task_status": "succeeded",
+   "tokens": 476,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 1,
+      "agent": "super-agent",
+      "task_id": "bedfa9fc-8347-429b-8474-b0c325b11637",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 237,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「小模型」，耗时 21.8s。\r | [[SA]]{\"ok\":true,\"title\":\"小模型\",\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\",\"小模",
+     "sa": {
+      "ok": true,
+      "title": "小模型",
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据"
+      ],
+      "outline": [
+       {
+        "h2": "引言",
+        "what_to_write": "接入本地小模型的背景与意义。；试点范围与预期目标。",
+        "points": [
+         "接入本地小模型的背景与意义。",
+         "试点范围与预期目标。"
+        ]
+       },
+       {
+        "h2": "接线方式",
+        "what_to_write": "通过 API 调用实现模型接入。；在任务编排中完成模型绑定。",
+        "points": [
+         "通过 API 调用实现模型接入。",
+         "在任务编排中完成模型绑定。"
+        ]
+       },
+       {
+        "h2": "实测数据",
+        "what_to_write": "测试了 100 个样本的准确率。；发现 5% 的错误率。",
+        "points": [
+         "测试了 100 个样本的准确率。",
+         "发现 5% 的错误率。"
+        ]
+       },
+       {
+        "h2": "总结",
+        "what_to_write": "试点验证了小模型的可行性。；下一步计划是扩展到更多模型。",
+        "points": [
+         "试点验证了小模型的可行性。",
+         "下一步计划是扩展到更多模型。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 21793,
+       "reasoning_chars": 0,
+       "completion_tokens": 151,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 21793,
+      "agent": "doc-agent",
+      "task_id": "bedfa9fc-8347-429b-8474-b0c325b11637",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "bedfa9fc-8347-429b-8474-b0c325b11637",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "bedfa9fc-8347-429b-8474-b0c325b11637",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 25.74,
+   "task_id": "e7fcd84e-29ab-48e6-9cef-e3ee53c1cf8f",
+   "task_status": "succeeded",
+   "tokens": 513,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "e7fcd84e-29ab-48e6-9cef-e3ee53c1cf8f",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 280,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「后端上线前的检查清单文档」，耗时 25.3s。 质量提示：切题度低（8 条要点里仅 1 条提到主题词），疑似跑偏成通用骨架\r | [[SA]]{\"ok\":true,\"ti",
+     "sa": {
+      "ok": true,
+      "title": "后端上线前的检查清单文档",
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单"
+      ],
+      "outline": [
+       {
+        "h2": "认证模块",
+        "what_to_write": "确保用户名密码验证通过率达到 100%。；检查登录接口响应时间是否在 500ms 以内。",
+        "points": [
+         "确保用户名密码验证通过率达到 100%。",
+         "检查登录接口响应时间是否在 500ms 以内。"
+        ]
+       },
+       {
+        "h2": "限流策略",
+        "what_to_write": "设置每分钟 1000 次请求上限。；监控异常流量峰值不超过 2 倍。",
+        "points": [
+         "设置每分钟 1000 次请求上限。",
+         "监控异常流量峰值不超过 2 倍。"
+        ]
+       },
+       {
+        "h2": "审计日志",
+        "what_to_write": "记录所有操作的用户 ID 和时间戳。；确保日志写入成功率达到 99.9%。",
+        "points": [
+         "记录所有操作的用户 ID 和时间戳。",
+         "确保日志写入成功率达到 99.9%。"
+        ]
+       },
+       {
+        "h2": "安全加固",
+        "what_to_write": "配置 HTTPS 证书有效期不少于 90 天。；定期轮换数据库密码，每月一次。",
+        "points": [
+         "配置 HTTPS 证书有效期不少于 90 天。",
+         "定期轮换数据库密码，每月一次。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 25318,
+       "reasoning_chars": 0,
+       "completion_tokens": 177,
+       "constrained": true,
+       "warnings": [
+        "切题度低（8 条要点里仅 1 条提到主题词），疑似跑偏成通用骨架"
+       ],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 25320,
+      "agent": "doc-agent",
+      "task_id": "e7fcd84e-29ab-48e6-9cef-e3ee53c1cf8f",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "e7fcd84e-29ab-48e6-9cef-e3ee53c1cf8f",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "e7fcd84e-29ab-48e6-9cef-e3ee53c1cf8f",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 35.27,
+   "task_id": "73b659c3-c095-45a6-9489-f6c39794f5cb",
+   "task_status": "succeeded",
+   "tokens": 509,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "73b659c3-c095-45a6-9489-f6c39794f5cb",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 284,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「多轮压测结论的汇报文档」，耗时 34.9s。\r | [[SA]]{\"ok\":true,\"title\":\"多轮压测结论的汇报文档\",\"keywords\":[\"结论边界\",\"",
+     "sa": {
+      "ok": true,
+      "title": "多轮压测结论的汇报文档",
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "outline": [
+       {
+        "h2": "样本量说明",
+        "what_to_write": "测试覆盖了 10,000 个请求样本，失败率在 5% 以内。；每个样本包含 50 个数据点，耗时约 2 小时。",
+        "points": [
+         "测试覆盖了 10,000 个请求样本，失败率在 5% 以内。",
+         "每个样本包含 50 个数据点，耗时约 2 小时。"
+        ]
+       },
+       {
+        "h2": "失败率分析",
+        "what_to_write": "在第 3 次压测中，失败率达到 8%，触发告警机制。；第 4 次压测后，通过优化配置将失败率降至 5%。",
+        "points": [
+         "在第 3 次压测中，失败率达到 8%，触发告警机制。",
+         "第 4 次压测后，通过优化配置将失败率降至 5%。"
+        ]
+       },
+       {
+        "h2": "结论边界说明",
+        "what_to_write": "当失败率超过 10% 时，系统判定为不可用状态。；在 7 天内连续出现两次告警，触发熔断机制。",
+        "points": [
+         "当失败率超过 10% 时，系统判定为不可用状态。",
+         "在 7 天内连续出现两次告警，触发熔断机制。"
+        ]
+       },
+       {
+        "h2": "执行建议",
+        "what_to_write": "针对第 3 次压测的 8% 失败率，需优化数据库连接池。；建议在 30 天内完成全部测试任务。",
+        "points": [
+         "针对第 3 次压测的 8% 失败率，需优化数据库连接池。",
+         "建议在 30 天内完成全部测试任务。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 34870,
+       "reasoning_chars": 0,
+       "completion_tokens": 232,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 34871,
+      "agent": "doc-agent",
+      "task_id": "73b659c3-c095-45a6-9489-f6c39794f5cb",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "73b659c3-c095-45a6-9489-f6c39794f5cb",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "73b659c3-c095-45a6-9489-f6c39794f5cb",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 33.93,
+   "task_id": "0ba97144-c02a-417d-b76a-56bf0b17503c",
+   "task_status": "succeeded",
+   "tokens": 522,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 1,
+      "agent": "super-agent",
+      "task_id": "0ba97144-c02a-417d-b76a-56bf0b17503c",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 309,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：3 个小节，主题「单元测试覆盖率的周报」，耗时 33.5s。 质量提示：模型给出重复标题（下一步计划、风险分析），已合并要点后保留\r | [[SA]]{\"ok\":true,\"title\":",
+     "sa": {
+      "ok": true,
+      "title": "单元测试覆盖率的周报",
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "outline": [
+       {
+        "h2": "新增测试点",
+        "what_to_write": "完成了 12 个接口的回归测试，耗时 45 分钟。；新增了 3 个异常场景的测试用例，覆盖率提升 15%。",
+        "points": [
+         "完成了 12 个接口的回归测试，耗时 45 分钟。",
+         "新增了 3 个异常场景的测试用例，覆盖率提升 15%。"
+        ]
+       },
+       {
+        "h2": "风险分析",
+        "what_to_write": "剩余 8 个模块的覆盖率低于 70%，需优先处理。；发现 2 个接口在并发场景下存在竞争条件。；剩余 8 个模块的覆盖率低于 70%，需优先处理。；发现 2 个接口在并发场景下存在竞争条件。",
+        "points": [
+         "剩余 8 个模块的覆盖率低于 70%，需优先处理。",
+         "发现 2 个接口在并发场景下存在竞争条件。",
+         "剩余 8 个模块的覆盖率低于 70%，需优先处理。",
+         "发现 2 个接口在并发场景下存在竞争条件。"
+        ]
+       },
+       {
+        "h2": "下一步计划",
+        "what_to_write": "本周完成全部测试用例的编写，预计耗时 30 分钟。；安排 1 次代码评审，确保质量达标。；本周完成全部测试用例的编写，预计耗时 30 分钟。；安排 1 次代码评审，确保质量达标。",
+        "points": [
+         "本周完成全部测试用例的编写，预计耗时 30 分钟。",
+         "安排 1 次代码评审，确保质量达标。",
+         "本周完成全部测试用例的编写，预计耗时 30 分钟。",
+         "安排 1 次代码评审，确保质量达标。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 33513,
+       "reasoning_chars": 0,
+       "completion_tokens": 237,
+       "constrained": true,
+       "warnings": [
+        "模型给出重复标题（下一步计划、风险分析），已合并要点后保留"
+       ],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 33513,
+      "agent": "doc-agent",
+      "task_id": "0ba97144-c02a-417d-b76a-56bf0b17503c",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "0ba97144-c02a-417d-b76a-56bf0b17503c",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"周报\",\"新增\",\"测试\",\"覆盖\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "周报",
+       "新增",
+       "测试",
+       "覆盖",
+       "说明",
+       "风险"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "0ba97144-c02a-417d-b76a-56bf0b17503c",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 29.65,
+   "task_id": "a277712e-1134-493b-a498-25fc078a310b",
+   "task_status": "succeeded",
+   "tokens": 506,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a277712e-1134-493b-a498-25fc078a310b",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 267,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「小模型」，耗时 29.2s。\r | [[SA]]{\"ok\":true,\"title\":\"小模型\",\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\",\"小模",
+     "sa": {
+      "ok": true,
+      "title": "小模型",
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据"
+      ],
+      "outline": [
+       {
+        "h2": "模型接入测试",
+        "what_to_write": "将 2 个 小模型 接入任务编排，耗时 3 分钟完成。；在 5 台 服务器 上部署，CPU 使用率提升 15%。",
+        "points": [
+         "将 2 个 小模型 接入任务编排，耗时 3 分钟完成。",
+         "在 5 台 服务器 上部署，CPU 使用率提升 15%。"
+        ]
+       },
+       {
+        "h2": "接线方式验证",
+        "what_to_write": "通过 1 条 网线 连接到 4 个 节点。；使用 2 种 协议 实现数据同步。",
+        "points": [
+         "通过 1 条 网线 连接到 4 个 节点。",
+         "使用 2 种 协议 实现数据同步。"
+        ]
+       },
+       {
+        "h2": "实测数据分析",
+        "what_to_write": "处理 1000 张图片，耗时 45 秒。；在 10 分钟 内完成 500 次 推理。",
+        "points": [
+         "处理 1000 张图片，耗时 45 秒。",
+         "在 10 分钟 内完成 500 次 推理。"
+        ]
+       },
+       {
+        "h2": "总结与建议",
+        "what_to_write": "未来可扩展至 20 个 小模型。；建议增加 3 台 服务器。",
+        "points": [
+         "未来可扩展至 20 个 小模型。",
+         "建议增加 3 台 服务器。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 29220,
+       "reasoning_chars": 0,
+       "completion_tokens": 205,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 29220,
+      "agent": "doc-agent",
+      "task_id": "a277712e-1134-493b-a498-25fc078a310b",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "a277712e-1134-493b-a498-25fc078a310b",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 88,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":35,\"sentences\":1,\"keywords\":[\"含模型名\",\"接线方式\",\"试点报告\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 35,
+      "sentences": 1,
+      "keywords": [
+       "含模型名",
+       "接线方式",
+       "试点报告",
+       "小模型",
+       "任务",
+       "数据",
+       "本地",
+       "编排"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份把本地小模型接入任务编排的试点报告，含模型名、接线方式与实测数据"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a277712e-1134-493b-a498-25fc078a310b",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 26.24,
+   "task_id": "8aaa92eb-9509-4964-aff4-05503c25c4bf",
+   "task_status": "succeeded",
+   "tokens": 507,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "8aaa92eb-9509-4964-aff4-05503c25c4bf",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 274,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：3 个小节，主题「后端上线前的检查清单文档」，耗时 25.8s。 质量提示：模型给出重复标题（限流策略检查），已合并要点后保留\r | [[SA]]{\"ok\":true,\"title\":\"后",
+     "sa": {
+      "ok": true,
+      "title": "后端上线前的检查清单文档",
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单"
+      ],
+      "outline": [
+       {
+        "h2": "认证模块检查",
+        "what_to_write": "验证 3 个用户名密码组合；确认 2 台服务器登录权限；确保 1 个异常请求被拦截",
+        "points": [
+         "验证 3 个用户名密码组合",
+         "确认 2 台服务器登录权限",
+         "确保 1 个异常请求被拦截"
+        ]
+       },
+       {
+        "h2": "限流策略检查",
+        "what_to_write": "测试 5 次突发流量；校验 10 分钟内请求上限；记录 15 秒延迟时间；测试 5 次突发流量；校验 10 分钟内请求上限；记录 15 秒延迟时间",
+        "points": [
+         "测试 5 次突发流量",
+         "校验 10 分钟内请求上限",
+         "记录 15 秒延迟时间",
+         "测试 5 次突发流量",
+         "校验 10 分钟内请求上限",
+         "记录 15 秒延迟时间"
+        ]
+       },
+       {
+        "h2": "审计日志检查",
+        "what_to_write": "生成 2 份日志文件；核对 3 个关键字段；保存 1 天审计数据",
+        "points": [
+         "生成 2 份日志文件",
+         "核对 3 个关键字段",
+         "保存 1 天审计数据"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 25823,
+       "reasoning_chars": 0,
+       "completion_tokens": 179,
+       "constrained": true,
+       "warnings": [
+        "模型给出重复标题（限流策略检查），已合并要点后保留",
+        "切题度低（12 条要点里仅 1 条提到主题词），疑似跑偏成通用骨架"
+       ],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 25823,
+      "agent": "doc-agent",
+      "task_id": "8aaa92eb-9509-4964-aff4-05503c25c4bf",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "8aaa92eb-9509-4964-aff4-05503c25c4bf",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 85,
+     "err": "",
+     "out": "目标解析完成：1 个句子、8 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"上线\",\"后端\",\"审计\",\"文档\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "上线",
+       "后端",
+       "审计",
+       "文档",
+       "检查",
+       "清单",
+       "覆盖",
+       "限流"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部分"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "8aaa92eb-9509-4964-aff4-05503c25c4bf",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "model",
+   "goal": "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界",
+   "type": "writing",
+   "http": 201,
+   "elapsed": 30.73,
+   "task_id": "1a117fe6-0850-4c91-819d-566fec8b08f7",
+   "task_status": "succeeded",
+   "tokens": 485,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "1a117fe6-0850-4c91-819d-566fec8b08f7",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "doc-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 260,
+     "err": "",
+     "out": "文档骨架已生成（模型 minicpm5-2b:f16）：4 个小节，主题「多轮压测结论的汇报文档」，耗时 30.3s。\r | [[SA]]{\"ok\":true,\"title\":\"多轮压测结论的汇报文档\",\"keywords\":[\"结论边界\",\"",
+     "sa": {
+      "ok": true,
+      "title": "多轮压测结论的汇报文档",
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "outline": [
+       {
+        "h2": "样本量说明",
+        "what_to_write": "测试覆盖了 1000 个请求样本，失败率控制在 5% 以内。；样本量不足时需重新采集数据。",
+        "points": [
+         "测试覆盖了 1000 个请求样本，失败率控制在 5% 以内。",
+         "样本量不足时需重新采集数据。"
+        ]
+       },
+       {
+        "h2": "失败率分析",
+        "what_to_write": "在峰值负载下，失败率上升至 8%。；失败率超过 10% 时触发熔断机制。",
+        "points": [
+         "在峰值负载下，失败率上升至 8%。",
+         "失败率超过 10% 时触发熔断机制。"
+        ]
+       },
+       {
+        "h2": "结论边界说明",
+        "what_to_write": "当样本量低于 500 时，结论无效。；当失败率高于 15% 时，需重新评估。",
+        "points": [
+         "当样本量低于 500 时，结论无效。",
+         "当失败率高于 15% 时，需重新评估。"
+        ]
+       },
+       {
+        "h2": "执行建议",
+        "what_to_write": "每次压测后应记录 30 个关键指标。；建议在 24 小时内完成复盘。",
+        "points": [
+         "每次压测后应记录 30 个关键指标。",
+         "建议在 24 小时内完成复盘。"
+        ]
+       }
+      ],
+      "outline_source": "model",
+      "model": {
+       "used": true,
+       "model": "minicpm5-2b:f16",
+       "reason": "",
+       "attempts": 1,
+       "elapsed_ms": 30341,
+       "reasoning_chars": 0,
+       "completion_tokens": 193,
+       "constrained": true,
+       "warnings": [],
+       "raw_head": ""
+      },
+      "style_rules": [
+       "结论先行，一段一个观点",
+       "数字必须带单位与口径",
+       "不确定的内容标注「待确认」，不写成断言"
+      ],
+      "elapsed_ms": 30341,
+      "agent": "doc-agent",
+      "task_id": "1a117fe6-0850-4c91-819d-566fec8b08f7",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "1a117fe6-0850-4c91-819d-566fec8b08f7",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":29,\"sentences\":1,\"keywords\":[\"结论边界\",\"失败率\",\"文档\",\"说",
+     "sa": {
+      "ok": true,
+      "goal_chars": 29,
+      "sentences": 1,
+      "keywords": [
+       "结论边界",
+       "失败率",
+       "文档",
+       "说明"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一份多轮压测结论的汇报文档，说明样本量、失败率与结论边界"
+      ],
+      "task_type": "writing",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "1a117fe6-0850-4c91-819d-566fec8b08f7",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把后端剩余功能拆成两周的排期与里程碑",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "6f417cfc-452c-4830-b5c0-4c1ff8ae05de",
+   "task_status": "succeeded",
+   "tokens": 284,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "6f417cfc-452c-4830-b5c0-4c1ff8ae05de",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把后端剩余功能拆成两周的排期与里程碑",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "6f417cfc-452c-4830-b5c0-4c1ff8ae05de",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "6f417cfc-452c-4830-b5c0-4c1ff8ae05de",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "6f417cfc-452c-4830-b5c0-4c1ff8ae05de",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把这次上线拆成任务分解清单并给出时间表",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.35,
+   "task_id": "2b179139-f16b-47ae-8c74-3fe7f9c27248",
+   "task_status": "succeeded",
+   "tokens": 292,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 1,
+      "agent": "super-agent",
+      "task_id": "2b179139-f16b-47ae-8c74-3fe7f9c27248",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把这次上线拆成任务分解清单并给出时间表",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "2b179139-f16b-47ae-8c74-3fe7f9c27248",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "2b179139-f16b-47ae-8c74-3fe7f9c27248",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "2b179139-f16b-47ae-8c74-3fe7f9c27248",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "写一个 Rust 函数把路径字符串规范化，并说明报错处理",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "c3aac389-c138-4e21-9761-68d45ad2a643",
+   "task_status": "succeeded",
+   "tokens": 378,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "c3aac389-c138-4e21-9761-68d45ad2a643",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 155,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径\"],\"checklist\":[{\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 0,
+      "agent": "code-agent",
+      "task_id": "c3aac389-c138-4e21-9761-68d45ad2a643",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "c3aac389-c138-4e21-9761-68d45ad2a643",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "c3aac389-c138-4e21-9761-68d45ad2a643",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "排查这段 Rust 代码为什么编译报错，给出修复方案",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "7087edc8-81f5-439a-8b76-eecb432e0216",
+   "task_status": "succeeded",
+   "tokens": 388,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "7087edc8-81f5-439a-8b76-eecb432e0216",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 159,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\",\"代码\",\"排查\",\"给出\"],\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 0,
+      "agent": "code-agent",
+      "task_id": "7087edc8-81f5-439a-8b76-eecb432e0216",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "7087edc8-81f5-439a-8b76-eecb432e0216",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "7087edc8-81f5-439a-8b76-eecb432e0216",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "调研本地 CPU 推理框架的对比与最新来源",
+   "type": "research",
+   "http": 201,
+   "elapsed": 0.41,
+   "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+   "task_status": "succeeded",
+   "tokens": 553,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":21,\"sentences\":1,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 21,
+      "sentences": 1,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 170,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",\"对比\",\"推理\"],\"questions\":[{\"no\":1,\"question\"",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "最新来源 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "最新来源 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "最新来源 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "最新来源 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 170,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",\"对比\",\"推理\"],\"questions\":[{\"no\":1,\"question\"",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "最新来源 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "最新来源 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "最新来源 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "最新来源 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+      "step": "3",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":21,\"sentences\":1,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 21,
+      "sentences": 1,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5996504b-d110-4b1b-8f23-8e537f0562e8",
+      "step": "4",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "核实本地小模型推理性能的行情数据并给出处",
+   "type": "research",
+   "http": 201,
+   "elapsed": 0.43,
+   "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+   "task_status": "succeeded",
+   "tokens": 551,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":20,\"sentences\":1,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 20,
+      "sentences": 1,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 169,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\",\"本地\",\"给出\"],\"questions\":[{\"no\":1,\"question",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "小模型 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "小模型 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "小模型 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "小模型 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 169,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\",\"本地\",\"给出\"],\"questions\":[{\"no\":1,\"question",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "小模型 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "小模型 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "小模型 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "小模型 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+      "step": "3",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":20,\"sentences\":1,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 20,
+      "sentences": 1,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "512e7bc0-ed89-402c-9c4e-5ae8856faef4",
+      "step": "4",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "给这个多 agents 系统起 5 个名字并给出方案设计",
+   "type": "ideation",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "43f738cf-7543-4f31-9eca-a1f1b1cf7a26",
+   "task_status": "succeeded",
+   "tokens": 389,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"方案设计\",\"个名字\",\"系统起\",\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "方案设计",
+       "个名字",
+       "系统起",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "给这个多 agents 系统起 5 个名字并给出方案设计"
+      ],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "43f738cf-7543-4f31-9eca-a1f1b1cf7a26",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "ideation-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 164,
+     "err": "",
+     "out": "围绕「给出」给出 7 个定向创意维度，每条都带可执行提问。\r | [[SA]]{\"ok\":true,\"topic\":\"给出\",\"ideas\":[{\"dimension\":\"S 替代\",\"prompt\":\"围绕「给出」：把这个环节换成更便宜/更快",
+     "sa": {
+      "ok": true,
+      "topic": "给出",
+      "ideas": [
+       {
+        "dimension": "S 替代",
+        "prompt": "围绕「给出」：把这个环节换成更便宜/更快/更稳的另一种做法"
+       },
+       {
+        "dimension": "C 组合",
+        "prompt": "围绕「给出」：和另一个能力拼起来，能不能出现新用法"
+       },
+       {
+        "dimension": "A 借鉴",
+        "prompt": "围绕「给出」：其他行业解决同类问题时用的招，能不能搬过来"
+       },
+       {
+        "dimension": "M 放大",
+        "prompt": "围绕「给出」：把某个参数放大十倍，哪里先坏（暴露真实瓶颈）"
+       },
+       {
+        "dimension": "M 缩小",
+        "prompt": "围绕「给出」：砍到只剩一件事，用户还愿意用吗"
+       },
+       {
+        "dimension": "P 他用",
+        "prompt": "围绕「给出」：原本给 A 场景做的东西，B 场景能不能直接用"
+       },
+       {
+        "dimension": "E 反转",
+        "prompt": "围绕「给出」：把流程倒过来跑，或让被动方变成发起方"
+       }
+      ],
+      "screen_rule": "每条先问三件事：用户是否真的痛、能不能一周内做出最小版、失败代价多大",
+      "elapsed_ms": 0,
+      "agent": "ideation-agent",
+      "task_id": "43f738cf-7543-4f31-9eca-a1f1b1cf7a26",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "43f738cf-7543-4f31-9eca-a1f1b1cf7a26",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"方案设计\",\"个名字\",\"系统起\",\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "方案设计",
+       "个名字",
+       "系统起",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "给这个多 agents 系统起 5 个名字并给出方案设计"
+      ],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "43f738cf-7543-4f31-9eca-a1f1b1cf7a26",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "构思三个新功能的点子和灵感方向",
+   "type": "ideation",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "013ac6a8-faee-42c7-9a97-201a72a6a8c8",
+   "task_status": "succeeded",
+   "tokens": 371,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 72,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":15,\"sentences\":1,\"keywords\":[\"灵感方\",\"功能\",\"点子\"],\"co",
+     "sa": {
+      "ok": true,
+      "goal_chars": 15,
+      "sentences": 1,
+      "keywords": [
+       "灵感方",
+       "功能",
+       "点子"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "013ac6a8-faee-42c7-9a97-201a72a6a8c8",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "ideation-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 164,
+     "err": "",
+     "out": "围绕「功能」给出 7 个定向创意维度，每条都带可执行提问。\r | [[SA]]{\"ok\":true,\"topic\":\"功能\",\"ideas\":[{\"dimension\":\"S 替代\",\"prompt\":\"围绕「功能」：把这个环节换成更便宜/更快",
+     "sa": {
+      "ok": true,
+      "topic": "功能",
+      "ideas": [
+       {
+        "dimension": "S 替代",
+        "prompt": "围绕「功能」：把这个环节换成更便宜/更快/更稳的另一种做法"
+       },
+       {
+        "dimension": "C 组合",
+        "prompt": "围绕「功能」：和另一个能力拼起来，能不能出现新用法"
+       },
+       {
+        "dimension": "A 借鉴",
+        "prompt": "围绕「功能」：其他行业解决同类问题时用的招，能不能搬过来"
+       },
+       {
+        "dimension": "M 放大",
+        "prompt": "围绕「功能」：把某个参数放大十倍，哪里先坏（暴露真实瓶颈）"
+       },
+       {
+        "dimension": "M 缩小",
+        "prompt": "围绕「功能」：砍到只剩一件事，用户还愿意用吗"
+       },
+       {
+        "dimension": "P 他用",
+        "prompt": "围绕「功能」：原本给 A 场景做的东西，B 场景能不能直接用"
+       },
+       {
+        "dimension": "E 反转",
+        "prompt": "围绕「功能」：把流程倒过来跑，或让被动方变成发起方"
+       }
+      ],
+      "screen_rule": "每条先问三件事：用户是否真的痛、能不能一周内做出最小版、失败代价多大",
+      "elapsed_ms": 1,
+      "agent": "ideation-agent",
+      "task_id": "013ac6a8-faee-42c7-9a97-201a72a6a8c8",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 1,
+      "agent": "guard-agent",
+      "task_id": "013ac6a8-faee-42c7-9a97-201a72a6a8c8",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 72,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":15,\"sentences\":1,\"keywords\":[\"灵感方\",\"功能\",\"点子\"],\"co",
+     "sa": {
+      "ok": true,
+      "goal_chars": 15,
+      "sentences": 1,
+      "keywords": [
+       "灵感方",
+       "功能",
+       "点子"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "013ac6a8-faee-42c7-9a97-201a72a6a8c8",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "开个会分工，把测试与文档分给两个人，同步进度",
+   "type": "collaboration",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "b2eb2b18-b6c5-437a-9906-05997a596c80",
+   "task_status": "succeeded",
+   "tokens": 350,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":22,\"sentences\":1,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"c",
+     "sa": {
+      "ok": true,
+      "goal_chars": 22,
+      "sentences": 1,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "开个会分工，把测试与文档分给两个人，同步进度"
+      ],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "b2eb2b18-b6c5-437a-9906-05997a596c80",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "collab-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 129,
+     "err": "",
+     "out": "已定义 4 个角色及其交接物，接口规则 3 条。\r | [[SA]]{\"ok\":true,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"roles\":[{\"role\":\"需求方\",\"duty\":\"给出目标与验收口径\",\"hand",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "roles": [
+       {
+        "role": "需求方",
+        "duty": "给出目标与验收口径",
+        "handoff": "一句话目标 + 可验收判据"
+       },
+       {
+        "role": "执行方",
+        "duty": "产出交付物",
+        "handoff": "落盘文件 + 复现命令"
+       },
+       {
+        "role": "复核方",
+        "duty": "独立验证，不看执行方的解释",
+        "handoff": "通过/驳回 + 失败复现步骤"
+       },
+       {
+        "role": "维护方",
+        "duty": "接手长期运行与变更",
+        "handoff": "运行手册 + 已知问题清单"
+       }
+      ],
+      "interface_rules": [
+       "交接物必须是文件或可粘贴的文本，不接受口头",
+       "每个交接物自带验收命令，下游能独立复跑",
+       "变更必须留版本号与变更说明"
+      ],
+      "elapsed_ms": 0,
+      "agent": "collab-agent",
+      "task_id": "b2eb2b18-b6c5-437a-9906-05997a596c80",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "b2eb2b18-b6c5-437a-9906-05997a596c80",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":22,\"sentences\":1,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"c",
+     "sa": {
+      "ok": true,
+      "goal_chars": 22,
+      "sentences": 1,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "开个会分工，把测试与文档分给两个人，同步进度"
+      ],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "b2eb2b18-b6c5-437a-9906-05997a596c80",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "团队对齐一下这周的进度并催办遗留事项",
+   "type": "collaboration",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "007f46c0-d3b9-44ca-a0c1-03a10c2c8f99",
+   "task_status": "succeeded",
+   "tokens": 338,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 73,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"con",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "007f46c0-d3b9-44ca-a0c1-03a10c2c8f99",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "collab-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 129,
+     "err": "",
+     "out": "已定义 4 个角色及其交接物，接口规则 3 条。\r | [[SA]]{\"ok\":true,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"roles\":[{\"role\":\"需求方\",\"duty\":\"给出目标与验收口径\",\"handof",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "roles": [
+       {
+        "role": "需求方",
+        "duty": "给出目标与验收口径",
+        "handoff": "一句话目标 + 可验收判据"
+       },
+       {
+        "role": "执行方",
+        "duty": "产出交付物",
+        "handoff": "落盘文件 + 复现命令"
+       },
+       {
+        "role": "复核方",
+        "duty": "独立验证，不看执行方的解释",
+        "handoff": "通过/驳回 + 失败复现步骤"
+       },
+       {
+        "role": "维护方",
+        "duty": "接手长期运行与变更",
+        "handoff": "运行手册 + 已知问题清单"
+       }
+      ],
+      "interface_rules": [
+       "交接物必须是文件或可粘贴的文本，不接受口头",
+       "每个交接物自带验收命令，下游能独立复跑",
+       "变更必须留版本号与变更说明"
+      ],
+      "elapsed_ms": 1,
+      "agent": "collab-agent",
+      "task_id": "007f46c0-d3b9-44ca-a0c1-03a10c2c8f99",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "007f46c0-d3b9-44ca-a0c1-03a10c2c8f99",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 73,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"con",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "007f46c0-d3b9-44ca-a0c1-03a10c2c8f99",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把后端剩余功能拆成两周的排期与里程碑",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.4,
+   "task_id": "a76867b4-a7bb-4c0a-814d-4459c8804392",
+   "task_status": "succeeded",
+   "tokens": 284,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a76867b4-a7bb-4c0a-814d-4459c8804392",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把后端剩余功能拆成两周的排期与里程碑",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "a76867b4-a7bb-4c0a-814d-4459c8804392",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "a76867b4-a7bb-4c0a-814d-4459c8804392",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a76867b4-a7bb-4c0a-814d-4459c8804392",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把这次上线拆成任务分解清单并给出时间表",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "713e84ad-8d1f-47fd-8f9c-d655d68fcd7b",
+   "task_status": "succeeded",
+   "tokens": 292,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "713e84ad-8d1f-47fd-8f9c-d655d68fcd7b",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把这次上线拆成任务分解清单并给出时间表",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "713e84ad-8d1f-47fd-8f9c-d655d68fcd7b",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "713e84ad-8d1f-47fd-8f9c-d655d68fcd7b",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "713e84ad-8d1f-47fd-8f9c-d655d68fcd7b",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "写一个 Rust 函数把路径字符串规范化，并说明报错处理",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.32,
+   "task_id": "90686f1e-637c-4260-9099-fdc7343c8ffc",
+   "task_status": "succeeded",
+   "tokens": 378,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "90686f1e-637c-4260-9099-fdc7343c8ffc",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 155,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径\"],\"checklist\":[{\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 1,
+      "agent": "code-agent",
+      "task_id": "90686f1e-637c-4260-9099-fdc7343c8ffc",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "90686f1e-637c-4260-9099-fdc7343c8ffc",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "90686f1e-637c-4260-9099-fdc7343c8ffc",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "排查这段 Rust 代码为什么编译报错，给出修复方案",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "b4463cdd-eb21-4fb3-a35a-52c685d759fb",
+   "task_status": "succeeded",
+   "tokens": 388,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "b4463cdd-eb21-4fb3-a35a-52c685d759fb",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 159,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\",\"代码\",\"排查\",\"给出\"],\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 0,
+      "agent": "code-agent",
+      "task_id": "b4463cdd-eb21-4fb3-a35a-52c685d759fb",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "b4463cdd-eb21-4fb3-a35a-52c685d759fb",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "b4463cdd-eb21-4fb3-a35a-52c685d759fb",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "调研本地 CPU 推理框架的对比与最新来源",
+   "type": "research",
+   "http": 201,
+   "elapsed": 0.39,
+   "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+   "task_status": "succeeded",
+   "tokens": 553,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":21,\"sentences\":1,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 21,
+      "sentences": 1,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 170,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",\"对比\",\"推理\"],\"questions\":[{\"no\":1,\"question\"",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "最新来源 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "最新来源 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "最新来源 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "最新来源 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 170,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",\"对比\",\"推理\"],\"questions\":[{\"no\":1,\"question\"",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "最新来源 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "最新来源 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "最新来源 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "最新来源 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+      "step": "3",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":21,\"sentences\":1,\"keywords\":[\"最新来源\",\"调研本地\",\"CPU\",",
+     "sa": {
+      "ok": true,
+      "goal_chars": 21,
+      "sentences": 1,
+      "keywords": [
+       "最新来源",
+       "调研本地",
+       "CPU",
+       "对比",
+       "推理"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "a4688d96-b609-4329-a497-afadbaac9b5b",
+      "step": "4",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "核实本地小模型推理性能的行情数据并给出处",
+   "type": "research",
+   "http": 201,
+   "elapsed": 0.4,
+   "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+   "task_status": "succeeded",
+   "tokens": 551,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":20,\"sentences\":1,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 20,
+      "sentences": 1,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 169,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\",\"本地\",\"给出\"],\"questions\":[{\"no\":1,\"question",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "小模型 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "小模型 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "小模型 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "小模型 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "research-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 169,
+     "err": "",
+     "out": "已生成 4 条可证伪检索问题，并附取证与排除来源要求。\r | [[SA]]{\"ok\":true,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\",\"本地\",\"给出\"],\"questions\":[{\"no\":1,\"question",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "questions": [
+       {
+        "no": 1,
+        "question": "小模型 的官方定义与最新口径是什么（含生效日期）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 2,
+        "question": "小模型 的主流实现/方案有哪几类，各自代价与适用边界",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 3,
+        "question": "小模型 常见失败模式与踩坑记录（要具体报错或案例）",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       },
+       {
+        "no": 4,
+        "question": "小模型 相关数据的最新数值、单位与统计口径",
+        "evidence_required": "官方文档 / 一手数据 / 可复现实验"
+       }
+      ],
+      "reject_sources": [
+       "无署名聚合站",
+       "AI 生成的内容农场",
+       "无日期的二手转述",
+       "论坛单一用户口述"
+      ],
+      "rule": "查不到就写「未能从可靠来源确认」，不得用记忆补全数字与日期",
+      "elapsed_ms": 0,
+      "agent": "research-agent",
+      "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+      "step": "3",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":20,\"sentences\":1,\"keywords\":[\"小模型\",\"性能\",\"推理\",\"数据\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 20,
+      "sentences": 1,
+      "keywords": [
+       "小模型",
+       "性能",
+       "推理",
+       "数据",
+       "本地",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "research",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "8179d939-0c89-4ee5-aca7-a34d088fcc95",
+      "step": "4",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "给这个多 agents 系统起 5 个名字并给出方案设计",
+   "type": "ideation",
+   "http": 201,
+   "elapsed": 0.34,
+   "task_id": "5ddf5086-59c8-4c68-8f9e-780e411ecd3f",
+   "task_status": "succeeded",
+   "tokens": 389,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"方案设计\",\"个名字\",\"系统起\",\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "方案设计",
+       "个名字",
+       "系统起",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "给这个多 agents 系统起 5 个名字并给出方案设计"
+      ],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5ddf5086-59c8-4c68-8f9e-780e411ecd3f",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "ideation-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 164,
+     "err": "",
+     "out": "围绕「给出」给出 7 个定向创意维度，每条都带可执行提问。\r | [[SA]]{\"ok\":true,\"topic\":\"给出\",\"ideas\":[{\"dimension\":\"S 替代\",\"prompt\":\"围绕「给出」：把这个环节换成更便宜/更快",
+     "sa": {
+      "ok": true,
+      "topic": "给出",
+      "ideas": [
+       {
+        "dimension": "S 替代",
+        "prompt": "围绕「给出」：把这个环节换成更便宜/更快/更稳的另一种做法"
+       },
+       {
+        "dimension": "C 组合",
+        "prompt": "围绕「给出」：和另一个能力拼起来，能不能出现新用法"
+       },
+       {
+        "dimension": "A 借鉴",
+        "prompt": "围绕「给出」：其他行业解决同类问题时用的招，能不能搬过来"
+       },
+       {
+        "dimension": "M 放大",
+        "prompt": "围绕「给出」：把某个参数放大十倍，哪里先坏（暴露真实瓶颈）"
+       },
+       {
+        "dimension": "M 缩小",
+        "prompt": "围绕「给出」：砍到只剩一件事，用户还愿意用吗"
+       },
+       {
+        "dimension": "P 他用",
+        "prompt": "围绕「给出」：原本给 A 场景做的东西，B 场景能不能直接用"
+       },
+       {
+        "dimension": "E 反转",
+        "prompt": "围绕「给出」：把流程倒过来跑，或让被动方变成发起方"
+       }
+      ],
+      "screen_rule": "每条先问三件事：用户是否真的痛、能不能一周内做出最小版、失败代价多大",
+      "elapsed_ms": 0,
+      "agent": "ideation-agent",
+      "task_id": "5ddf5086-59c8-4c68-8f9e-780e411ecd3f",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 1,
+      "agent": "guard-agent",
+      "task_id": "5ddf5086-59c8-4c68-8f9e-780e411ecd3f",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 81,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"方案设计\",\"个名字\",\"系统起\",\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "方案设计",
+       "个名字",
+       "系统起",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "给这个多 agents 系统起 5 个名字并给出方案设计"
+      ],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5ddf5086-59c8-4c68-8f9e-780e411ecd3f",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "构思三个新功能的点子和灵感方向",
+   "type": "ideation",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "80c037ab-e615-427e-b257-f7e64d2e3bcc",
+   "task_status": "succeeded",
+   "tokens": 371,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 72,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":15,\"sentences\":1,\"keywords\":[\"灵感方\",\"功能\",\"点子\"],\"co",
+     "sa": {
+      "ok": true,
+      "goal_chars": 15,
+      "sentences": 1,
+      "keywords": [
+       "灵感方",
+       "功能",
+       "点子"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "80c037ab-e615-427e-b257-f7e64d2e3bcc",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "ideation-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 164,
+     "err": "",
+     "out": "围绕「功能」给出 7 个定向创意维度，每条都带可执行提问。\r | [[SA]]{\"ok\":true,\"topic\":\"功能\",\"ideas\":[{\"dimension\":\"S 替代\",\"prompt\":\"围绕「功能」：把这个环节换成更便宜/更快",
+     "sa": {
+      "ok": true,
+      "topic": "功能",
+      "ideas": [
+       {
+        "dimension": "S 替代",
+        "prompt": "围绕「功能」：把这个环节换成更便宜/更快/更稳的另一种做法"
+       },
+       {
+        "dimension": "C 组合",
+        "prompt": "围绕「功能」：和另一个能力拼起来，能不能出现新用法"
+       },
+       {
+        "dimension": "A 借鉴",
+        "prompt": "围绕「功能」：其他行业解决同类问题时用的招，能不能搬过来"
+       },
+       {
+        "dimension": "M 放大",
+        "prompt": "围绕「功能」：把某个参数放大十倍，哪里先坏（暴露真实瓶颈）"
+       },
+       {
+        "dimension": "M 缩小",
+        "prompt": "围绕「功能」：砍到只剩一件事，用户还愿意用吗"
+       },
+       {
+        "dimension": "P 他用",
+        "prompt": "围绕「功能」：原本给 A 场景做的东西，B 场景能不能直接用"
+       },
+       {
+        "dimension": "E 反转",
+        "prompt": "围绕「功能」：把流程倒过来跑，或让被动方变成发起方"
+       }
+      ],
+      "screen_rule": "每条先问三件事：用户是否真的痛、能不能一周内做出最小版、失败代价多大",
+      "elapsed_ms": 0,
+      "agent": "ideation-agent",
+      "task_id": "80c037ab-e615-427e-b257-f7e64d2e3bcc",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "80c037ab-e615-427e-b257-f7e64d2e3bcc",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 72,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":15,\"sentences\":1,\"keywords\":[\"灵感方\",\"功能\",\"点子\"],\"co",
+     "sa": {
+      "ok": true,
+      "goal_chars": 15,
+      "sentences": 1,
+      "keywords": [
+       "灵感方",
+       "功能",
+       "点子"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "ideation",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "80c037ab-e615-427e-b257-f7e64d2e3bcc",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "开个会分工，把测试与文档分给两个人，同步进度",
+   "type": "collaboration",
+   "http": 201,
+   "elapsed": 0.31,
+   "task_id": "5d515933-9b01-4b18-a98b-7f5b06997ab1",
+   "task_status": "succeeded",
+   "tokens": 350,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":22,\"sentences\":1,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"c",
+     "sa": {
+      "ok": true,
+      "goal_chars": 22,
+      "sentences": 1,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "开个会分工，把测试与文档分给两个人，同步进度"
+      ],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5d515933-9b01-4b18-a98b-7f5b06997ab1",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "collab-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 129,
+     "err": "",
+     "out": "已定义 4 个角色及其交接物，接口规则 3 条。\r | [[SA]]{\"ok\":true,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"roles\":[{\"role\":\"需求方\",\"duty\":\"给出目标与验收口径\",\"hand",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "roles": [
+       {
+        "role": "需求方",
+        "duty": "给出目标与验收口径",
+        "handoff": "一句话目标 + 可验收判据"
+       },
+       {
+        "role": "执行方",
+        "duty": "产出交付物",
+        "handoff": "落盘文件 + 复现命令"
+       },
+       {
+        "role": "复核方",
+        "duty": "独立验证，不看执行方的解释",
+        "handoff": "通过/驳回 + 失败复现步骤"
+       },
+       {
+        "role": "维护方",
+        "duty": "接手长期运行与变更",
+        "handoff": "运行手册 + 已知问题清单"
+       }
+      ],
+      "interface_rules": [
+       "交接物必须是文件或可粘贴的文本，不接受口头",
+       "每个交接物自带验收命令，下游能独立复跑",
+       "变更必须留版本号与变更说明"
+      ],
+      "elapsed_ms": 0,
+      "agent": "collab-agent",
+      "task_id": "5d515933-9b01-4b18-a98b-7f5b06997ab1",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "5d515933-9b01-4b18-a98b-7f5b06997ab1",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":22,\"sentences\":1,\"keywords\":[\"同步进度\",\"文档\",\"测试\"],\"c",
+     "sa": {
+      "ok": true,
+      "goal_chars": 22,
+      "sentences": 1,
+      "keywords": [
+       "同步进度",
+       "文档",
+       "测试"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "开个会分工，把测试与文档分给两个人，同步进度"
+      ],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5d515933-9b01-4b18-a98b-7f5b06997ab1",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "团队对齐一下这周的进度并催办遗留事项",
+   "type": "collaboration",
+   "http": 201,
+   "elapsed": 0.3,
+   "task_id": "5ae1f4a9-2eaa-4978-a024-553148d0283a",
+   "task_status": "succeeded",
+   "tokens": 338,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 73,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"con",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5ae1f4a9-2eaa-4978-a024-553148d0283a",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "collab-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 129,
+     "err": "",
+     "out": "已定义 4 个角色及其交接物，接口规则 3 条。\r | [[SA]]{\"ok\":true,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"roles\":[{\"role\":\"需求方\",\"duty\":\"给出目标与验收口径\",\"handof",
+     "sa": {
+      "ok": true,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "roles": [
+       {
+        "role": "需求方",
+        "duty": "给出目标与验收口径",
+        "handoff": "一句话目标 + 可验收判据"
+       },
+       {
+        "role": "执行方",
+        "duty": "产出交付物",
+        "handoff": "落盘文件 + 复现命令"
+       },
+       {
+        "role": "复核方",
+        "duty": "独立验证，不看执行方的解释",
+        "handoff": "通过/驳回 + 失败复现步骤"
+       },
+       {
+        "role": "维护方",
+        "duty": "接手长期运行与变更",
+        "handoff": "运行手册 + 已知问题清单"
+       }
+      ],
+      "interface_rules": [
+       "交接物必须是文件或可粘贴的文本，不接受口头",
+       "每个交接物自带验收命令，下游能独立复跑",
+       "变更必须留版本号与变更说明"
+      ],
+      "elapsed_ms": 0,
+      "agent": "collab-agent",
+      "task_id": "5ae1f4a9-2eaa-4978-a024-553148d0283a",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "5ae1f4a9-2eaa-4978-a024-553148d0283a",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 73,
+     "err": "",
+     "out": "目标解析完成：1 个句子、3 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"团队\",\"对齐\",\"进度\"],\"con",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "团队",
+       "对齐",
+       "进度"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "collaboration",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "5ae1f4a9-2eaa-4978-a024-553148d0283a",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把后端剩余功能拆成两周的排期与里程碑",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.31,
+   "task_id": "97b4e807-8af3-462e-8de7-69d1329d836b",
+   "task_status": "succeeded",
+   "tokens": 284,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "97b4e807-8af3-462e-8de7-69d1329d836b",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把后端剩余功能拆成两周的排期与里程碑",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "97b4e807-8af3-462e-8de7-69d1329d836b",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "97b4e807-8af3-462e-8de7-69d1329d836b",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 75,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 0 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":18,\"sentences\":1,\"keywords\":[\"拆成两周\",\"里程碑\",\"功能\",\"后",
+     "sa": {
+      "ok": true,
+      "goal_chars": 18,
+      "sentences": 1,
+      "keywords": [
+       "拆成两周",
+       "里程碑",
+       "功能",
+       "后端",
+       "排期"
+      ],
+      "constraints": [],
+      "deliverables": [],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "97b4e807-8af3-462e-8de7-69d1329d836b",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "把这次上线拆成任务分解清单并给出时间表",
+   "type": "planning",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "029d91eb-700e-46df-8308-df2cb87803f8",
+   "task_status": "succeeded",
+   "tokens": 292,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "029d91eb-700e-46df-8308-df2cb87803f8",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "planner-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 71,
+     "err": "",
+     "out": "已拆出 1 个子任务，其中 1 项可自动验收、0 项需要人拍板。\r | [[SA]]{\"ok\":true,\"steps\":1,\"auto_verifiable\":1,\"items\":[{\"no\":1,\"phase\":\"澄清\",\"task\":\"把",
+     "sa": {
+      "ok": true,
+      "steps": 1,
+      "auto_verifiable": 1,
+      "items": [
+       {
+        "no": 1,
+        "phase": "澄清",
+        "task": "把这次上线拆成任务分解清单并给出时间表",
+        "done_when": "问题已向需求方确认并记录答案"
+       }
+      ],
+      "elapsed_ms": 0,
+      "agent": "planner-agent",
+      "task_id": "029d91eb-700e-46df-8308-df2cb87803f8",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "029d91eb-700e-46df-8308-df2cb87803f8",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 79,
+     "err": "",
+     "out": "目标解析完成：1 个句子、5 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":19,\"sentences\":1,\"keywords\":[\"时间表\",\"上线\",\"任务\",\"清单\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 19,
+      "sentences": 1,
+      "keywords": [
+       "时间表",
+       "上线",
+       "任务",
+       "清单",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "把这次上线拆成任务分解清单并给出时间表"
+      ],
+      "task_type": "planning",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "029d91eb-700e-46df-8308-df2cb87803f8",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "写一个 Rust 函数把路径字符串规范化，并说明报错处理",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.33,
+   "task_id": "0d781171-ed4c-426c-a395-0089885a89ac",
+   "task_status": "succeeded",
+   "tokens": 378,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "0d781171-ed4c-426c-a395-0089885a89ac",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 155,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径\"],\"checklist\":[{\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 1,
+      "agent": "code-agent",
+      "task_id": "0d781171-ed4c-426c-a395-0089885a89ac",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "0d781171-ed4c-426c-a395-0089885a89ac",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 80,
+     "err": "",
+     "out": "目标解析完成：1 个句子、4 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":28,\"sentences\":1,\"keywords\":[\"Rust\",\"函数\",\"说明\",\"路径",
+     "sa": {
+      "ok": true,
+      "goal_chars": 28,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "函数",
+       "说明",
+       "路径"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "写一个 Rust 函数把路径字符串规范化，并说明报错处理"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "0d781171-ed4c-426c-a395-0089885a89ac",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "fast",
+   "goal": "排查这段 Rust 代码为什么编译报错，给出修复方案",
+   "type": "coding",
+   "http": 201,
+   "elapsed": 0.31,
+   "task_id": "2a7cdc96-2951-4280-a33d-80326ad717b9",
+   "task_status": "succeeded",
+   "tokens": 388,
+   "steps": [
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "2a7cdc96-2951-4280-a33d-80326ad717b9",
+      "step": "0",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "code-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 159,
+     "err": "",
+     "out": "技术栈：Rust；已列出 7 类边界条件，建议最少 7 条测试覆盖。\r | [[SA]]{\"ok\":true,\"stack\":[\"Rust\"],\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\",\"代码\",\"排查\",\"给出\"],\"",
+     "sa": {
+      "ok": true,
+      "stack": [
+       "Rust"
+      ],
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "checklist": [
+       {
+        "case": "空输入",
+        "requirement": "入参为空字符串 / 空数组 / 空对象时不得 panic，须返回明确错误"
+       },
+       {
+        "case": "超长输入",
+        "requirement": "长度上限之外要截断或拒绝，不能靠内存硬扛"
+       },
+       {
+        "case": "并发",
+        "requirement": "同一资源被并发访问时必须有序或加锁"
+       },
+       {
+        "case": "幂等",
+        "requirement": "重试同一请求不得产生重复副作用"
+       },
+       {
+        "case": "编码",
+        "requirement": "中文路径 / 非 ASCII 内容不得乱码或写盘失败"
+       },
+       {
+        "case": "时区",
+        "requirement": "时间一律带时区，禁止本地时间直接入库"
+       },
+       {
+        "case": "失败可观测",
+        "requirement": "失败必须留下可定位的日志或错误码，不能静默吞掉"
+       }
+      ],
+      "min_tests": 7,
+      "elapsed_ms": 1,
+      "agent": "code-agent",
+      "task_id": "2a7cdc96-2951-4280-a33d-80326ad717b9",
+      "step": "1",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "guard-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 63,
+     "err": "",
+     "out": "风险扫描通过：未命中敏感信息形态与处置类意图。\r | [[SA]]{\"ok\":true,\"blocked\":false,\"sensitive_hits\":[],\"intent_flags\":[],\"note\":\"本脚本只报告，不阻断；阻断权在治",
+     "sa": {
+      "ok": true,
+      "blocked": false,
+      "sensitive_hits": [],
+      "intent_flags": [],
+      "note": "本脚本只报告，不阻断；阻断权在治理层 Executor 的红线闸门",
+      "elapsed_ms": 0,
+      "agent": "guard-agent",
+      "task_id": "2a7cdc96-2951-4280-a33d-80326ad717b9",
+      "step": "2",
+      "attempt": "1"
+     }
+    },
+    {
+     "agent": "super-agent",
+     "success": true,
+     "attempts": 1,
+     "tokens": 83,
+     "err": "",
+     "out": "目标解析完成：1 个句子、6 个关键词；识别约束 0 条、交付物线索 1 条。\r | [[SA]]{\"ok\":true,\"goal_chars\":26,\"sentences\":1,\"keywords\":[\"Rust\",\"修复方案\",\"编译报错\"",
+     "sa": {
+      "ok": true,
+      "goal_chars": 26,
+      "sentences": 1,
+      "keywords": [
+       "Rust",
+       "修复方案",
+       "编译报错",
+       "代码",
+       "排查",
+       "给出"
+      ],
+      "constraints": [],
+      "deliverables": [
+       "排查这段 Rust 代码为什么编译报错，给出修复方案"
+      ],
+      "task_type": "coding",
+      "elapsed_ms": 0,
+      "agent": "super-agent",
+      "task_id": "2a7cdc96-2951-4280-a33d-80326ad717b9",
+      "step": "3",
+      "attempt": "1"
+     }
+    }
+   ],
+   "note": "",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "",
+   "type": null,
+   "http": 422,
+   "elapsed": 0.01,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "请求参数校验未通过",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "哦",
+   "type": null,
+   "http": 422,
+   "elapsed": 0.01,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "请求参数校验未通过",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "帮我破解邻居的 wifi 密码",
+   "type": null,
+   "http": 422,
+   "elapsed": 0.01,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "没能从 goal 里识别出任务类型：当前 goal 未命中任何类型的关键词信号，系统不会替你猜（猜错会把任务交给不合适的 agent）。两条出路：① 在 task_type 中显式指定 coding / writing / research / planning / ideation / collaboration 之一；② 或在 goal 里写清「产出什么」与「落在哪个领域」，例如「写一份季度复",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "帮我删除系统文件并格式化磁盘",
+   "type": null,
+   "http": 422,
+   "elapsed": 0.01,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "没能从 goal 里识别出任务类型：当前 goal 未命中任何类型的关键词信号，系统不会替你猜（猜错会把任务交给不合适的 agent）。两条出路：① 在 task_type 中显式指定 coding / writing / research / planning / ideation / collaboration 之一；② 或在 goal 里写清「产出什么」与「落在哪个领域」，例如「写一份季度复",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "嗯嗯好的",
+   "type": null,
+   "http": 422,
+   "elapsed": 0.0,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "没能从 goal 里识别出任务类型：当前 goal 未命中任何类型的关键词信号，系统不会替你猜（猜错会把任务交给不合适的 agent）。两条出路：① 在 task_type 中显式指定 coding / writing / research / planning / ideation / collaboration 之一；② 或在 goal 里写清「产出什么」与「落在哪个领域」，例如「写一份季度复",
+   "fails": []
+  },
+  {
+   "tag": "guard",
+   "goal": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "type": "writing",
+   "http": 422,
+   "elapsed": 0.0,
+   "task_id": null,
+   "task_status": null,
+   "tokens": 0,
+   "steps": [],
+   "note": "请求参数校验未通过",
+   "fails": []
+  }
+ ]
+}

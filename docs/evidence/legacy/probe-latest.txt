@@ -1,0 +1,70 @@
+==============================================================================
+probe.py · 好用度体检（不是冒烟）
+exe=super-agents.exe  port=18170  data_dir=sa-probe-k75ulpag
+==============================================================================
+
+[A] 错误可读性：报错能不能直接告诉调用方怎么改
+  [OK  ] 缺字段注册被拒 422  ->  实际=422
+       body = {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"email": "必填"}}
+  [OK  ] 错误体是标准信封（含 code）
+  [OK  ] 错误体在 details 里点名出问题的字段  ->  {"email": "必填"}
+  [OK  ] 正常注册成功 201  ->  实际=201
+  [OK  ] 注册直接下发令牌（少一次登录往返）
+  [OK  ] 重复注册 409  ->  实际=409
+  [OK  ] 重复注册的文案说人话  ->  {"code": "conflict", "message": "用户名已被占用"}
+  [OK  ] 密码错 401  ->  实际=401
+  [OK  ] 密码错的文案可读  ->  {"code": "unauthorized", "message": "账号或密码不正确"}
+
+[B] 列表接口：前端能不能做出分页器（has_more / total / limit）
+  [OK  ] 登录拿到 access_token  ->  eyJhbGciOiJI…
+       GET /tasks?limit=2 -> 200  body={"total": 0, "count": 0, "limit": 2, "offset": 0, "has_more": false, "items": []}
+  [OK  ] 任务列表可访问  ->  实际=200
+  [OK  ] 任务列表带分页元信息
+       GET /memories -> 200  body={"total": 0, "count": 0, "limit": 50, "offset": 0, "has_more": false, "items": []}
+
+[C] 契约一致性：时间 / id / envelope 是否全站统一
+       GET /auth/me -> 200  body={"id": "9d82fab7-f323-4b89-aa9a-5c647f2f069b", "username": "probe_e54c72", "email": "probe_e54c72@ex.com", "display_name": "probe_e54c72", "role": "owner", "status": "active", "locale": "zh-CN", "timezone": "Asia/Shanghai", "created_at": "2026-11-09T14:44:03.6
+  [OK  ] created_at 是 RFC3339 带时区  ->  实际=2026-11-09T14:44:03.611620900Z
+  [OK  ] me 的 envelope 明确
+
+[D] 越权 / 不存在：前端要靠状态码分流，不能混用
+  [OK  ] 不存在的任务给出 403/404  ->  实际=404
+       body = {"code": "not_found", "message": "任务不存在"}
+  [NOTE] 不存在的任务返回 404（若为 403，前端无法区分'他人资源'与'不存在'）
+  [OK  ] 非法 id 不返回 500  ->  实际=404
+  [OK  ] 未知路由 404（不是 401/500）  ->  实际=404
+
+[E] 幂等：同一条记忆重复写，会不会炸出重复条目
+  [OK  ] 首次 created=true、二次 created=false  ->  True/False
+  [OK  ] 记忆写入成功  ->  201/200
+  [OK  ] 同 key 覆盖而非新建（upsert 语义）  ->  id1=None id2=None
+  [OK  ] 版本号自增  ->  1 -> 2
+
+[F] 任务：提交 → 详情，返回的东西够不够前端画一条进度线
+       POST /tasks -> 201  body={"id": "5b2bd4de-a000-4abf-9987-605669af907e", "goal": "帮我整理这周的会议记录并生成会议纪要", "task_type": "collaboration", "status": "succeeded", "plan": [{"index": 0, "name": "intent_and_boundary", "agent_id": "super-agent", "model_profile": "standard", "permission": "cross_agent", "est_tokens": 900, "sandbox": fa
+  [OK  ] 任务提交成功  ->  实际=201
+  [OK  ] 响应里能直接拿到 task id  ->  5b2bd4de
+  [OK  ] 提交响应带执行计划  ->  否则前端首屏空白
+       GET /tasks/{id} -> 200  keys=['id', 'goal', 'task_type', 'status', 'plan', 'results', 'result_summary', 'tokens_used', 'budget_tokens', 'model_profile', 'agreement_score', 'created_at', 'updated_at', 'finished_at', 'trace', 'memory_refs']
+  [OK  ] 任务详情可读  ->  实际=200
+  [OK  ] 详情含 trace（可画时间线）
+  [OK  ] 详情含步骤（可画进度条）
+  [OK  ] trace 端点形状可用  ->  实际类型=list
+
+[G] 边界：超纲任务 / 超长输入 / 空目标
+  [OK  ] 超纲任务被拒 422  ->  实际=422
+  [OK  ] 拒绝理由可解释（含下一步）  ->  {"code": "unprocessable_entity", "message": "无法判断任务类型，请在 task_type 中显式指定（coding/writing/research/planning/ideation/collaboration）"}
+  [OK  ] 超长 goal 被拒  ->  实际=422
+  [OK  ] 过短 goal 被拒  ->  实际=422
+
+[H] 观测：出问题时能不能定位
+  [OK  ] 响应带 X-Request-Id（可追日志）  ->  c2ab1cc0-1a07-
+  [OK  ] /metrics 有鉴权  ->  实际=401
+
+[J] 并发：同一 key 并发写 8 次，版本号是否线性不丢
+  [OK  ] 8 次并发全部成功（8/8）  ->  [1, 2, 3, 4, 5, 6, 7, 8]
+  [OK  ] 并发下版本号无重复（无丢失更新）  ->  去重后=8
+
+==============================================================================
+体检结论：0 处不达标 / 1 条观察
+==============================================================================

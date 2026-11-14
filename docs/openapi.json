@@ -1,0 +1,4398 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Personal Super Agents Backend API",
+    "version": "1.0.0",
+    "description": "本文件由 scripts/gen-openapi.py 从 Rust 源码自动生成，请勿手工编辑。\n真源：src/api/mod.rs（路由）、src/api/handlers/*.rs（入参出参）、src/**/*.rs（数据结构）。\n注意：本仓库未使用 utoipa；错误响应统一为 Problem JSON，具体状态码语义见 docs/10-verification-report.md。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8088",
+      "description": "本地默认监听 127.0.0.1:8088（src/config.rs:50，可用 SA_BIND 覆盖）"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "POST /api/v1/auth/login 取得的 access_token，默认有效期 1800 秒"
+      },
+      "metricsToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "静态指标令牌 SA_METRICS_TOKEN（≥24 字符）"
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "错误码，如 unauthorized / conflict / unprocessable_entity"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "字段级校验明细，仅 422 等场景出现"
+          }
+        }
+      },
+      "AgentView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "vertical_knowledge": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "doc_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sandbox_profile": {
+            "type": "string"
+          },
+          "default_model": {
+            "type": "string"
+          },
+          "task_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "max_concurrency": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "domain",
+          "summary",
+          "vertical_knowledge",
+          "doc_refs",
+          "skills",
+          "permissions",
+          "sandbox_profile",
+          "default_model",
+          "task_types",
+          "max_concurrency"
+        ]
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "observed": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first_fired_at": {
+            "type": "string"
+          },
+          "last_seen_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "title",
+          "severity",
+          "observed",
+          "threshold",
+          "detail",
+          "hits",
+          "first_fired_at",
+          "last_seen_at"
+        ]
+      },
+      "AlertList": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            }
+          },
+          "evaluated": {
+            "$ref": "#/components/schemas/EvaluatedNow"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/AlertStats"
+          },
+          "auto_action": {
+            "$ref": "#/components/schemas/AutoAction"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/AlertPolicyView"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleView"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "active",
+          "evaluated",
+          "stats",
+          "auto_action",
+          "policy",
+          "rules"
+        ]
+      },
+      "AlertPolicyView": {
+        "type": "object",
+        "properties": {
+          "dedup_window_secs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "storm_threshold": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "http_5xx_ratio": {
+            "type": "number"
+          },
+          "min_http_requests": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "task_failure_ratio": {
+            "type": "number"
+          },
+          "min_tasks": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rate_limited_hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authz_denied_hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "circuit_open_hits": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "dedup_window_secs",
+          "storm_threshold",
+          "http_5xx_ratio",
+          "min_http_requests",
+          "task_failure_ratio",
+          "min_tasks",
+          "rate_limited_hits",
+          "authz_denied_hits",
+          "circuit_open_hits"
+        ]
+      },
+      "AlertStats": {
+        "type": "object",
+        "properties": {
+          "fired_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "suppressed_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "aggregated_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "active_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dedup_window_secs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "storm_threshold": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rules_total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "fired_total",
+          "suppressed_total",
+          "aggregated_total",
+          "active_total",
+          "dedup_window_secs",
+          "storm_threshold",
+          "rules_total"
+        ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "action",
+          "target",
+          "decision",
+          "reason",
+          "request_id"
+        ]
+      },
+      "AuditList": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "denied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "count",
+          "limit",
+          "offset",
+          "has_more",
+          "denied",
+          "items"
+        ]
+      },
+      "AuthResult": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserView"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/AuthTokens"
+          },
+          "onboarding_status": {
+            "type": "string"
+          },
+          "onboarding_next_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "user",
+          "tokens",
+          "onboarding_status"
+        ]
+      },
+      "AuthTokens": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "token_type",
+          "expires_in"
+        ]
+      },
+      "AutoAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "detail"
+        ]
+      },
+      "CapabilityView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "owner_agents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permission_boundary": {
+            "type": "string"
+          },
+          "observability_signals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "degradation_or_abort": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "trigger",
+          "owner_agents",
+          "permission_boundary",
+          "observability_signals",
+          "degradation_or_abort"
+        ]
+      },
+      "ChangePasswordInput": {
+        "type": "object",
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "new_password"
+        ]
+      },
+      "ClusterNode": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uptime_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "step_concurrency": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "async_running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "async_capacity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sse_subscribers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "events_dropped": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "agents_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tasks": {
+            "$ref": "#/components/schemas/ClusterTasks"
+          },
+          "source": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "node_id",
+          "role",
+          "started_at",
+          "uptime_seconds",
+          "step_concurrency",
+          "async_running",
+          "async_capacity",
+          "sse_subscribers",
+          "events_dropped",
+          "agents_total",
+          "tasks",
+          "source",
+          "updated_at",
+          "stale"
+        ]
+      },
+      "ClusterTasks": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "queued": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "running": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "succeeded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "partially_succeeded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "aborted_budget": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "total",
+          "queued",
+          "running",
+          "succeeded",
+          "partially_succeeded",
+          "failed",
+          "cancelled",
+          "aborted_budget"
+        ]
+      },
+      "ClusterTotals": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offline_nodes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "agents_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "async_running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "async_capacity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sse_subscribers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tasks": {
+            "$ref": "#/components/schemas/ClusterTasks"
+          }
+        },
+        "required": [
+          "nodes",
+          "offline_nodes",
+          "agents_total",
+          "async_running",
+          "async_capacity",
+          "sse_subscribers",
+          "tasks"
+        ]
+      },
+      "ClusterView": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClusterNode"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ClusterTotals"
+          }
+        },
+        "required": [
+          "nodes",
+          "totals"
+        ]
+      },
+      "ComponentInfo": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "string"
+          },
+          "active": {
+            "type": "string"
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "env_var": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "restart_required": {
+            "type": "boolean"
+          },
+          "health": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slot",
+          "active",
+          "available",
+          "env_var",
+          "contract",
+          "restart_required",
+          "health",
+          "notes"
+        ]
+      },
+      "ComponentList": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "restart_required_for_change": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentInfo"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "restart_required_for_change",
+          "items"
+        ]
+      },
+      "CreateTaskInput": {
+        "type": "object",
+        "properties": {
+          "goal": {
+            "type": "string"
+          },
+          "task_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "coding",
+                  "writing",
+                  "research",
+                  "planning",
+                  "ideation",
+                  "collaboration"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "任务类型；缺省时按 goal 文本的关键词打分判定，打不到任何信号**不会猜**——直接 422 并在 message 里说明补救方式（显式指定本字段，或把 goal 写成「产出物＋领域」）"
+          },
+          "model_profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fast",
+                  "standard",
+                  "deep"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "模型档位，影响预算与重试策略；缺省 standard。"
+          },
+          "budget_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ],
+            "default": "async",
+            "description": "执行模式。`async`（默认）：立即返回 202 与初始快照，后台执行，进度用 `GET /tasks/{id}/events`（SSE）或 `GET /tasks/{id}` 查询，可用 `POST /tasks/{id}/cancel` 取消；`sync`：同步执行完成后才返回 201 与终态快照——慢模型单步可达分钟级，绝大多数 HTTP 客户端会先超时，仅在确定步骤极快（如 sim 后端）时使用。"
+          }
+        },
+        "required": [
+          "goal"
+        ]
+      },
+      "EvaluatedNow": {
+        "type": "object",
+        "properties": {
+          "fired": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deduped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aggregated": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "fired",
+          "deduped",
+          "aggregated"
+        ]
+      },
+      "LoginInput": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "**用户名或邮箱**（注册时填的 `username` 或 `email` 均可）。主字段。"
+          },
+          "username": {
+            "type": "string",
+            "deprecated": true,
+            "description": "`account` 的兼容别名（复用注册字段名时可直接传）。三者取第一个非空值。"
+          },
+          "email": {
+            "type": "string",
+            "deprecated": true,
+            "description": "`account` 的兼容别名（只有邮箱时可直接传）。三者取第一个非空值。"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "account",
+              "password"
+            ]
+          },
+          {
+            "required": [
+              "username",
+              "password"
+            ]
+          },
+          {
+            "required": [
+              "email",
+              "password"
+            ]
+          }
+        ],
+        "description": "登录请求。`account` / `username` / `email` 是同一个登录名的三种叫法，任给其一即可（服务端按此顺序取第一个非空值），无需重复填写。"
+      },
+      "MemoryEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/MemoryScope"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "written_by": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "access_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "confidence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "owner_id",
+          "key",
+          "content",
+          "tags",
+          "version",
+          "written_by",
+          "created_at",
+          "updated_at",
+          "access_count",
+          "confidence"
+        ]
+      },
+      "MemoryList": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemoryEntry"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "count",
+          "limit",
+          "offset",
+          "has_more",
+          "items"
+        ]
+      },
+      "MemoryScope": {
+        "type": "string",
+        "enum": [
+          "private",
+          "shared",
+          "system"
+        ]
+      },
+      "ModelProfile": {
+        "type": "string",
+        "enum": [
+          "fast",
+          "standard",
+          "deep"
+        ]
+      },
+      "OnboardingView": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "total_required": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_required": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "boolean"
+          },
+          "next_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepView"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "total_required",
+          "completed_required",
+          "skipped",
+          "steps"
+        ]
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "env": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "storage_durable": {
+            "type": "boolean"
+          },
+          "uptime_secs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "agents_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capabilities_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "audit_denied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "audit_backend": {
+            "type": "string"
+          },
+          "runner_backend": {
+            "type": "string"
+          },
+          "limiter_backend": {
+            "type": "string"
+          },
+          "limiter_enforcing": {
+            "type": "boolean"
+          },
+          "metrics_export": {
+            "type": "string"
+          },
+          "store": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "env",
+          "storage",
+          "storage_durable",
+          "uptime_secs",
+          "agents_total",
+          "capabilities_total",
+          "audit_denied",
+          "audit_backend",
+          "runner_backend",
+          "limiter_backend",
+          "limiter_enforcing",
+          "metrics_export",
+          "store"
+        ]
+      },
+      "Permission": {
+        "type": "string",
+        "enum": [
+          "read",
+          "write",
+          "sandbox_exec",
+          "memory_write_shared",
+          "memory_write_system",
+          "cross_agent",
+          "admin"
+        ]
+      },
+      "PlanStep": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "name": {
+            "type": "string"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "model_profile": {
+            "$ref": "#/components/schemas/ModelProfile"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/Permission"
+          },
+          "est_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sandbox": {
+            "type": "boolean"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          }
+        },
+        "required": [
+          "index",
+          "name",
+          "agent_id",
+          "model_profile",
+          "permission",
+          "est_tokens",
+          "sandbox",
+          "depends_on"
+        ]
+      },
+      "RefreshInput": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ]
+      },
+      "RegisterInput": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "登录名，全局唯一；长度与字符集见 422 的 details。"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ]
+      },
+      "RevokedView": {
+        "type": "object",
+        "properties": {
+          "revoked_sessions": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "revoked_sessions"
+        ]
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "owner",
+          "admin",
+          "member"
+        ]
+      },
+      "RuleView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "observed_from": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "observed_from"
+        ]
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "info",
+          "warning",
+          "critical"
+        ]
+      },
+      "StepChangeView": {
+        "type": "object",
+        "properties": {
+          "changed": {
+            "type": "boolean"
+          },
+          "onboarding": {
+            "$ref": "#/components/schemas/OnboardingView"
+          }
+        },
+        "required": [
+          "changed",
+          "onboarding"
+        ]
+      },
+      "StepResult": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "model_profile": {
+            "$ref": "#/components/schemas/ModelProfile"
+          },
+          "tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "output": {
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "index",
+          "agent_id",
+          "name",
+          "success",
+          "model_profile",
+          "tokens",
+          "attempts",
+          "output"
+        ]
+      },
+      "StepView": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "est_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "order",
+          "title",
+          "summary",
+          "action",
+          "required",
+          "est_seconds",
+          "completed"
+        ]
+      },
+      "TaskDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "task_type": {
+            "$ref": "#/components/schemas/TaskType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "plan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanStep"
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepResult"
+            }
+          },
+          "result_summary": {
+            "type": "string"
+          },
+          "tokens_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "budget_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "model_profile": {
+            "$ref": "#/components/schemas/ModelProfile"
+          },
+          "agreement_score": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceEntry"
+            }
+          },
+          "memory_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "goal",
+          "task_type",
+          "status",
+          "plan",
+          "results",
+          "result_summary",
+          "tokens_used",
+          "budget_tokens",
+          "model_profile",
+          "agreement_score",
+          "created_at",
+          "updated_at",
+          "trace",
+          "memory_refs"
+        ]
+      },
+      "TaskEvent": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seq",
+          "task_id",
+          "status",
+          "at",
+          "summary"
+        ]
+      },
+      "TaskList": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskView"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "count",
+          "limit",
+          "offset",
+          "has_more",
+          "items"
+        ]
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "partially_succeeded",
+          "aborted_budget",
+          "cancelled"
+        ]
+      },
+      "TaskType": {
+        "type": "string",
+        "enum": [
+          "coding",
+          "writing",
+          "research",
+          "planning",
+          "ideation",
+          "collaboration"
+        ]
+      },
+      "TaskView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "task_type": {
+            "$ref": "#/components/schemas/TaskType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "plan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanStep"
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepResult"
+            }
+          },
+          "result_summary": {
+            "type": "string"
+          },
+          "tokens_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "budget_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "model_profile": {
+            "$ref": "#/components/schemas/ModelProfile"
+          },
+          "agreement_score": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "goal",
+          "task_type",
+          "status",
+          "plan",
+          "results",
+          "result_summary",
+          "tokens_used",
+          "budget_tokens",
+          "model_profile",
+          "agreement_score",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "TraceEntry": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "step_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "format": "int64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "step_index",
+          "agent_id",
+          "phase",
+          "outcome",
+          "detail",
+          "attempt",
+          "tokens"
+        ]
+      },
+      "UpdateInput": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "UpsertInput": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "scope",
+          "key",
+          "content",
+          "tags"
+        ]
+      },
+      "UpsertResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/MemoryEntry"
+          }
+        },
+        "required": [
+          "created",
+          "entry"
+        ]
+      },
+      "UserStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "disabled"
+        ]
+      },
+      "UserView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "display_name",
+          "role",
+          "status",
+          "locale",
+          "timezone",
+          "created_at"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "operationId": "getAgents",
+        "summary": "catalog::agents",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "operationId": "getAgentsId",
+        "summary": "catalog::agent_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "postAuthLogin",
+        "summary": "auth::login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号或密码错误 / 刷新令牌失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "登录配额耗尽（10 次/分钟），带 Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "postAuthLogout",
+        "summary": "auth::logout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshInput"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "getAuthMe",
+        "summary": "auth::me",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password": {
+      "put": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "putAuthPassword",
+        "summary": "auth::change_password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "postAuthRefresh",
+        "summary": "auth::refresh",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshInput"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号或密码错误 / 刷新令牌失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "刷新配额耗尽（30 次/分钟），带 Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "postAuthRegister",
+        "summary": "auth::register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterInput"
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "冲突（用户名或邮箱已占用）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "注册配额耗尽（10 次/小时/IP），带 Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getCapabilities",
+        "summary": "catalog::capabilities",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities/{id}": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getCapabilitiesId",
+        "summary": "catalog::capability_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cluster": {
+      "get": {
+        "tags": [
+          "cluster"
+        ],
+        "operationId": "getCluster",
+        "summary": "cluster::overview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/memories": {
+      "post": {
+        "tags": [
+          "memories"
+        ],
+        "operationId": "postMemories",
+        "summary": "memory::upsert",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "同步执行完成（`mode=sync`），返回终态快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpsertResult"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpsertResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "memories"
+        ],
+        "operationId": "getMemories",
+        "summary": "memory::list",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/memories/{id}": {
+      "get": {
+        "tags": [
+          "memories"
+        ],
+        "operationId": "getMemoriesId",
+        "summary": "memory::detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "memories"
+        ],
+        "operationId": "putMemoriesId",
+        "summary": "memory::update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "memories"
+        ],
+        "operationId": "deleteMemoriesId",
+        "summary": "memory::remove",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "成功，无响应体"
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/observability/alerts": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "operationId": "getObservabilityAlerts",
+        "summary": "observability::alerts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/observability/audit": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "operationId": "getObservabilityAudit",
+        "summary": "observability::audit",
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/observability/components": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "operationId": "getObservabilityComponents",
+        "summary": "observability::components",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/observability/overview": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "operationId": "getObservabilityOverview",
+        "summary": "observability::overview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding": {
+      "get": {
+        "tags": [
+          "onboarding"
+        ],
+        "operationId": "getOnboarding",
+        "summary": "onboarding::overview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/reset": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "operationId": "postOnboardingReset",
+        "summary": "onboarding::reset",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/skip": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "operationId": "postOnboardingSkip",
+        "summary": "onboarding::skip",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/steps/{step_id}/complete": {
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "operationId": "postOnboardingStepsStepIdComplete",
+        "summary": "onboarding::complete_step",
+        "parameters": [
+          {
+            "name": "step_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepChangeView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "postTasks",
+        "summary": "task::create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "提交任务。**默认 `mode=async`**：立即返回 202 与初始快照，后台执行，进度走 `GET /tasks/{id}/events`（SSE，支持 `Last-Event-ID` 断点续传）或轮询 `GET /tasks/{id}`，中途可用 `POST /tasks/{id}/cancel` 取消。`mode=sync` 才会同步执行完成后返回 201 与终态快照——耗时随步骤数与模型耗时增长（慢模型单步可达两分钟以上），客户端超时必须设长，不建议常规使用。两种模式的响应体结构完全一致（平铺的 TaskDetail），差异只在 `status` 是否已终态。",
+        "responses": {
+          "201": {
+            "description": "同步执行完成（`mode=sync`），返回终态快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "已受理，后台执行（`mode=async`）；用 `GET /tasks/{id}/events` 看直播，可 `POST /tasks/{id}/cancel` 取消",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "任务提交配额耗尽（默认 60 次/小时/用户），或 async 后台队列已满（并发上限），带 Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过或请求被业务拒绝（后两种 details 为空，原因在 message 里）。三种来源：① 字段校验失败（details 带字段级原因）；② 未识别出任务类型——未传 task_type 且 goal 未命中任何类型关键词，后端不猜类型；③ 超出能力边界——命中越界信号或没有子 agent 能承接该类型，message 带原因与建议",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "getTasks",
+        "summary": "task::list",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "task_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "getTasksId",
+        "summary": "task::detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "postTasksIdCancel",
+        "summary": "task::cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "已受理，后台执行（`mode=async`）；用 `GET /tasks/{id}/events` 看直播，可 `POST /tasks/{id}/cancel` 取消",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "任务已处于终态，无法取消",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/events": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "getTasksIdEvents",
+        "summary": "task_events::stream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-stream": {
+          "type": "sse",
+          "event": "status",
+          "frameSchema": "TaskEvent",
+          "heartbeatSeconds": 15,
+          "snapshotSeq": 0,
+          "endsOnTerminalStatus": true,
+          "reconnectHeaderLastEventId": true,
+          "reconnectHeaderName": "Last-Event-ID",
+          "reconnectReplayMetric": "sa_sse_replay_total",
+          "reconnectGapMetric": "sa_sse_replay_gap_total"
+        },
+        "description": "Server-Sent Events 长连接：一律 `event: status`，`data` 为 TaskEvent JSON，每帧带 `id: <seq>`。首帧是连接瞬间的快照（`seq = 0`）；任务进入终态后服务端主动结束流（EOF）；空闲时每 15s 一条心跳。**断点续传**：断线重连时带请求头 `Last-Event-ID: <最后收到的 seq>`，服务端只补发该锚点之后的帧（`seq` 严格大于锚点），不重推快照帧；锚点非法（非数字/负数）按首次连接处理、退回首帧快照；补发为空且任务已终态时立即 EOF，不会挂住连接。唯一退化场景：中间帧已滚出服务端环形台账，此时退化为重发快照并累加 `sa_sse_replay_gap_total`，前端应据 `seq` 跳变回查 `GET /tasks/{id}` 补齐。",
+        "responses": {
+          "200": {
+            "description": "事件流（SSE），终态后 EOF",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/trace": {
+      "get": {
+        "tags": [
+          "tasks"
+        ],
+        "operationId": "getTasksIdTrace",
+        "summary": "task::trace",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TraceEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "资源不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "healthz"
+        ],
+        "operationId": "getHealthz",
+        "summary": "observability::health",
+        "security": [],
+        "description": "响应体非 JSON（健康检查 / Prometheus 文本）。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "operationId": "getMetrics",
+        "summary": "observability::metrics",
+        "security": [
+          {
+            "metricsToken": []
+          }
+        ],
+        "description": "静态令牌鉴权：请求头 Authorization: Bearer $SA_METRICS_TOKEN（长度 ≥ 24）",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {}
+          },
+          "400": {
+            "description": "请求格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证或令牌无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "参数校验未通过（details 带字段级原因）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": [
+          "readyz"
+        ],
+        "operationId": "getReadyz",
+        "summary": "observability::ready",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {}
+          }
+        }
+      }
+    }
+  }
+}

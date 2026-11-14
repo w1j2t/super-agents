@@ -1,0 +1,17 @@
+[OK  ] M1a 存储端口 trait Backend 存在  ->  store/backends/mod.rs
+[OK  ] M1b 执行端口 trait StepRunner 存在  ->  orchestration/executor.rs
+[OK  ] M1c 审计端口 trait AuditSink 存在  ->  obs/audit.rs
+[OK  ] M2 业务层零依赖具体后端（换件不必改业务代码）  ->  业务层只认 Store / StepRunner 端口
+[OK  ] M5 后端只经 Store 门面装配（业务层不直连 backends::）  ->  无越级引用
+[OK  ] M3a StorageKind::ALL 每个取值都有工厂分支  ->  ALL=['json', 'memory'] 工厂分支=['Json', 'Memory']
+[OK  ] M3b RunnerKind::ALL 每个取值都有工厂分支  ->  ALL=['sim', 'process'] 工厂分支=['Sim', 'Process', 'Sim', 'Process']
+[OK  ] M3c AuditKind::ALL 每个取值都有工厂分支  ->  ALL=['memory', 'file'] 工厂分支=['Memory', 'File', 'Memory', 'File']
+[OK  ] M6 审计后端只实现 record/events，分页与计数由端口默认实现统一  ->  无后端私自覆盖分页/计数
+[OK  ] M4 环境变量 SA_STORAGE 只在 config.rs 读取  ->  读取文件=['config.rs']
+[OK  ] M4 环境变量 SA_RUNNER_DIR 只在 config.rs 读取  ->  读取文件=['config.rs']
+[OK  ] M4 环境变量 SA_RUNNER 只在 config.rs 读取  ->  读取文件=['config.rs']
+[OK  ] M4 环境变量 SA_AUDIT 只在 config.rs 读取  ->  读取文件=['config.rs']
+[OK  ] M4 环境变量 SA_AUDIT_FILE 只在 config.rs 读取  ->  读取文件=['config.rs']
+[OK  ] M4 环境变量 SA_AUDIT_CAPACITY 只在 config.rs 读取  ->  读取文件=['config.rs']
+
+合计 15 项 | 通过 15 | 失败 0
