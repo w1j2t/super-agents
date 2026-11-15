@@ -1,11 +1,11 @@
 # 23 CLI 客户端行为
-生成时间: 2026-11-14 16:49:54
-命令由 regress_all.py 编排执行，rc=0，耗时 17.0s
+生成时间: 2026-11-14 20:12:07
+命令由 regress_all.py 编排执行，rc=0，耗时 16.9s
 （原始输出如下，未做删改）
 ======================================================================
 门禁 23 · CLI 客户端子命令探针
-被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-18
+被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-20
 ------------------------------------------------------------------------------
 [BOOT] 服务：就绪（就绪）
 [BOOT] 注册：token=288 位
@@ -42,7 +42,7 @@
 [PASS] D  D1 submit(sync) rc=0                   rc=0
 [PASS] D  D2 submit 回显含 HTTP 状态                  已提交 HTTP 201
 [PASS] D  D3 submit 中文 goal 不改字                  命中=True
-[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=4040bbce
+[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=45182acf
 [PASS] D  D5 ls rc=0                             rc=0
 [PASS] D  D6 ls 表头存在                             id                                   状态 
 [PASS] D  D7 表头与数据行按显示宽度逐列对齐                     

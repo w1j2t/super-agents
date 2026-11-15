@@ -572,6 +572,99 @@ def group_e(rep, ctx):
     g(rep, ctx, "E", "E4 ls 不改服务端数据", t0 is not None and t0 == t1, "total %s→%s" % (t0, t1))
 
 
+# ---------------------------------------------------------------- F 组：跟随事件流
+# `submit --follow` 最容易做成"假跟随"：提交后 sleep 一下、再 GET 一次任务，
+# 打印出来的东西长得跟真的事件流一模一样，区别只在中间态全被跳过了。
+# 所以这里不看"像不像"，只看三件能证伪的事：
+#   1) 有没有真的收到多帧（seq 是否从 0 起、是否严格递增）；
+#   2) 退出码是不是从终态翻译出来的（失败任务必须非 0）；
+#   3) 同步任务加 --follow 时有没有如实说"没有中间进度"，而不是假装跟了一路。
+
+FRAME_RE = re.compile(r"^\s*\[(\d+)\]\s+(\S+)")
+TERM_RE = re.compile(r"终态\s+(\S+)")
+
+
+def _frames(out):
+    """抽出 (seq, status) 序列。只认 CLI 自己的帧格式，不猜别的行。"""
+    seqs = []
+    for line in out.splitlines():
+        m = FRAME_RE.match(line)
+        if m:
+            seqs.append((int(m.group(1)), m.group(2)))
+    return seqs
+
+
+def _terminal(out):
+    m = TERM_RE.search(out)
+    return m.group(1) if m else None
+
+
+def group_f(rep, ctx):
+    exe = ctx.exe
+    env = ctx.env()
+
+    # F1/F2：正常任务跟到底
+    rc, out = run_cli(exe, ["submit", "写一个 hello world 函数", "--mode", "async",
+                            "--follow"], env, timeout=200)
+    frames = _frames(out)
+    term = _terminal(out)
+    g(rep, ctx, "F", "F1 真的收到多帧（首帧 seq=0）",
+      len(frames) >= 2 and frames[0][0] == 0,
+      "帧数=%d 序列=%s" % (len(frames), [s for s, _ in frames][:8]))
+    g(rep, ctx, "F", "F2 成功任务：终态 succeeded 且 rc=0",
+      term == "succeeded" and rc == RC_OK,
+      "终态=%s rc=%s" % (term, rc))
+
+    # F3：帧序号必须严格递增。原地重复的 seq 意味着一帧被回放多次——
+    # 这正是"重连后拿快照拼时间线"的典型长相，肉眼看不出来。
+    mono = all(b[0] > a[0] for a, b in zip(frames, frames[1:])) if len(frames) > 1 else False
+    g(rep, ctx, "F", "F3 帧序号严格递增（无回放）", mono,
+      "序列=%s" % [s for s, _ in frames][:8])
+
+    # F4：失败任务必须非 0 退出。这一条是整个子命令的价值所在：
+    # 若"看到终态"就返回 0，那 `submit --follow && 干活` 会在失败任务上继续往下跑。
+    # 预算数字与 runner 步数耦合（sim runner 单步 500~3600 tokens），runner 改了要同步这里。
+    rc2, out2 = run_cli(exe, ["submit", "写一个 hello world 函数", "--mode", "async",
+                              "--follow", "--budget-tokens", "200"], env, timeout=200)
+    term2 = _terminal(out2)
+    g(rep, ctx, "F", "F4 非成功终态时 rc 非 0",
+      term2 is not None and term2 != "succeeded" and rc2 != RC_OK,
+      "终态=%s rc=%s" % (term2, rc2))
+
+    # F5：同步任务 + --follow 不许装样子。同步跑完没有中间态，
+    # 静默返回 0 会让人以为"跟完了、一切正常"，实际什么都没跟。
+    #
+    # 目标句必须命中类型关键词（"总结"→writing）。首版写成"说明 tcp 与 udp 的区别"，
+    # 未命中任何信号被 422 拒在门口，红色落在了门禁上——却跟 follow 毫无关系。
+    # 用例设计错和被测对象错长得一样，只有把 goal 换回可识别类型才能分清。
+    rc3, out3 = run_cli(exe, ["submit", "写一句话总结 tcp 与 udp 的区别",
+                              "--mode", "sync", "--follow"], env, timeout=200)
+    g(rep, ctx, "F", "F5 同步+follow 如实说无进度可跟",
+      "没有中间进度可跟" in out3 and not _frames(out3) and rc3 == RC_OK,
+      "提示=%s 帧数=%d rc=%s 原文=%s"
+      % ("没有中间进度可跟" in out3, len(_frames(out3)), rc3,
+         " ".join(out3.split())[:150]))
+
+    # F6：--json 时每一行都得是独立可解析的 JSON——脚本要能 jq 逐行读。
+    # 只要混进一行人类提示，管道下游就断在那一行上。
+    rc4, out4 = run_cli(exe, ["submit", "写一个 hello world 函数", "--mode", "async",
+                              "--follow", "--json"], env, timeout=200)
+    docs, bad = [], []
+    for line in out4.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        try:
+            docs.append(json.loads(s))
+        except Exception:  # noqa: BLE001
+            bad.append(s[:40])
+    last_status = docs[-1].get("status") if docs and isinstance(docs[-1], dict) else None
+    g(rep, ctx, "F", "F6 --json 每行独立可解析且末行是终态",
+      not bad and len(docs) >= 2 and last_status in ("succeeded", "failed",
+                                                     "aborted_budget", "cancelled"),
+      "行数=%d 坏行=%s 末状态=%s" % (len(docs), bad or "无", last_status))
+
+
 # ---------------------------------------------------------------- 主流程
 def bootstrap(ctx, rep):
     """起服务 + 注册账号 + login。服务起不来时全部记红并继续往下跑（drill 需要）。"""
@@ -643,6 +736,7 @@ def main():
             group_c_race(rep, ctx)
         group_d(rep, ctx)
         group_e(rep, ctx)
+        group_f(rep, ctx)
     finally:
         stop(ctx.proc, ctx.log)
 

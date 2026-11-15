@@ -196,20 +196,160 @@ pub fn submit(conn: &ConnArgs, a: &SubmitArgs) -> i32 {
     };
 
     if a.json {
+        // --json --follow 两个都要：先给提交回执（脚本要拿 id），再一帧一行。
         println!("{v}");
-        return RC_OK;
+    } else {
+        // 201 = 同步跑完返回 TaskDetail；202 = 已受理。两者都用同一套渲染，
+        // 差别只在末尾提示，因为 202 的任务还需要再看一次。
+        println!("已提交 HTTP {}", r.status);
+        render_detail(&v, "  ");
     }
-    // 201 = 同步跑完返回 TaskDetail；202 = 已受理。两者都用同一套渲染，
-    // 差别只在末尾提示，因为 202 的任务还需要再看一次。
-    println!("已提交 HTTP {}", r.status);
-    render_detail(&v, "  ");
+
+    if a.follow && r.status != 202 {
+        // 同步跑完的任务没有中间态，跟不出任何东西。说清楚，别让人以为跟丢了。
+        eprintln!(
+            "  注意  本次同步完成（HTTP {}），没有中间进度可跟；想边跑边看请加 --mode async",
+            r.status
+        );
+    }
     if r.status == 202 {
         if let Some(id) = v.get("id").and_then(|x| x.as_str()) {
-            println!("  提示  异步执行中：super-agents show {id}");
+            if a.follow {
+                return follow_events(&ep, &mut tok, id, a.json);
+            }
+            if !a.json {
+                println!("  提示  异步执行中：super-agents show {id}");
+            }
         }
     }
     RC_OK
 }
+
+/// 任务终态集合。与 API 的 status 取值一一对应——**不要在这里猜新状态名**，
+/// 拼错一个字的后果是"服务端已经结束了，CLI 还在等"，比报错更难查。
+fn is_terminal_status(s: &str) -> bool {
+    matches!(s, "succeeded" | "failed" | "aborted_budget" | "cancelled")
+}
+
+/// 一帧压成一行：`running  tokens=1234/40000  stage=...`。
+/// 字段不存在就**不写**，不补 0、不写"未知"——与 `render_detail` 同一口径。
+fn frame_line(v: &Value) -> String {
+    let mut s = str_field(v, "status");
+    if v.get("tokens_used").is_some() {
+        s.push_str(&format!("  tokens={}", tokens_cell(v)));
+    }
+    for k in ["stage", "model", "error"] {
+        if let Some(x) = v.get(k).and_then(|x| x.as_str()) {
+            if !x.is_empty() {
+                s.push_str(&format!("  {k}={x}"));
+            }
+        }
+    }
+    s
+}
+
+/// 跟随 `GET /tasks/{id}/events` 直到终态。
+///
+/// 返回值只有 `succeeded` 才给 `RC_OK`，其余终态一律 `RC_SERVER`。
+/// 这一条是这个子命令的**全部价值**：如果"看见终态"就算成功，那 `failed` 也会
+/// 返回 0，脚本里的 `submit --follow && 下一步` 就会在失败任务上继续往下跑。
+/// 跟随器必须把结论翻译成退出码，否则它只是个花哨的 `tail -f`。
+///
+/// 断线不重连：事件流只在终态时 EOF，中途断掉说明服务端重启或被中间环节截断，
+/// 这时"再连一次"会拿到一帧快照（seq 可能更大），拼出来的时间线是假的。
+/// 与其编一条看起来连续的时间线，不如明确告诉用户"断在 seq=N"。
+fn follow_events(ep: &Endpoint, tok: &mut Token, id: &str, json: bool) -> i32 {
+    let path = format!("{TASKS}/{}/events", urlencode_path(id));
+    let mut access = tok.access.clone();
+    let mut refreshed = false;
+
+    loop {
+        let mut terminal: Option<String> = None;
+        let mut last_seq: u64 = 0;
+        let mut bad_frame = 0u32;
+
+        let r = http::stream_lines(&ep.addr, &path, Some(&access), |line| {
+            let Some(data) = line.strip_prefix("data:") else {
+                // id: / event: / 空行 / `: ping` 心跳都不承载内容
+                return true;
+            };
+            let data = data.trim();
+            if data.is_empty() {
+                return true;
+            }
+            let Ok(v) = serde_json::from_str::<Value>(data) else {
+                // 解析不了就原样给人看：丢掉的话，出问题时手上一个证据都没有
+                println!("  [帧] {data}");
+                bad_frame += 1;
+                return true;
+            };
+            let st = v
+                .get("status")
+                .and_then(|x| x.as_str())
+                .unwrap_or("")
+                .to_string();
+            if let Some(n) = v.get("seq").and_then(|x| x.as_u64()) {
+                last_seq = n;
+            }
+            if json {
+                println!("{data}");
+            } else {
+                println!("  [{}] {}", last_seq, frame_line(&v));
+            }
+            if is_terminal_status(&st) {
+                terminal = Some(st);
+            }
+            terminal.is_none()
+        });
+
+        match r {
+            Ok(()) => {}
+            Err(e) => {
+                // 401 只给一次机会：refresh 是"轮换 + 重放检测"，刷两次必然失败，
+                // 重试多轮只会把真正的鉴权问题掩盖成"网络不稳定"。
+                if e.contains("401") && !refreshed {
+                    match session::refresh(ep, tok) {
+                        Ok(t) => {
+                            *tok = t;
+                            access = tok.access.clone();
+                            refreshed = true;
+                            continue;
+                        }
+                        Err(e2) => {
+                            eprintln!("令牌刷新失败：{e2}");
+                            return RC_AUTH;
+                        }
+                    }
+                }
+                if e.contains("401") {
+                    eprintln!("事件流鉴权失败（刷新令牌后仍 401）：{e}");
+                    return RC_AUTH;
+                }
+                eprintln!("事件流中断：{e}");
+                return RC_SERVER;
+            }
+        }
+
+        match terminal {
+            Some(st) => {
+                if !json {
+                    if st == "succeeded" {
+                        println!("  终态  succeeded");
+                    } else {
+                        println!("  终态  {st}");
+                    }
+                }
+                return if st == "succeeded" { RC_OK } else { RC_SERVER };
+            }
+            None => {
+                // 正常 EOF 却没走到终态：服务端重启、任务记录被清、或被中间环节截断。
+                eprintln!("事件流在终态之前就结束了（最后 seq={last_seq}，坏帧 {bad_frame} 条）");
+                return RC_SERVER;
+            }
+        }
+    }
+}
+
 
 pub fn ls(conn: &ConnArgs, a: &LsArgs) -> i32 {
     let ep = Endpoint::from_env(conn.addr.as_deref());

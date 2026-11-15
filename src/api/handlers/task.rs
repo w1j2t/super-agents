@@ -257,6 +257,38 @@ fn prepare(
     // 交给写作 agent，产出一篇正确的废话）。所以这里拒绝，但必须把"为什么拒"
     // 和"怎么办"说清楚，否则用户只会看到一句无从下手的 422。
     let Some(routing_outcome) = routing::classify(task_type, &goal) else {
+        // 越界检查必须先于「像不像任务」。
+        //
+        // 违规请求往往两样都不占：既不像正经任务，又绝不该被回答。早前这里直接
+        // 按「没识别出类型」拒，于是「帮我破解一个付费软件的授权码」收到的是一句
+        // 教用户怎么写 goal 的方法指导，而 sa_compliance_blocks_total 始终为 0——
+        // 拦截动作确实发生了，安全侧却看不到任何证据，等于「守住了但没留痕」。
+        // 顺序一错，越界词表再全也白搭：它根本没机会被执行到。
+        if let Some(marker) = routing::is_out_of_scope(&goal) {
+            let reason = if marker.contains("破坏性动作") {
+                marker
+            } else {
+                format!("请求命中超纲/越界信号「{marker}」，不在可承接范围内")
+            };
+            state.metrics.inc("sa_tasks_out_of_scope_total");
+            state.metrics.inc("sa_compliance_blocks_total");
+            state.audit.record(
+                &user.id,
+                "guard.blocked_out_of_scope",
+                &user.id,
+                false,
+                &reason,
+                &meta.request_id,
+            );
+            return Err(ApiError::Unprocessable(format!(
+                "超出能力边界：{reason}。建议：请把目标改为合规的写作、检索、规划、编码或沟通协作类任务。"
+            )));
+        }
+        // "识别不出类型"同样是能力边界外，必须记账。
+        // 不记的话，所有拒绝都消失在 422 里：既看不出系统在拒什么，也无法回答
+        // "是我不想做，还是我不知道怎么做"——这两个数字的处置方式完全不同。
+        // 注意这里**不**加 compliance：含糊的目标不是违规，安全指标不能被稀释。
+        state.metrics.inc("sa_tasks_out_of_scope_total");
         return Err(ApiError::Unprocessable(format!(
             "没能从 goal 里识别出任务类型：当前 goal 未命中任何类型的关键词信号，\
              系统不会替你猜（猜错会把任务交给不合适的 agent）。两条出路：\
@@ -272,6 +304,21 @@ fn prepare(
         routing::PlanOutcome::Ok(bundle) => bundle,
         routing::PlanOutcome::OutOfScope { reason, suggestion } => {
             state.metrics.inc("sa_tasks_out_of_scope_total");
+            // 破坏性红线和"这活我不会"要分开记账：前者是安全拦截（该被计算的守卫成绩），
+            // 后者是能力边界。混在一起，安全侧就永远显示 0，看着像没接线。
+            // 两种红线都要算守卫成绩：破坏性动作组合，以及越界词表命中（破解/盗用/
+            // 伪造证件等）。只认前者，等于"违法类拦截"永远进不了安全指标。
+            if reason.contains("破坏性动作") || reason.contains("超纲/越界信号") {
+                state.metrics.inc("sa_compliance_blocks_total");
+                state.audit.record(
+                    &user.id,
+                    "guard.blocked_destructive",
+                    &user.id,
+                    false,
+                    &reason,
+                    &meta.request_id,
+                );
+            }
             state.audit.record(
                 &user.id,
                 "task.rejected_out_of_scope",

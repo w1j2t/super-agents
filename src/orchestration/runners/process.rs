@@ -109,6 +109,18 @@ fn resolve_timeout(raw: Option<String>, fallback: Duration) -> Duration {
     }
 }
 
+/// 「启用模型后默认给足 300s」的纯函数版本。
+///
+/// 单独抽出来的唯一理由是可测：直接读环境变量写单测会和其他用例抢进程级状态，
+/// 测试之间互相污染比不测更糟（和 `resolve_timeout` 同样的取舍）。
+fn model_aware_default(base: Duration, model_on: bool) -> Duration {
+    if model_on {
+        base.max(Duration::from_secs(300))
+    } else {
+        base
+    }
+}
+
 pub struct ProcessRunner {
     dir: PathBuf,
     /// `canonicalize` 后的根目录，用于前缀校验
@@ -200,7 +212,27 @@ impl ProcessRunner {
             "SA_RUNNER_TIMEOUT_{}",
             agent_id.replace('-', "_").to_ascii_uppercase()
         );
-        resolve_timeout(std::env::var(&key).ok(), self.timeout)
+        resolve_timeout(std::env::var(&key).ok(), self.model_aware_default())
+    }
+
+    /// 默认超时要随「是否启用模型」切换，而不是永远 20s。
+    ///
+    /// 实测证据 `docs/evidence/soak/soak-smoke4.jsonl`：code-agent 接上
+    /// minicpm5-2b:f16 后单次要 100~300s，而默认 20s 让它每一轮都被 kill，
+    /// 任务侧只看到 partially_succeeded + code_chars=0，看着像"代码写不出来"，
+    /// 实际是"还没写完就被杀了"。上面注释里早就写了这个道理，但只做了
+    /// 「可按 agent 覆盖」、没做「默认就够用」—— 用户不配环境变量就必然踩坑。
+    ///
+    /// 规则 agent 20s 依然够用；一旦配置了模型，任何 agent 都可能调模型，
+    /// 所以统一抬到 300s。未配模型时维持原值，不多等一秒。
+    fn model_on(&self) -> bool {
+        std::env::var("SA_LLM_MODEL")
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+    }
+
+    fn model_aware_default(&self) -> Duration {
+        model_aware_default(self.timeout, self.model_on())
     }
 
     /// 真实执行：带硬超时，stdout/stderr 由独立线程抽干，杜绝管道写满导致的假死。
@@ -210,6 +242,17 @@ impl ProcessRunner {
         envs: &[(String, String)],
     ) -> Result<RunOutput, RunError> {
         let timeout = self.timeout_for(agent_id);
+        // 每次真执行都把"这一步给了多少秒、依据是什么"写进日志。
+        // 为什么要这一行：超时是"最会伪装成别的问题"的故障——模型慢被杀，
+        // 上层只看到 code_chars=0，读起来像"模型写不出代码"。有了实际生效值，
+        // 排查时能一眼分清"配了没生效"和"配了但确实不够"。
+        tracing::debug!(
+            agent = agent_id,
+            timeout_secs = timeout.as_secs(),
+            base_secs = self.timeout.as_secs(),
+            model_on = self.model_on(),
+            "脚本执行超时预算"
+        );
         let path = self.resolve(agent_id)?;
         let ext = path
             .extension()
@@ -344,7 +387,7 @@ impl StepRunner for ProcessRunner {
         match self.run_script(&req.step.agent_id, &envs) {
             Ok(out) if out.timed_out => StepOutcome::retryable(format!(
                 "脚本执行超时（>{}s）已强制终止：agent={}",
-                self.timeout.as_secs(),
+                self.timeout_for(&req.step.agent_id).as_secs(),
                 req.step.agent_id
             )),
             Ok(out) if out.exit_code == 0 => {
@@ -535,6 +578,25 @@ mod tests {
         assert_eq!(
             resolve_timeout(Some(" 45 ".into()), base),
             Duration::from_secs(45)
+        );
+    }
+
+    #[test]
+    fn model_on_raises_default_timeout_only_upward() {
+        // 没配模型：默认值原样不动，规则 agent 不会白等 5 分钟
+        assert_eq!(
+            model_aware_default(Duration::from_secs(20), false),
+            Duration::from_secs(20)
+        );
+        // 配了模型：20s 抬到 300s，否则 code-agent 每次都被 kill
+        assert_eq!(
+            model_aware_default(Duration::from_secs(20), true),
+            Duration::from_secs(300)
+        );
+        // 已经比 300s 大就不许往下压：只升不降
+        assert_eq!(
+            model_aware_default(Duration::from_secs(600), true),
+            Duration::from_secs(600)
         );
     }
 

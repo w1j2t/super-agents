@@ -130,6 +130,9 @@ pub struct SubmitArgs {
     /// 本次任务 token 预算
     #[arg(long)]
     pub budget_tokens: Option<u64>,
+    /// 提交后跟随事件流直到终态（只对异步受理有意义；跟随中 Ctrl+C 只退跟随，任务照跑）
+    #[arg(long)]
+    pub follow: bool,
     /// 机器可读输出（完整响应 JSON）
     #[arg(long)]
     pub json: bool,

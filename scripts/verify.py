@@ -90,7 +90,11 @@ def main() -> int:
     ap.add_argument("--verbose", action="store_true", help="失败时打印完整输出")
     a = ap.parse_args()
 
-    build = pathlib.Path(a.build_dir) if a.build_dir else (ROOT.parent / "build_sa1")
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    from _paths import build_dir  # noqa: E402
+
+    # 默认镜像走统一解析：写死的桌面 build_sa1 早已废弃，留着它等于默认指向空目录。
+    build = pathlib.Path(a.build_dir) if a.build_dir else build_dir()
     if not build.exists():
         eprint(f"[FAIL] 编译副本目录不存在：{build}")
         eprint("       源码路径含中文时无法直接编译（MinGW 链接器硬伤）。")

@@ -47,7 +47,10 @@ import urllib.request
 import uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_EXE = pathlib.Path(r"C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _paths import default_exe  # noqa: E402
+
+DEFAULT_EXE = default_exe()
 
 results: list[tuple[str, bool, str]] = []
 

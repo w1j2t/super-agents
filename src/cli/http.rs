@@ -180,3 +180,150 @@ fn dechunk(mut data: &[u8]) -> Result<Vec<u8>, String> {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// SSE 事件流：一次性的 `request()` 读不出"进行中"
+// ---------------------------------------------------------------------------
+
+/// 按行读一条事件流，**边到边抛**；回调返回 false 表示客户端主动收工。
+///
+/// 为什么不能复用 `request()`：它要读到 EOF 才返回，而事件流的 EOF 恰好等于
+/// "任务到了终态"。拿它做 `submit --follow`，用户看到的是"提交完一声不响干等
+/// 90 秒，然后进度哗一下全刷出来"——那不叫跟随，叫延迟回放。
+///
+/// 读超时按**心跳的三倍**（45s）给，而不是普通请求的 300s：事件流有"每 15s 一条
+/// ping"的契约，45s 一个字节都没有就是链路死了。挂着等救不回来，也不如报错清楚。
+pub fn stream_lines(
+    addr: &str,
+    path: &str,
+    bearer: Option<&str>,
+    mut on_line: impl FnMut(&str) -> bool,
+) -> Result<(), String> {
+    use std::io::{BufRead, BufReader};
+
+    let sock = addr
+        .to_socket_addrs()
+        .map_err(|e| format!("地址解析失败 {addr}：{e}"))?
+        .next()
+        .ok_or_else(|| format!("地址解析结果为空：{addr}"))?;
+    let mut stream = TcpStream::connect_timeout(&sock, Duration::from_secs(3)).map_err(|e| {
+        format!("连不上 {addr}：{e}\n提示：服务没起？先跑 `super-agents doctor` 看监听端口那一项")
+    })?;
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(45)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
+
+    let mut req = format!(
+        "GET {path} HTTP/1.1\r\nHost: {addr}\r\nAccept: text/event-stream\r\n\
+         Cache-Control: no-cache\r\nConnection: close\r\n"
+    );
+    if let Some(t) = bearer {
+        req.push_str("Authorization: Bearer ");
+        req.push_str(t);
+        req.push_str("\r\n");
+    }
+    req.push_str("\r\n");
+    stream
+        .write_all(req.as_bytes())
+        .map_err(|e| format!("发送请求失败：{e}"))?;
+
+    let mut br = BufReader::new(stream);
+    let mut status = 0u16;
+    let mut chunked = false;
+    let mut head = String::new();
+    loop {
+        head.clear();
+        let n = br
+            .read_line(&mut head)
+            .map_err(|e| format!("读取事件流响应头失败：{e}"))?;
+        if n == 0 {
+            return Err("响应头没读完连接就断了".into());
+        }
+        let l = head.trim_end_matches(['\r', '\n']);
+        if l.is_empty() {
+            break;
+        }
+        let low = l.to_ascii_lowercase();
+        if let Some(rest) = low.strip_prefix("http/1.1 ") {
+            status = rest
+                .split_whitespace()
+                .next()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+        } else if low.starts_with("transfer-encoding:") {
+            chunked = low.contains("chunked");
+        }
+    }
+    if status != 200 {
+        // 不在这里决定提示口径：上层要能区分 401（可刷令牌重连）与真错。
+        return Err(format!("事件流返回 HTTP {status}"));
+    }
+    if !chunked {
+        // 没有分块编码就没有"哪一段结束了"的边界，硬按字节切会把多字节汉字劈成两半。
+        // 本服务用 axum::Sse，一定是 chunked；万一真不是，如实报错，别猜着读。
+        return Err("事件流没有 chunked 编码，无法增量读取".into());
+    }
+
+    let mut chunk: Vec<u8> = Vec::new();
+    // chunk 边界可以落在任何位置，包括一行中间，甚至一个汉字中间。
+    // 所以按字节攒，遇到 '\n' 才切出整行——这样多字节字符永远不会被截断。
+    let mut carry: Vec<u8> = Vec::new();
+    loop {
+        let mut size_line = String::new();
+        let n = br.read_line(&mut size_line).map_err(describe_read_err)?;
+        if n == 0 {
+            break;
+        }
+        let s = size_line.trim();
+        if s.is_empty() {
+            continue; // chunk 与 chunk 之间的空行
+        }
+        let hex = s.split(';').next().unwrap_or("0").trim();
+        let size = usize::from_str_radix(hex, 16).map_err(|_| format!("chunk 长度非法：{s:?}"))?;
+        if size == 0 {
+            break; // 末块
+        }
+        chunk.clear();
+        (&mut br)
+            .take(size as u64)
+            .read_to_end(&mut chunk)
+            .map_err(describe_read_err)?;
+        let mut tail = String::new();
+        let _ = br.read_line(&mut tail); // 吃掉 chunk 末尾的 CRLF
+        carry.extend_from_slice(&chunk);
+        while let Some(pos) = carry.iter().position(|b| *b == b'\n') {
+            let mut line: Vec<u8> = carry.drain(..=pos).collect();
+            line.pop(); // '\n'
+            if line.last() == Some(&b'\r') {
+                line.pop();
+            }
+            let text = String::from_utf8_lossy(&line).to_string();
+            if !on_line(&text) {
+                return Ok(());
+            }
+        }
+    }
+    if !carry.is_empty() {
+        // 最后一行可能没有换行符收尾
+        let mut line = carry;
+        if line.last() == Some(&b'\r') {
+            line.pop();
+        }
+        let text = String::from_utf8_lossy(&line).to_string();
+        if !text.is_empty() {
+            let _ = on_line(&text);
+        }
+    }
+    Ok(())
+}
+
+/// 读超时要说人话：这里是"链路死了"，不是"服务慢"。
+fn describe_read_err(e: std::io::Error) -> String {
+    if matches!(
+        e.kind(),
+        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+    ) {
+        "45 秒没收到任何数据（心跳也没来），当成断链".to_string()
+    } else {
+        format!("读取事件流失败：{e}")
+    }
+}

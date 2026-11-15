@@ -13,7 +13,7 @@
 | **03** | [03-division-of-labor.md](03-division-of-labor.md) | **六部分③ 分工协作**：14 个 agent 的花名册与权限档位、路由打分与派发门槛（打不到信号即拒，不猜类型），**由源码生成** | 想确认"谁干什么" |
 | **04** | [04-interaction-spec.md](04-interaction-spec.md) | **六部分④ 交互规范**：鉴权流程、Problem 错误模型与**按操作真实分布的错误码**、任务与 SSE、取消、前端三条铁律 | 写前端 / 联调 |
 | **05** | [05-boundary-handling.md](05-boundary-handling.md) | **六部分⑤ 边界处理**：三道闸门、七权限、七条红线、预算降档、熔断阈值、限流配额、不可配置清单 | 想知道"什么会被拒绝" |
-| **06** | [06-acceptance-criteria.md](06-acceptance-criteria.md) | **六部分⑥ 验收标准**：24 道门禁逐条说明、命令清单、六部分验收矩阵、抽查项、已知未达标、准入准出 | **想知道"算不算做完"** |
+| **06** | [06-acceptance-criteria.md](06-acceptance-criteria.md) | **六部分⑥ 验收标准**：26 道门禁逐条说明、命令清单、六部分验收矩阵、抽查项、已知未达标、准入准出 | **想知道"算不算做完"** |
 | **07** | [07-api-reference.md](07-api-reference.md) | API 索引（**由 openapi 生成**）：路径 / 操作清单与数据结构一览 | 查接口 |
 | 10 | [10-verification-report.md](10-verification-report.md) | **后端验收报告**：**截至 2026-11-11 的时点为 131 单测 + 156 项端到端冒烟（json/memory 双后端各一遍）+ 14 道门禁全绿**（§11 与 `evidence/regress-all.txt`）；**当前口径以 `evidence/regress-all.txt` 与逐门禁 latest 为准（24 道门禁）**、3 个真实缺陷修复、环境变量清单、已知缺口清单 | 想知道"做完了没" |
 | 20 | [20-rust-python-architecture.md](20-rust-python-architecture.md) | Rust 热路径 + Python 编排的落地设计：进程协议、延迟预算、可靠性、4 步迁移路径 | 决定下一步怎么演进 |
@@ -45,7 +45,7 @@
 | `scripts/check-modularity.py` | **模块化静态守护**：扫全部 `.rs`，禁止业务层出现具体后端名、禁止越级调 `backends::`/`audit::open`、校验 `StorageKind/RunnerKind/AuditKind::ALL` 与工厂分支同步、环境变量单点读取（仅 `config.rs`） | `python scripts/check-modularity.py`（退出码 0 = 15/15） |
 | `scripts/swap_drill.py` | **换件演练（行为级）**：同一套 18 个请求在 json/memory 与 memory/file 两组后端各跑一遍，比对状态码与响应结构签名；同一任务在 sim/process 下比对计划、权限档位、trace 口径、token 记账；另含**硬杀重启后台账可追溯**与坏配置拒启 | `python scripts/swap_drill.py`（退出码 0 = 22/22） |
 | `scripts/verify_runner.py` | **执行端口实测**：`SA_RUNNER=process` 真跑外部脚本，验证标记真的出现、治理未绕过、缺脚本是可重试失败、非法配置拒启 | `python scripts/verify_runner.py`（退出码 0 = 15/15） |
-| `scripts/regress_all.py` | **一键全量门禁（24 道）**：单测 + 冒烟×2 后端 + OpenAPI 语义/未漂移 + TS 同步 + 契约文档 + 执行端口 + 部件矩阵 + 换件演练 + 审计自检 + 响应形状 + 多节点集群 + worker 分词质量 + 异步受理与缺省；判定口径见 `docs/06` | `python scripts/regress_all.py`（退出码 0 = 24 道全绿；`--with-drills` 另跑负向演练，不计入门禁数） |
+| `scripts/regress_all.py` | **一键全量门禁（26 道）**：单测 + 冒烟×2 后端 + OpenAPI 语义/未漂移 + TS 同步 + 契约文档 + 执行端口 + 部件矩阵 + 换件演练 + 审计自检 + 响应形状 + 多节点集群 + worker 分词质量 + 异步受理与缺省；判定口径见 `docs/06` | `python scripts/regress_all.py`（退出码 0 = 26 道全绿；`--with-drills` 另跑负向演练，不计入门禁数） |
 | `scripts/build-exe.py` | **门禁 0：编译 + 自证二进制新鲜**。`cargo test` 不更新 `super-agents.exe`，于是出现过"12 道全绿、测的是 18:48 旧程序"的假绿；本脚本真编译并校验 exe mtime ≥ 最新源码，落后即红 | `python scripts/build-exe.py`（退出码 0 = 编译成功且新鲜） |
 | `scripts/check-prompt-coverage.py` | **门禁 12：需求覆盖对齐**。把首个提示词拆成术语清单，逐条查六部分文档有无落点，并校验源码 26 个能力 id 与设计公理 A1~A6 全覆盖；缺一即红（已做负向演练确认它会红） | `python scripts/check-prompt-coverage.py`（退出码 0 = 全覆盖） |
 | `scripts/probe_hallucination.py` | **门禁 13：防幻觉打点实测**。造 5 条长记忆压到上下文裁剪，再抓 `/metrics` 断言 `sa_hallucination_flags_total` 与 `sa_context_truncations_total` 真有值——治的是"规格写了、代码没打点" | `python scripts/probe_hallucination.py --exe <exe>`（退出码 0 = 13/13） |
@@ -58,9 +58,13 @@
 | `scripts/probe_topic_guard.py` | **门禁 20：主题取词质量**。12 条真实任务原文喂给三个垂直 worker 的取词函数，判"取出来的是人能用的词"：命中域内对象词 / 不是半句 / 不是碎片 / 不是视角词顶替 / 兜底串不被误判；七条句法判据（含标点、指示量词开头、超长含虚词、补语动量收尾、含疑问词、连词开头、两字趋向尾）。**关键词与域词表都与线上同源**（`_common.keywords` + `_topic_guard.DOMAINS`）——第一版探针自带词表，12/12 全绿而真实产出是 `段剧情`/`上线`，绿的是探针自己 | `python scripts/probe_topic_guard.py`（退出码 0 = 12/12；`--drill-no-guard` 拿掉守卫，期望成片变红） |
 | `scripts/probe_vertical_verdict.py` | **门禁 21：垂直域判据**。三个垂直域（narrative / market / qa）各自的判据表是否**在**（A 结构）、是否**用得上**（B 该抓就抓）、**会不会串域**（C 跨域隔离）、**主题是否可读**（D），共 24 项。门禁 20 只守"主题取得对"，主题对只是前提，判据表退化了不会有任何一道门禁变红 | `python scripts/probe_vertical_verdict.py`（退出码 0 = 24/24，约 0.8s；`--drill` 清空叙事词表，B 组必须转红） |
 | `scripts/probe_cli.py` | **门禁 22：CLI 外壳行为**。守一条从没写下来的约定：**无子命令 = serve**（前 21 道全部以 `[exe]` 无参启动）。另验 `--help` 列全 serve/doctor、未知子命令被拒绝而非静默当 serve、`doctor` 的文本与 `--json` 逐项同数同码、退出码 0/1/2 真能分开、跑完端口释放不留残留，共 22 项 | `python scripts/probe_cli.py --exe <exe>`（退出码 0 = 22/22，约 5s；`--fast` 只跑 A/C 组，`--drill` 换 `where.exe` 须 10 项全红） |
-| `scripts/probe_cli_http.py` | **门禁 23：CLI 客户端行为**。真起服务、真登录、真提交，53 项断言分五组：登录落盘与覆盖 / **401 → 自动刷新 → 重试并回写**（含 8 进程并发刷新自愈）/ 表格按**显示宽度**对齐且 UUID 完整 36 位、时间标 UTC / `--json` 可被 `json.loads` 直接解析 / 连不上必须 rc=1 而非崩栈。抓出的真缺陷：刷新时漏查 `tokens` 嵌套一层，把**已作废的旧 refresh 写回文件**，下一条命令必 401 | `python scripts/probe_cli_http.py --exe <exe>`（退出码 0 = 53/53，约 17s；`--fast` 只砍并发项，`--drill` 须 51 项全红） |
+| `scripts/probe_cli_http.py` | **门禁 23：CLI 客户端行为**。真起服务、真登录、真提交，57 项断言分六组：登录落盘与覆盖 / **401 → 自动刷新 → 重试并回写**（含 8 进程并发刷新自愈）/ 表格按**显示宽度**对齐且 UUID 完整 36 位、时间标 UTC / `--json` 可被 `json.loads` 直接解析 / 连不上必须 rc=1 而非崩栈。抓出的真缺陷：刷新时漏查 `tokens` 嵌套一层，把**已作废的旧 refresh 写回文件**，下一条命令必 401 | `python scripts/probe_cli_http.py --exe <exe>`（退出码 0 = 53/53，约 17s；`--fast` 只砍并发项，`--drill` 须 51 项全红） |
+| `scripts/probe_lazy_stack.py` | **门禁 24：懒加载三件套接缝**。压缩（`_compact.py`）/ 检索（`_rag.py`）/ 取网页（`_web.py`）三个零依赖模块各有自检，但**零件全绿不等于装起来能用**：本道只测接缝——构造不读盘不建索引、首次使用才加载、上限不被绕过、抓取→入索引→检索→压缩→引用可回读整条链，13 项 | `python scripts/probe_lazy_stack.py`（退出码 0 = 13/13，约 13s；`--drill` 三种坏法须各自变红） |
+| `scripts/probe_sched.py` | **门禁 25：自动任务调度**。守第一件"会自己按时间动起来"的东西，防三类**沉默型退化**：①把执行顺手写进 `due()`（派发条数照对、心跳却被拖死，故用 AST 扫描 + 运行时桩 + 哨兵文件三重自证"它不动手"）；②`mark()` 只改内存不落盘（同实例连查天然幂等，重启后才暴露）；③漏跑诊断恒返回空（一个功能两个答案）。另守日历边界 8 例（月末 31 / 闰日 / 周日 0≡7 / 跨年首分钟）、CLI 与库同库且原子写无 `.tmp` 残留、坏行与非法 cron 不影响派发，19 项 | `python scripts/probe_sched.py`（退出码 0 = 19/19，约 0.3s；`--drill` 三种坏法须分别红在 G2 / G3 / G4c） |
 
-> 以下为 2026-11-09 的历史留档；**最新口径以 `docs/evidence/regress-all.raw.txt` 为准（单测 174 项 / 157 项冒烟 / 24 道门禁）**，一条命令可复跑：`python scripts/regress_all.py`：
+> 以下为 2026-11-09 的历史留档（**当时的单测/冒烟/门禁数已全部过时，勿据此判断当前状态**）；
+> 当前口径以 `docs/evidence/regress-all.raw.txt` 为准（**26 道门禁**），一条命令可复跑：`python scripts/regress_all.py`：
+> 下列数字只描述当时那一次运行：
 > - `cargo test`：**80 passed / 0 failed**（含沙箱记账归属、审计部件、重启回读、坏行跳过、容量有界等守护）
 > - `smoke.py`：**123 项断言，123 通过 / 0 失败**，且 **json / memory 两套存储后端各跑一遍全绿**
 > - `check-contract.py`：21 个 interface 全部一致，0 差异

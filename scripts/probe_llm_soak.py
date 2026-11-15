@@ -473,6 +473,11 @@ def run_task(base, goal, task_type, tag, timeout):
             "tokens": int(s.get("tokens") or 0),
             "err": (s.get("error") or "")[:80],
             "out": raw_out[:120].replace("\n", " | "),
+            # 完整产出单独留一份：`out` 只是给人看的一行摘要，判据（代码抽取、编译
+            # 校验、worker 自检标记）必须吃全文。早前评测台只存了 120 字摘要，
+            # 于是「代码能编译吗」这个问题一直在拿残句作答，rust 组恒 0% 就是这么来的。
+            # 上限对齐执行后端的 OUTPUT_LIMIT(4000)，不额外裁剪。
+            "out_full": raw_out[:8000],
             "sa": _sa_json(raw_out),
         })
     return row

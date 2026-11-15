@@ -55,7 +55,10 @@ except Exception:
     pass
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_EXE = ROOT.parent / "build_sa1" / "target-gnu" / "debug" / "super-agents.exe"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _paths import default_exe as _default_exe  # noqa: E402
+
+DEFAULT_EXE = _default_exe()
 METRICS_TOKEN = "cluster-drill-metrics-token-0123456789"
 # 心跳周期取 1s（clamp 下限）、TTL 取 5s（clamp 下限）：
 # 演练要等 TTL 过期，用默认的 20s 会让 C5/C6 白等一分钟。

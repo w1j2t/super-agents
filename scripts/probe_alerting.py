@@ -47,7 +47,12 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_EXE = pathlib.Path(r"C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _paths import default_exe  # noqa: E402
+
+# 写死过桌面 build_sa1，那个镜像已不存在：单独跑本脚本永远"找不到可执行文件"，
+# 报错还指向空目录，看着像没编译。统一走镜像解析规则。
+DEFAULT_EXE = default_exe()
 METRICS_TOKEN = "alert-probe-metrics-token-0123456789"
 # 每次运行独占一个目录：探针要反复起停进程、反复注册同一批用户名，
 # 复用固定目录会在第二次运行时撞 409（用户已存在），把"服务坏了"和"数据脏了"混为一谈。

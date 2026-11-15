@@ -22,7 +22,7 @@
 | A3 | 模块化：换一件不殃及全部 | 五槽位（`src/ports.rs`）+ 依赖注入（`src/state.rs`） | `scripts/matrix.py` 逐案换件、`scripts/swap_drill.py` 换件演练 |
 | A4 | 可观测：每一步都能被外部看见 | `obs/` 指标 + `audit` 审计 + `EventBus` SSE + `trace` | `/metrics`、`/api/v1/tasks/{id}/trace`、`/api/v1/tasks/{id}/events` |
 | A5 | 安全边界：越权与红线不做"下不为例" | `security/rbac.rs` + `executor.rs` 的 `REDLINES` | 命中红线即阻断，不降级放行（`docs/05`） |
-| A6 | 亲自实测：不接受"应该能跑" | `scripts/regress_all.py` 24 道门禁 | 一条命令出结论表，退出码即结论 |
+| A6 | 亲自实测：不接受"应该能跑" | `scripts/regress_all.py` 26 道门禁 | 一条命令出结论表，退出码即结论 |
 
 ## 2.1 八个"化"的落点（原文第五段逐条对应）
 
@@ -122,7 +122,7 @@ src/
 | 分工协作 | `03` | **由源码生成** | `gen-spec-docs.py --check` |
 | 交互规范 | `04` + `07` | 手写规范 + **索引由 openapi 生成** | `check-openapi.py`、`check-contract.py`、`gen-ts-types.py --check` |
 | 边界处理 | `05` | 手写规范 | 治理单测 + `matrix.py` + `audit-probe-test.py` |
-| 验收标准 | `06` | 手写标准 | `regress_all.py`（24 道门禁） |
+| 验收标准 | `06` | 手写标准 | `regress_all.py`（26 道门禁） |
 
 结论先行：**"文档说能"不算数，"脚本跑绿"才算数。** 02/03/07 三份干脆不给人手写的机会——
 它们是脚本从源码生成的，源码一变、文档没重生成，门禁直接红。

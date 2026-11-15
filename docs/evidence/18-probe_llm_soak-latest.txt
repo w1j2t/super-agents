@@ -1,9 +1,9 @@
 # 18 模型路径真采用
-生成时间: 2026-11-14 16:49:54
-命令由 regress_all.py 编排执行，rc=0，耗时 111.7s
+生成时间: 2026-11-14 20:12:07
+命令由 regress_all.py 编排执行，rc=0，耗时 131.3s
 （原始输出如下，未做删改）
 ======================================================================
-== 多轮压测 ==  模型 minicpm5-2b:f16  二进制 C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+== 多轮压测 ==  模型 minicpm5-2b:f16  二进制 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
    worker 解释器 D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\python.exe
    数据目录 C:\Users\94355\Desktop\新建文件夹(7)\target\soak
    /readyz OK
@@ -14,11 +14,11 @@
    ⚠ fast 轮数 2 < 用例数 14：末尾目标不会被覆盖
    ⚠ model 轮数 3 < 用例数 4：末尾目标不会被覆盖
    ⚠ guard 轮数 2 < 用例数 6：末尾用例不会被覆盖
-[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 43.17s tok=516 OK
-[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 30.29s tok=476 OK
-[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 31.3s tok=512 OK
-[4/7] fast  planning      succeeded  0.39s OK
-[5/7] fast  planning      succeeded  0.35s OK
+[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 51.91s tok=544 OK
+[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 43.1s tok=541 OK
+[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 29.88s tok=512 OK
+[4/7] fast  planning      succeeded  0.35s OK
+[5/7] fast  planning      succeeded  0.31s OK
 [6/7] guard 空目标必须 400            HTTP 422 OK
 [7/7] guard 过短目标必须 400           HTTP 422 OK
 
@@ -39,13 +39,13 @@
    rounds_total             7
    model_rounds             3
    fast_rounds              2
-   model_elapsed_avg_s      34.9
-   model_elapsed_min_s      30.3
-   model_elapsed_max_s      43.2
-   model_tokens_avg         501.3
-   model_tokens_min         476
-   model_tokens_max         516
-   fast_elapsed_avg_s       0.37
+   model_elapsed_avg_s      41.6
+   model_elapsed_min_s      29.9
+   model_elapsed_max_s      51.9
+   model_tokens_avg         532.3
+   model_tokens_min         512
+   model_tokens_max         544
+   fast_elapsed_avg_s       0.33
    model_adopted_rounds     3
    auth_refreshes           0
    accounts                 ['soak_owner', 'soak_u2', 'soak_u3']
@@ -55,9 +55,9 @@
    route_hits               {'super-agent': 10, 'doc-agent': 3, 'guard-agent': 5, 'planner-agent': 2}
 
 == 模型轮次逐轮 ==
-   #1   43.17s tok= 516 doc_tok= 303 attempts=1 succeeded  采用
-   #2   30.29s tok= 476 doc_tok= 237 attempts=1 succeeded  采用
-   #3    31.3s tok= 512 doc_tok= 279 attempts=1 succeeded  采用
+   #1   51.91s tok= 544 doc_tok= 331 attempts=1 succeeded  采用
+   #2    43.1s tok= 541 doc_tok= 302 attempts=1 succeeded  采用
+   #3   29.88s tok= 512 doc_tok= 279 attempts=1 succeeded  采用
 
 结论： 全绿
    证据： C:\Users\94355\Desktop\新建文件夹(7)\docs\evidence\soak-gate18-latest.json

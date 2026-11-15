@@ -1,11 +1,11 @@
 # 22 CLI 外壳行为
-生成时间: 2026-11-14 14:36:16
-命令由 regress_all.py 编排执行，rc=0，耗时 4.9s
+生成时间: 2026-11-15 13:40:13
+命令由 regress_all.py 编排执行，rc=0，耗时 4.8s
 （原始输出如下，未做删改）
 ======================================================================
 门禁 22 · CLI 外壳行为探针
-被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-5
+被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-22
 --------------------------------------------------------------------
 [PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
 [PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True

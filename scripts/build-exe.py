@@ -106,6 +106,21 @@ def main() -> int:
         return 2
 
     if not args.skip_build:
+        # 先同步，再编译。
+        #
+        # cargo 只看镜像里的源码，不看工作区。不同步就直接编，会得到：
+        # 源码改了 → cargo 认为无变化(0.4s 编完) → 脚本热情地报告
+        # "二进制与源码同版本" → 后续门禁全绿，测的却是上一版程序。
+        # 这是最坏的一种假绿：连"新鲜度自检"本身都被骗过去了。
+        try:
+            os.environ["SA_BUILD_DIR"] = str(build_dir)
+            sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+            import sync_build  # noqa: E402  (同目录脚本，延迟导入避免影响 --skip-build)
+
+            sync_build.sync()
+        except Exception as e:  # noqa: BLE001
+            print("同步源码到镜像失败：%s" % e)
+            return 1
         env = dict(os.environ)
         env["CARGO_TARGET_DIR"] = str(build_dir / "target-gnu")
         env["PYTHONIOENCODING"] = "utf-8"
