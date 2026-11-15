@@ -1,0 +1,296 @@
+{
+  "gen": 1,
+  "created_at": "2026-11-16T07:47:20",
+  "note": "第一代基线：判分三态+证据留存+占位符识别+语言猜错隔离，all批次按当前尺重算",
+  "include": "",
+  "tags": [
+    "camp-01",
+    "camp-02",
+    "camp-a",
+    "camp-b",
+    "camp-c",
+    "camp-d",
+    "camp-e",
+    "camp-f",
+    "codegen-modes",
+    "precheck",
+    "py120",
+    "smoke",
+    "smoke2",
+    "smoke3",
+    "smoke4",
+    "smoke5",
+    "soak-py-100",
+    "v2-smoke",
+    "v3-timeout",
+    "verify1",
+    "verify2",
+    "verify3",
+    "verify4"
+  ],
+  "metrics": {
+    "n": 645,
+    "projects": 11,
+    "done": 618,
+    "done_pct": 95.8,
+    "done_ci": [
+      0.9397800979232072,
+      0.9710739533583382
+    ],
+    "delivered": 415,
+    "delivered_pct": 64.3,
+    "delivered_ci": [
+      0.6056954045516952,
+      0.6794281140389747
+    ],
+    "compiles": 424,
+    "compiles_pct": 87.2,
+    "compiles_ci": [
+      0.8398190799088585,
+      0.8991953280140292
+    ],
+    "judged": 486,
+    "compiles_verifiable": 321,
+    "judged_verifiable": 336,
+    "compiles_verifiable_pct": 95.5,
+    "compiles_verifiable_ci": [
+      0.9276572792862339,
+      0.972762210264192
+    ],
+    "tokens_total": 526632,
+    "tokens_per_delivery": 1269.0,
+    "elapsed_p50": 123.4,
+    "elapsed_p95": 426.66,
+    "multi_agent_pct": 98.3,
+    "retries_total": 50
+  },
+  "fail_buckets": [
+    {
+      "reason": "placeholder-instead-of-code",
+      "n": 86,
+      "pct": 13.3,
+      "verifiable": 86,
+      "unverifiable": 0,
+      "langs": {
+        "python": 86
+      },
+      "top_projects": [
+        [
+          "P10 任务队列",
+          33
+        ],
+        [
+          "P9 微服务接口",
+          21
+        ],
+        [
+          "P6 API 文档生成",
+          21
+        ],
+        [
+          "P7 命令行工具",
+          5
+        ]
+      ],
+      "hint": "模型没写代码、只吐了模板占位符（<code here>）：改提示词，硬性要求完整可运行代码、禁止占位符"
+    },
+    {
+      "reason": "no-code-at-all",
+      "n": 52,
+      "pct": 8.1,
+      "verifiable": 6,
+      "unverifiable": 46,
+      "langs": {
+        "none": 43,
+        "rust": 9
+      },
+      "top_projects": [
+        [
+          "P1 存档系统",
+          13
+        ],
+        [
+          "P6 API 文档生成",
+          12
+        ],
+        [
+          "P5 日志聚合",
+          11
+        ],
+        [
+          "P2 战斗结算",
+          4
+        ]
+      ],
+      "hint": "模型一句话没写：区分是提示词没要求代码、还是模型能力不够"
+    },
+    {
+      "reason": "legacy-unverified",
+      "n": 39,
+      "pct": 6.0,
+      "verifiable": 0,
+      "unverifiable": 39,
+      "langs": {
+        "none": 1,
+        "rust": 10,
+        "python": 28
+      },
+      "top_projects": [
+        [
+          "P6 API 文档生成",
+          8
+        ],
+        [
+          "P10 任务队列",
+          8
+        ],
+        [
+          "P1 存档系统",
+          5
+        ],
+        [
+          "P7 命令行工具",
+          5
+        ]
+      ],
+      "hint": "旧口径残留且证据不在：只能整批重测，别拿它选靶心"
+    },
+    {
+      "reason": "not-delivered",
+      "n": 25,
+      "pct": 3.9,
+      "verifiable": 23,
+      "unverifiable": 2,
+      "langs": {
+        "python": 25
+      },
+      "top_projects": [
+        [
+          "P7 命令行工具",
+          10
+        ],
+        [
+          "P6 API 文档生成",
+          7
+        ],
+        [
+          "P9 微服务接口",
+          5
+        ],
+        [
+          "P1 存档系统",
+          2
+        ]
+      ],
+      "hint": "有代码但未达交付标准：查判定阈值是否过严/交付口径"
+    },
+    {
+      "reason": "syntax-error",
+      "n": 17,
+      "pct": 2.6,
+      "verifiable": 17,
+      "unverifiable": 0,
+      "langs": {
+        "rust": 13,
+        "python": 4
+      },
+      "top_projects": [
+        [
+          "P6 API 文档生成",
+          13
+        ],
+        [
+          "P5 日志聚合",
+          2
+        ],
+        [
+          "P7 命令行工具",
+          1
+        ],
+        [
+          "P8 数据清洗",
+          1
+        ]
+      ],
+      "hint": "代码抽出来了但不合法：查提示词约束、抽取是否截断、围栏语言标注"
+    },
+    {
+      "reason": "unverified",
+      "n": 12,
+      "pct": 1.9,
+      "verifiable": 12,
+      "unverifiable": 0,
+      "langs": {
+        "python": 12
+      },
+      "top_projects": [
+        [
+          "P9 微服务接口",
+          4
+        ],
+        [
+          "P5 日志聚合",
+          4
+        ],
+        [
+          "P10 任务队列",
+          4
+        ]
+      ],
+      "hint": "有代码痕迹但本机复验不了：查 output 是否被平台截断"
+    },
+    {
+      "reason": "timeout-no-output",
+      "n": 10,
+      "pct": 1.6,
+      "verifiable": 9,
+      "unverifiable": 1,
+      "langs": {
+        "none": 10
+      },
+      "top_projects": [
+        [
+          "P5 日志聚合",
+          4
+        ],
+        [
+          "P10 任务队列",
+          4
+        ],
+        [
+          "P1 存档系统",
+          1
+        ],
+        [
+          "P9 微服务接口",
+          1
+        ]
+      ],
+      "hint": "查 task-timeout、LLM 后端吞吐、并发度；本地 CPU 推理下 600s 可能本就不够"
+    },
+    {
+      "reason": "lang-guessed",
+      "n": 1,
+      "pct": 0.2,
+      "verifiable": 1,
+      "unverifiable": 0,
+      "langs": {
+        "python": 1
+      },
+      "top_projects": [
+        [
+          "P6 API 文档生成",
+          1
+        ]
+      ],
+      "hint": "语言是兜底猜的（fallback-py）：查围栏语言标注与嗅探规则，猜出来的语言不能当实测"
+    }
+  ],
+  "vs_prev": {
+    "verdict": "首代（无基线）",
+    "reasons": [
+      "已固化为基线"
+    ],
+    "rows": []
+  }
+}

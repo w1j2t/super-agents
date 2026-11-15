@@ -40,6 +40,81 @@ LAST_TOKEN = None
 PORT = 18190
 
 
+# ---------------------------------------------------------------- 端口段体检
+# 本脚本用的是固定端口段（base .. base+11），好处是"跑之前就知道用哪几个口"，
+# 代价是：一旦有残留进程占着其中某个口，门禁就会把请求打到**别人的实例**上。
+# 这不是假想——D4i 曾在 base+8 被一个无主 super-agents.exe 占着时给出
+# "重启前=None 条 / 重启后=None 条"，看上去像"审计台账丢了"，实际是问错了人。
+# 更坏的情况是打到行为一致的旧实例上，那就会**假绿**。故：先体检，再开跑。
+
+
+def _port_taken(port, timeout=0.35):
+    """端口有没有人在应答。
+
+    判据用 connect 而不是 bind：bind 在 Windows 上会被 SO_REUSEADDR 之类的
+    选项骗过，而"connect 成功"是硬事实——那一端真的有人在听。
+    """
+    import socket
+    s = socket.socket()
+    s.settimeout(timeout)
+    try:
+        s.connect(("127.0.0.1", int(port)))
+        return True
+    except OSError:
+        return False
+    finally:
+        try:
+            s.close()
+        except OSError:
+            pass
+
+
+def pick_port_block(base, need=12, span=60):
+    """从 base 起找**连续** need 个没人应答的端口。
+
+    返回 (起始端口, 是否顺移过, 被占端口列表)。
+    连续性是硬要求：脚本内部用 base+N 的偏移，段内出现空洞就会撞上别人。
+    """
+    # 每个端口**只探一次**并把结果缓存下来。
+    # 不能边滑边探：connect 探测会在对端 accept 队列里留下一条没人收的连接，探得够多次
+    # 就把 backlog 打满，之后连它自己都连不上，于是一个**确实有人占**的端口被判成空闲
+    # ——检测器污染了自己的判断。实测踩过：占住 18198 后滑动窗口竟选出了含 18198 的 18193-18204。
+    taken = {pt: _port_taken(pt) for pt in range(base, base + span)}
+    busy = [pt for pt in sorted(taken) if taken[pt]]
+    if not busy:
+        return base, False, []
+    for start in range(base, base + span - need + 1):
+        if not any(taken[pt] for pt in range(start, start + need)):
+            return start, True, busy
+    # 连一段干净的口都找不到：宁可如实失败，也不要打到别人身上跑出一堆假结论
+    return base, True, busy
+
+
+def d0_port_sentinel():
+    """自检：检测器本身会不会失灵。
+
+    门禁最怕"守护者自己坏了"。这里自己占一个口，检测器必须报被占；
+    放掉之后必须报空闲。两头都要验，否则"永远返回 False"也会显得很乖。
+    """
+    import socket
+    srv = socket.socket()
+    try:
+        srv.bind(("127.0.0.1", 0))
+        srv.listen(1)
+        pt = srv.getsockname()[1]
+        taken_ok = _port_taken(pt) is True
+        srv.close()
+        time.sleep(0.2)
+        free_ok = _port_taken(pt) is False
+    finally:
+        try:
+            srv.close()
+        except OSError:
+            pass
+    rec("D0 端口占用检测器自身有效（自己占一个必须报被占，放掉必须报空闲）",
+        taken_ok and free_ok, "占住时报被占=%s / 放掉后报空闲=%s" % (taken_ok, free_ok))
+
+
 def rec(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
     print("[%s] %s%s" % ("OK  " if ok else "FAIL", name, ("  -> " + str(detail)) if detail else ""))
@@ -220,6 +295,15 @@ def main():
     ap.add_argument("--exe", default="")
     ap.add_argument("--port", type=int, default=PORT)
     args = ap.parse_args()
+
+    # 端口段体检：撞上别人的实例会产出"看起来像功能坏了"的假红，甚至假绿
+    base, moved, busy = pick_port_block(args.port, need=12)
+    if moved:
+        print("[WARN] 端口段 %d-%d 已被占用（%s），本脚本改用 %d-%d；"
+              "建议先排查残留 super-agents.exe" %
+              (args.port, args.port + 11, busy, base, base + 11))
+        args.port = base
+    d0_port_sentinel()
 
     exe = args.exe or str(pathlib.Path(os.environ.get("LOCALAPPDATA", ".")) /
                           "sa-build" / "target" / "debug" / "super-agents.exe")

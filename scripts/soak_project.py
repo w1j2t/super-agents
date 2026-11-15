@@ -55,6 +55,7 @@ agent_id / success / attempts / tokens / output）、共享记忆引用。据此
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -150,15 +151,25 @@ def _project_lang(goals) -> str:
     return "py" if "python" in " ".join(goals).lower() else "rs"
 
 
-def build_goals(rounds: int, suite: str = "all"):
+def build_goals(rounds: int, suite: str = "all", order: str = "easy-first"):
     """把项目阶段摊平成一条有顺序的任务流。
+
+    order="easy-first"（默认）：按语言把"模型大概率能完成"的项目排前面。
+    为什么必须加：P1-P6 全是 Rust，`--suite all` 时它们正好排在轮转最前面，
+    2B 模型在 Rust 上一轮就能吃满 task-timeout。实测 camp-02 第 1 轮就是
+    st=None / 600s / 代码 0 字符 —— 长跑开局即卡死，前面几百轮全白烧。
+    把 Python 侧提前后，样本里才会同时有"跑成功的"和"跑不动的"，
+    也才分得清是框架问题还是模型能力上限。order="legacy" 保持原序。
 
     刻意做成"项目内按阶段推进、跨项目轮转"，而不是随机抽题：
     这样跑出来的序列更接近真实的连续迭代开发（后一阶段能看到前一阶段的产物语境），
     也让"第 N 轮"与"哪个阶段"可复现、可对账。
     """
     stages = []
-    for pname, goals in PROJECTS:
+    projs = list(PROJECTS)
+    if order == "easy-first":
+        projs.sort(key=lambda pg: (0 if _project_lang(pg[1]) == "py" else 1))
+    for pname, goals in projs:
         if suite != "all" and _project_lang(goals) != suite:
             continue
         for i, g in enumerate(goals, 1):
@@ -198,6 +209,48 @@ def sniff_lang(body: str) -> str:
     if py == 0 and rs == 0:
         return "unknown"
     return "py" if py >= rs else "rs"
+
+
+# 占位符识别用。模型被要求"给出完整代码"时，常原样吐出模板占位符而不是代码。
+_PH_MARK_RE = re.compile(
+    r"<[^<>\n]{0,40}>"                       # <code here> / <你的代码>
+    r"|\.{3,}|…{2,}"                         # ... / …
+    r"|\b(?:your|the|full|complete|entire)\s+code\b"
+    r"|待填|此处填|自行补充",
+    re.I,
+)
+# 强结构标志：真正的代码里几乎必然出现其中之一。
+# 括号刻意不算（`... (your full code here) ...` 带括号但不是代码），
+# 但"标识符紧跟左括号"要算——`print("hi")` 是合法短代码，不能误判成占位符。
+_STRUCT_RE = re.compile(
+    r"\b(?:def|class|import|from|return|yield|lambda|elif|"
+    r"fn|let|mut|impl|struct|enum|trait|pub|match|mod)\b"
+    r"|\w\s*\(|="
+)
+
+
+def is_placeholder(code):
+    """判断抽出来的"代码"其实是占位符/示意片段，而不是可编译的真代码。
+
+    为什么必须单判：2B 模型被要求"给出完整代码"时，常原样吐出模板占位符
+    （`<code here>`、`<你的代码>`、`... (your full code here) ...`）。这些送去
+    编译必然报 SyntaxError，于是「模型交不出来」被记成「模型写错了」——一类
+    能力问题被伪装成语法问题，靶心直接指错方向。实测 20 条可复验 syntax-error
+    中绝大多数属此，真语法错极少。
+
+    判据两条取或：① 有占位符标记且无代码结构；② 极短且无代码结构。
+    长度上限 160 是硬门槛：占位符写不到这么长，长的一律按真代码处理。
+    """
+    s = (code or "").strip()
+    if not s:
+        return False            # 空代码归 no-code 分支，不与本判据混判
+    if len(s) > 160:
+        return False
+    has_mark = bool(_PH_MARK_RE.search(s))
+    no_struct = not _STRUCT_RE.search(s)
+    if has_mark and no_struct:
+        return True
+    return len(s) < 40 and no_struct
 
 
 def extract_code(text: str):
@@ -260,6 +313,37 @@ def compile_check(lang, code):
         return None, "no-rustc"
     except subprocess.TimeoutExpired:
         return False, "rustc-timeout"
+
+
+def _judge_evidence(joins, code, mark_deliv, mark_lang, mark_chars, cap=4000,
+                    lang="", lang_src="", csrc=""):
+    """把判分依据压成可重放的证据块。
+
+    代码超过 cap 时保留头尾并打 truncated 标记，同时给整串 sha1 —— 这样既不
+    把 jsonl 撑爆，又能事后判断"这段代码有没有被改动过"。
+
+    lang / lang_src / csrc 是后补的：没有它们，"语言是不是我们猜的"这件事
+    事后无法复原，重判就只能瞎猜（`fallback-py` 这种靠默认兜底的样本，编译
+    结论本身不成立，重判时必须能识别出来才敢翻案）。
+    """
+    code = code or ""
+    if len(code) > cap:
+        head, tail = code[: int(cap * 0.7)], code[-int(cap * 0.25):]
+        cf, trunc = head + "\n…（中略）…\n" + tail, True
+    else:
+        cf, trunc = code, False
+    return {
+        "joined_chars": len(joins or ""),
+        "joined_sha1": hashlib.sha1((joins or "").encode("utf-8", "replace")).hexdigest()[:16],
+        "code_chars": len(code),
+        "code_sha1": hashlib.sha1(code.encode("utf-8", "replace")).hexdigest()[:16] if code else "",
+        "code_full": cf,
+        "code_truncated": trunc,
+        "lang": lang,
+        "lang_source": lang_src,
+        "compile_source": csrc,
+        "marked": {"delivered": mark_deliv, "lang": mark_lang, "chars": mark_chars},
+    }
 
 
 def judge(row):
@@ -343,13 +427,37 @@ def judge(row):
         if lang == "unknown":
             lang, lang_src = "py", "fallback-py"
     ok, cdetail = compile_check(lang, code)
-    # 取不到完整代码时（平台截断），退回 worker 自检结论，并显式标注来源。
-    # 宁可标注口径，也不要留一列全 False 的假读数——那会把"交付成功"记成"编译失败"。
+    # 取不到完整代码时（平台截断），本机就没法验证语法了。
+    #
+    # 这里曾经写成 ok = bool(mark_deliv)：结果把"worker 自报交付"当成了"能编译"。
+    # 两个字段语义不同（交付 ≠ 语法合法），混用后编译列变成一锅粥——实测 47 条
+    # 编译失败里有 34 条是这条路径产生的，等于用"没证据"冒充"有结论"，而且方向
+    # 还会随 worker 自报乱翻。改成三态：True 本机实测通过 / False 本机实测失败 /
+    # None 无法验证。None 不进入编译率分母（见 metrics 里 judged 的口径）。
     csrc = "local"
+    claimed = None
+    # 第四刀：占位符与"猜出来的语言"都不能当编译结论。
+    #
+    # 这两者是同一类错误的两个侧面——**编译前提不成立**。占位符不是代码
+    # （`<code here>` 送去 compile 必然 SyntaxError）；`fallback-py` 意味着
+    # 语言是兜底猜的（把一段 Rust 片段按 Python 编译，报错与模型无关）。
+    # 两者此前都落进 syntax-error，让这个桶 3/4 都是假的（可复验 20 条里，
+    # 真正的语法错只有个位数）。处理原则与 §判分三态一致：前提不成立就记
+    # None（无法验证），不进分母，而不是记 False（实测失败）。
+    if code and is_placeholder(code):
+        ok = None
+        csrc = "placeholder"
+        cdetail = ("抽取内容是占位符/示意片段（%d 字符），不是可编译代码；"
+                   "不计入编译率" % len(code))
+    elif ok is not None and lang_src == "fallback-py":
+        ok = None
+        csrc = "lang-guessed"
+        cdetail = ("语言靠默认兜底（%s），编译前提不成立；不计入编译率" % lang_src)
     if not code and mark_deliv is not None:
-        ok = bool(mark_deliv)
-        csrc = "worker"
-        cdetail = "worker 自检（output 被平台截断，本机无法复验）"
+        ok = None
+        csrc = "worker-unverified"
+        cdetail = "无完整代码可复验（output 被平台截断）；worker 自报交付=%s，未计入编译率" % ("是" if mark_deliv else "否")
+        claimed = bool(mark_deliv)
     return {
         "done": row.get("task_status") == "succeeded",
         "status": row.get("task_status"),
@@ -362,6 +470,8 @@ def judge(row):
         # 语言判定从哪来：label=模型标的围栏 / sniff=按内容嗅探 / worker-mark=worker
         # 自报标记。报告里带上它，才能区分"模型写错了语言"和"我们把语言判错了"。
         "lang_source": lang_src,
+        # worker 自报交付（仅在无完整代码可复验时才有值）；与 compiles 是两码事。
+        "worker_claim_delivered": claimed,
         # 字符数取 payload 报告的原始长度：它记录"模型到底写了多少"，
         # 与"能不能交付"是两件事，混在一起会让能力边界看不出来
         "code_chars": max(len(code or ""), p_chars),
@@ -383,6 +493,14 @@ def judge(row):
              "out": (s.get("out") or "")[:160]}
             for s in steps
         ],
+        # 判分证据：让"这个结论是怎么得出来的"以后还能重放。
+        #
+        # 为什么必须有：判分逻辑本身也会写错（本台就出过"worker 自报交付"被当成
+        # "能编译"，一口气污染 34 条）。发现判分器有错时要能拿旧数据按新逻辑重算，
+        # 否则唯一出路就是全部重跑——几小时的实测白扔，还没法回答"改了以后到底
+        # 影响多少条"。这里存下被判分的代码本体（限长）与标记值，重判即可复现。
+        "judge_evidence": _judge_evidence(joins, code, mark_deliv, mark_lang, mark_chars,
+                                          lang=lang, lang_src=lang_src, csrc=csrc),
         # 可审计摘录：把 worker 自报的关键字段单独留一份，报告与事后复算靠它。
         # 不存代码全文——几百轮会把 jsonl 撑到几十 MB，而核对口径只需要这几项。
         "code_payload": [
@@ -397,6 +515,37 @@ def judge(row):
 
 
 # ------------------------------------------------------------------ 主循环
+
+def failure_reason(j):
+    """给每个未达标样本贴一个可统计的原因标签。
+
+    为什么在写盘时就贴：事后靠 status 猜不出区别——超时未收尾、任务跑完但模型
+    一个字没写、写了但语法不过，这三种都会落进同一个 status 里，混在一起就
+    等于没有归因。这里在样本产生的一刻就定性，看板与复盘才有据可依。
+    """
+    if j.get("compiles") is None:
+        if not j.get("code_chars"):
+            if j.get("status") in (None, "", "unknown") or (j.get("elapsed") or 0) >= 580:
+                return "timeout-no-output"
+            return "no-code-at-all"
+        # 前提不成立的两种情形，各自成桶而不是塞进 unverified：
+        # 它们的"下一步动作"完全不同——占位符要去改提示词（要求真给代码），
+        # 语言猜错要去看围栏标注与嗅探规则；混进 unverified 就只剩一句"看不见"。
+        if j.get("compile_source") == "placeholder":
+            return "placeholder-instead-of-code"
+        if j.get("compile_source") == "lang-guessed":
+            return "lang-guessed"
+        # 有代码痕迹但本机复验不了（平台截断）。这不是"编译失败"，也不是"成功"，
+        # 单独成一桶：统计时既不进分母也不进分子，只作为观测缺口挂着。
+        return "unverified"
+    if j.get("compiles") is False:
+        return "syntax-error"
+    if j.get("delivered_code") is False:
+        return "not-delivered"
+    if not j.get("done"):
+        return "not-done"
+    return ""
+
 
 def append_jsonl(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -478,7 +627,9 @@ def summarize(path, tag):
     for r in rows:
         if r["done"]:
             continue
-        key = r["status"] or ("http%s" % r["http"]) or "unknown"
+        # 优先用样本自身贴的原因标签（timeout-no-output / syntax-error / ...），
+        # 它比 status 细一档；老批次没有这个字段，回落 status。
+        key = r.get("failure_reason") or r["status"] or ("http%s" % r["http"]) or "unknown"
         why[key] = why.get(key, 0) + 1
 
     # 协作分布
@@ -538,6 +689,9 @@ def summarize(path, tag):
         "compiled": len(compiled),
         "compile_judged": len(tried),
         "compile_pct": pct(len(compiled), len(tried)),
+        # 三态里明确留出"无法验证"，不允许它借道分子或分母
+        "compile_unverified": len([r for r in rows if r["compiles"] is None]),
+        "worker_claimed": len([r for r in rows if r.get("worker_claim_delivered")]),
         "agents_avg": round(sum(r["agents"] for r in rows) / n, 2),
         "multi_agent_pct": pct(sum(1 for r in rows if r["agents"] >= 2), n),
         "handoff_total": sum(r["handoff"] for r in rows),
@@ -568,7 +722,7 @@ def write_report(s, tag):
         f"| 代码达交付标准（delivered） | **{s['delivered']} / {s['rounds']} = {s['delivered_pct']}%** |",
         f"| 产出里有代码块 | {s['with_code']} / {s['rounds']} = {s['code_pct']}% |",
         f"| 代码通过语法/编译检查 | **{s['compiled']} / {s['compile_judged']} = {s['compile_pct']}%**（其余无代码或环境缺 rustc） |",
-        f"| 编译判定来源 | local {s.get('compile_source', {}).get('local', 0)} 条 / worker 自检 {s.get('compile_source', {}).get('worker', 0)} 条 |",
+        f"| 编译判定来源 | 本机实测 {s.get('compile_source', {}).get('local', 0)} 条 / 无法复验 {s.get('compile_unverified', 0)} 条（不计入编译率） |",
         f"| 平均出场 agent 数 | {s['agents_avg']} |",
         f"| 出现 2 个以上 agent 的任务 | {s['multi_agent_pct']}% |",
         f"| 跨 agent 交接总次数 | {s['handoff_total']} |",
@@ -651,6 +805,16 @@ def selftest() -> int:
     lang, _, _ = extract_code("```\nhello world\n```")
     ck("无语义内容判为 unknown", lang == "unknown", lang)
 
+    # 4b. 占位符必须被认出来。这类送去编译必然 SyntaxError，会把"模型交不出来"
+    #     伪装成"模型写错了"——靶心指错方向的直接来源。
+    #     正样本、负样本都要测：只测正样本，一个 `return True` 也能全绿。
+    for probe in ("<code here>", "<你的代码>", "... (your full code here) ...",
+                  "...", "TODO", "''"):
+        ck(f"占位符识别 {probe!r}", is_placeholder(probe) is True, probe)
+    for probe in ("def f():\n    return 1", 'fn main() { println!("hi"); }',
+                  'print("hello")', "x = 1", "import os\nos.getcwd()"):
+        ck(f"真代码不误判 {probe.splitlines()[0]!r}", is_placeholder(probe) is False, probe)
+
     # 5. 真编译：合法 Python 过、非法 Python 不过
     ok, _ = compile_check("py", "def f():\n    return 1\n")
     ck("合法 Python 通过", ok is True, ok)
@@ -683,6 +847,8 @@ def main() -> int:
     ap.add_argument("--suite", default="all", choices=["all", "py", "rs"],
                     help="任务集：py=Python 项目（模型交得出的那半），"
                          "rs=Rust 项目（2B 的能力天花板），all=混合按项目轮转")
+    ap.add_argument("--order", default="easy-first", choices=["easy-first", "legacy"],
+                    help="任务流排序：easy-first 先跑模型更可能完成的 Python 侧任务")
     ap.add_argument("--tag", default="baseline")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--report-only", action="store_true")
@@ -739,7 +905,7 @@ def main() -> int:
         if done:
             print("[SOAK] 续跑：已有 %d 轮样本，从下一个未完成轮继续" % len(done))
 
-        goals = build_goals(args.rounds, args.suite)
+        goals = build_goals(args.rounds, args.suite, args.order)
         t0 = time.time()
         ok_n = 0
         for item in goals:
@@ -755,6 +921,7 @@ def main() -> int:
             j.update({"round": rnd, "project": item["project"], "stage": item["stage"],
                       "cycle": item["cycle"], "user": user,
                       "goal": item["goal"][:120]})
+            j["failure_reason"] = failure_reason(j)
             append_jsonl(out, j)
             ok_n += 1 if j["done"] else 0
             el = time.time() - t0

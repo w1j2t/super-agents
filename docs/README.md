@@ -43,7 +43,7 @@
 | `docs/evidence/round3-summary.txt` | **一页式验证汇总（历史留档）**：4 个一致性检查 rc=0、单测 55 绿、冒烟 98 绿，含中文路径编译坑说明。最新数字见 `regress-all.raw.txt` | — |
 | `scripts/smoke.py` | **拉起真实 exe 打真实 HTTP** 的端到端冒烟，**157 项断言**，覆盖鉴权/限流/预算/追踪/过滤/分页/审计/指标 | `python scripts/smoke.py`（退出码 0 = 157/157 通过；`--exe` 指定可执行文件） |
 | `scripts/check-modularity.py` | **模块化静态守护**：扫全部 `.rs`，禁止业务层出现具体后端名、禁止越级调 `backends::`/`audit::open`、校验 `StorageKind/RunnerKind/AuditKind::ALL` 与工厂分支同步、环境变量单点读取（仅 `config.rs`） | `python scripts/check-modularity.py`（退出码 0 = 15/15） |
-| `scripts/swap_drill.py` | **换件演练（行为级）**：同一套 18 个请求在 json/memory 与 memory/file 两组后端各跑一遍，比对状态码与响应结构签名；同一任务在 sim/process 下比对计划、权限档位、trace 口径、token 记账；另含**硬杀重启后台账可追溯**与坏配置拒启 | `python scripts/swap_drill.py`（退出码 0 = 22/22） |
+| `scripts/swap_drill.py` | **换件演练（行为级）**：同一套 18 个请求在 json/memory 与 memory/file 两组后端各跑一遍，比对状态码与响应结构签名；同一任务在 sim/process 下比对计划、权限档位、trace 口径、token 记账；另含**硬杀重启后台账可追溯**与坏配置拒启；开跑前先做**端口段体检**（这段口有人应答就自动顺移并 WARN，`D0` 验证检测器本身不失灵） | `python scripts/swap_drill.py`（退出码 0 = 23/23） |
 | `scripts/verify_runner.py` | **执行端口实测**：`SA_RUNNER=process` 真跑外部脚本，验证标记真的出现、治理未绕过、缺脚本是可重试失败、非法配置拒启 | `python scripts/verify_runner.py`（退出码 0 = 15/15） |
 | `scripts/regress_all.py` | **一键全量门禁（26 道）**：单测 + 冒烟×2 后端 + OpenAPI 语义/未漂移 + TS 同步 + 契约文档 + 执行端口 + 部件矩阵 + 换件演练 + 审计自检 + 响应形状 + 多节点集群 + worker 分词质量 + 异步受理与缺省；判定口径见 `docs/06` | `python scripts/regress_all.py`（退出码 0 = 26 道全绿；`--with-drills` 另跑负向演练，不计入门禁数） |
 | `scripts/build-exe.py` | **门禁 0：编译 + 自证二进制新鲜**。`cargo test` 不更新 `super-agents.exe`，于是出现过"12 道全绿、测的是 18:48 旧程序"的假绿；本脚本真编译并校验 exe mtime ≥ 最新源码，落后即红 | `python scripts/build-exe.py`（退出码 0 = 编译成功且新鲜） |
@@ -71,7 +71,7 @@
 > - `check-openapi.py`：40 个 struct schema + 9 个枚举 schema，0 处不一致（字段/可选性/枚举取值）
 > - `gen-ts-types.py` / `gen-openapi.py`：40 interface + 9 联合类型、24 路径 / 28 操作 / 50 schema，`--check` 幂等
 > - `verify_runner.py`：**15/15**（真跑外部进程）
-> - `swap_drill.py`：**22/22**（换件后上层零感，含审计部件与重启可追溯）；`check-modularity.py`：**15/15**（静态守护）
+> - `swap_drill.py`：**23/23**（换件后上层零感，含审计部件与重启可追溯、端口段体检 D0）；`check-modularity.py`：**15/15**（静态守护）
 > - 留档：`docs/evidence/regress-all.txt`、`docs/evidence/regress-all.raw.txt`、`docs/evidence/modularity.txt`
 
 ## 三句话总结
