@@ -1,14 +1,14 @@
 # 25 自动任务调度
-生成时间: 2026-11-16 07:46:43
+生成时间: 2026-11-16 08:54:27
 命令由 regress_all.py 编排执行，rc=0，耗时 0.5s
 （原始输出如下，未做删改）
 ======================================================================
 [OK  ] G1 _sched --selftest                         rc=0，13 项断言，失败 0
 [OK  ] G2a 源码无执行类调用                                 干净
 [OK  ] G2b 运行时未触发执行                                 执行被调用 0 次，哨兵文件不存在
-[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_2ub5ezju\\sentinel.txt'
+[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_9u9kw9wi\\sentinel.txt'
 [OK  ] G3 重启后同分钟不重复派发                               首派 1 条，重启后同分钟再派 0 条
-[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_adf08c4e", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
+[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_68df52c1", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
 [OK  ] G4b 补跑过的不再报漏跑，且不连环补                          missed=[]，同分钟再派 0 条
 [OK  ] G4c 从未跑的必须报出来                                missed=['从未跑']
 [OK  ] G5 月末 31 日命中                                 0 0 31 * * @ 2026-12-31 00:00 → True（期望 True）

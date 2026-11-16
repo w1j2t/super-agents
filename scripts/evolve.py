@@ -64,7 +64,15 @@ def load_samples(include="", exclude="", pattern="*.jsonl"):
     """
     rows, seen = [], set()
     for f in sorted(glob.glob(str(SOAK / pattern))):
-        tag = pathlib.Path(f).stem
+        stem = pathlib.Path(f).stem
+        # 派生文件不是主样本，必须在 glob 之后立刻拦掉：
+        # `-retry` 是分解重试的第二轮，`-decomp` 是两轮结论行。二者都命中 *.jsonl，
+        # 而它们的 tag 与主批次不同（camp-g-retry != camp-g），
+        # 所以 (tag, round) 去重**拦不住**——放进来就是样本量虚增 + 成功率虚高。
+        # 这正是本项目反复踩的那类坑：新加一列数据，先想它是"证据"还是"又一个样本"。
+        if stem.endswith("-retry") or stem.endswith("-decomp"):
+            continue
+        tag = stem
         if tag.startswith("soak-"):
             tag = tag[len("soak-"):]
         if include and not tag.startswith(include):
@@ -182,7 +190,12 @@ def reason_of(r):
     if r.get("compiles") is False:
         return "legacy-unverified" if legacy else "syntax-error"
     if r.get("delivered_code") is False:
-        return "not-delivered"
+        # 语法合法、worker 却自己否认交付 —— 实测内容是 `print('Hello World')`、
+        # `import os`、`import os\n# ...` 这类玩具代码。它和 not-delivered 要的
+        # 修法完全不同：not-delivered 查交付口径，stub-pass 查「模型为什么放弃
+        # 任务、退化成背hello world」。混在一个桶里，等于把能力问题的极端形态
+        # 当成流程问题处理。
+        return "stub-pass" if r.get("compiles") is True else "not-delivered"
     return "done-not-delivered"
 
 
@@ -223,6 +236,17 @@ def metrics(rows):
            and not r["judge_evidence"].get("code_truncated")]
     comp_v = sum(1 for r in ver if r.get("compiles") is True)
     judged_v = sum(1 for r in ver if r.get("compiles") is not None)
+    # 可用交付：worker 自己认了（delivered_code=True）**且**本机实测语法通过。
+    # 为什么要多这一把尺：编译通过率只问"这段字符是不是合法语法"，不问"这是不是
+    # 任务要的东西"。实测 459 条有证据样本里，delivered_code=True 的 311 条 P50
+    # 长度 1352、310 条可编译；delivered_code=False 的 132 条 P50 长度只有 7 个
+    # 字符，其中却有 21 条"编译通过"—— 内容是 `print('Hello World')` 这类能跑
+    # 但与任务无关的玩具代码（同一串 209 字符在 camp-b/e/f 五个轮次里反复出现）。
+    # 只看语法，这 21 条就是纯假绿；加上交付声明这一维，它们立刻归位。
+    usable = sum(1 for r in rows if r.get("delivered_code") is True
+                 and r.get("compiles") is True)
+    usable_v = sum(1 for r in ver if r.get("delivered_code") is True
+                   and r.get("compiles") is True)
     toks = sum(int(r.get("tokens") or 0) for r in rows)
     el = [r.get("elapsed") or 0 for r in rows]
     return {
@@ -235,12 +259,70 @@ def metrics(rows):
         "compiles_verifiable": comp_v, "judged_verifiable": judged_v,
         "compiles_verifiable_pct": pct(comp_v, judged_v),
         "compiles_verifiable_ci": wilson(comp_v, judged_v),
+        "usable": usable, "usable_pct": pct(usable, judged), "usable_ci": wilson(usable, judged),
+        "usable_verifiable": usable_v, "usable_verifiable_pct": pct(usable_v, judged_v),
+        "usable_verifiable_ci": wilson(usable_v, judged_v),
+        # 语法通过与可用交付之间的落差 —— 这个数本身就是"模型交玩具代码"的量化。
+        "stub_gap_pct": round(pct(comp_v, judged_v) - pct(usable_v, judged_v), 1)
+        if judged_v else None,
         "tokens_total": toks,
         "tokens_per_delivery": round(toks / deliv, 1) if deliv else None,
         "elapsed_p50": med(el), "elapsed_p95": sorted(el)[int(len(el) * 0.95)] if el else None,
         "multi_agent_pct": pct(sum(1 for r in rows if (r.get("agents") or 0) > 1), n),
         "retries_total": sum(int(r.get("retries") or 0) for r in rows),
     }
+
+
+def blame_of(r):
+    """归责：这一轮失败该记在框架头上，还是记在模型头上。
+
+    这是整个闭环里最容易被跳过、也最贵的一步。没有它，"下一个靶心"只能按
+    桶的大小排序，而桶的大小和"框架能不能修"完全是两件事——把模型能力边界
+    当成框架 bug 去修，就是最典型的假进化：改一堆代码，数字不动，还以为在进步。
+
+    实测依据（本台 619 轮，有证据 472 轮）：
+      成功组   413 轮 —— steps 全为 4、agents 全为 3、交接合计 1239（3.0/轮）
+      失败组   189 轮 —— steps 全为 4、agents 全为 3、交接合计  537（2.84/轮）
+    两组的框架行为**完全一致**，差别只在 tokens（937 vs 607）与耗时（112s vs
+    185s）：失败组花的时间更多、吐的字更少。流程跑满四步、三个 agent 都到场，
+    最后交出来的是 `...` 或 `print('Hello World')` —— 框架没坏，是模型在单轮内
+    写不出多部件实现，退化成最小可运行骨架。
+
+    所以凡属"流程跑满但产出不达标"的桶，一律归 model，不进下一刀的候选。
+    只有流程压根没起来（steps/agents 为 0）或证据取不全（输出被截断）才算框架。
+    """
+    why = reason_of(r)
+    if not why:
+        return None
+    steps = r.get("steps") or 0
+    agents = r.get("agents") or 0
+    # 取数失败必须先于 steps/agents 判断。
+    # 以前这两件事完全同形：查详情失败 → task_of() 空 → steps=0、agents=0，
+    # 归责就判成"流程没启动"。但 evidence/soak/camp-e r249 反证了这一点：
+    # 那轮 elapsed=287s、task_id 齐全，任务明明跑完了，只是最后一步查询 401。
+    # 两者修法相反——一个改后端启动，一个改客户端续期与错误处理。
+    # 混在一起，就会拿"客户端 bug"的证据去改后端。
+    dh = r.get("detail_http")
+    if dh is not None and str(dh) != "200":
+        return "framework-collector"
+    # 样本已按新口径定性为取数失败时，即使没带 detail_http 也照样判 collector：
+    # soak_project.failure_reason() 造出这个标签的前提就是查详情非 200，
+    # 再要求它重复证明一遍，等于让老批次一律错判成 framework。
+    if why == "collect-failed":
+        return "framework-collector"
+    # 一步都没走成 / 一个 agent 都没起来：流程没启动，算框架。
+    if steps == 0 or agents == 0:
+        return "framework"
+    if why == "timeout-no-output":
+        return "framework"
+    if why == "unverified":
+        # 模型明明吐了很多字（该桶 tokens P50=1255，全样本最高），却取不全代码：
+        # 这是输出通道/截断问题，不是模型不会写。
+        return "framework"
+    if why == "legacy-unverified":
+        return "unknown"
+    # 流程跑满、产出不达标：模型能力边界。
+    return "model"
 
 
 def bucket_failures(rows):
@@ -259,9 +341,11 @@ def bucket_failures(rows):
 
     hint = {
         "timeout-no-output": "查 task-timeout、LLM 后端吞吐、并发度；本地 CPU 推理下 600s 可能本就不够",
+        "collect-failed": "任务可能跑完了，是客户端没取回来（查详情返回非 200，多为令牌过期/续期失败）。别去调超时阈值，也别改后端启动——这两处改了数字不会动",
         "no-code-at-all": "模型一句话没写：区分是提示词没要求代码、还是模型能力不够",
         "syntax-error": "代码抽出来了但不合法：查提示词约束、抽取是否截断、围栏语言标注",
-        "placeholder-instead-of-code": "模型没写代码、只吐了模板占位符（<code here>）：改提示词，硬性要求完整可运行代码、禁止占位符",
+        "placeholder-instead-of-code": "模型没写代码、只吐了模板占位符（<code here> / ... / <你的代码>）。实测 90 条全部 delivered_code=False、summary 为空，即 worker 已明说没交付——不是耍滑头，是交不出来：查提示词是否把任务拆得太大、单轮给不出完整实现",
+        "stub-pass": "能编译但与任务无关的玩具代码（print('Hello World') / import os），worker 自报未交付。它骗过的是编译率不是质检：查模型在无力完成任务时的退化行为，别再去修语法",
         "lang-guessed": "语言是兜底猜的（fallback-py）：查围栏语言标注与嗅探规则，猜出来的语言不能当实测",
         "unverified": "有代码痕迹但本机复验不了：查 output 是否被平台截断",
         "legacy-unverified": "旧口径残留且证据不在：只能整批重测，别拿它选靶心",
@@ -281,10 +365,15 @@ def bucket_failures(rows):
         # 没有这个拆分，桶里"看得见的问题"和"只剩结论、证据已丢的旧账"会混成
         # 一个数——而这两者该做的事完全不同：前者能定位，后者只能重测。
         ver = sum(1 for r in v if r.get("judge_evidence") or r.get("failure_reason"))
+        blame = {}
+        for r in v:
+            bl = blame_of(r) or "unknown"
+            blame[bl] = blame.get(bl, 0) + 1
         out.append({
             "reason": k, "n": len(v), "pct": pct(len(v), len(rows)),
             "verifiable": ver, "unverifiable": len(v) - ver,
             "langs": langs, "top_projects": sorted(by_proj.items(), key=lambda kv: -kv[1])[:4],
+            "blame": blame,
             "hint": hint.get(k, ""),
         })
     return out
@@ -298,8 +387,18 @@ def _cmp_rate(cur, prev, key_ci, name):
     再缺就明确写"不可比"。宁可显示"口径不同"，也不要 KeyError 把整条
     判据链打断——那会让人误以为"没问题"。
     """
-    alias = {"compiles_verifiable_ci": "compiles_ci"}
-    kp = key_ci if key_ci in prev else alias.get(key_ci, key_ci)
+    # 单级别名不够用：可用交付率是后加的，而它的上游编译率（可复验）也是后加的。
+    # 老基线两条都没有，只能一路回落到最早的 compiles_ci，否则一加新指标就断链。
+    alias = {
+        "compiles_verifiable_ci": ("compiles_ci",),
+        "usable_verifiable_ci": ("compiles_verifiable_ci", "compiles_ci"),
+    }
+    kp = key_ci
+    if key_ci not in prev:
+        for cand in alias.get(key_ci, ()):
+            if cand in prev:
+                kp = cand
+                break
     if key_ci not in cur or kp not in prev:
         return {"metric": name + "（基线缺此项，不可比）",
                 "cur": cur.get(key_ci.replace("_ci", "_pct")), "prev": None,
@@ -328,8 +427,11 @@ def judge_gen(cur, prev, min_n=100):
     if not prev:
         return {"verdict": "首代（无基线）", "reasons": why or ["已固化为基线"], "rows": []}
 
+    # 主尺换成"可用交付"（认领 + 语法双过）。编译通过率留作参照：两者若背离，
+    # 说明本代多出来的"通过"是玩具代码而不是真产出，这种改善不算改善。
     rows = [_cmp_rate(cur, prev, "delivered_ci", "达交付率"),
-            _cmp_rate(cur, prev, "compiles_verifiable_ci", "编译通过率（可复验）"),
+            _cmp_rate(cur, prev, "usable_verifiable_ci", "可用交付率（可复验·主尺）"),
+            _cmp_rate(cur, prev, "compiles_verifiable_ci", "编译通过率（可复验·参照）"),
             _cmp_rate(cur, prev, "done_ci", "任务完成率")]
     bad = [r for r in rows if r["verdict"] == "退化"]
     good = [r for r in rows if r["verdict"] == "改善"]
@@ -440,18 +542,48 @@ def show_buckets(include=""):
     print("样本 %d 轮：完成 %d（%s%%）、达交付 %d（%s%%）、编译通过 %d/%d（%s%%，分母只含可判定轮）"
           % (m["n"], m["done"], m["done_pct"], m["delivered"], m["delivered_pct"],
              m["compiles"], m["judged"], m["compiles_pct"]))
-    print("   可复验子集：编译通过 %d/%d（%s%%）—— 证据在手、能被当前尺子复算，跨代比较以此为准"
+    print("   可复验子集：编译通过 %d/%d（%s%%）—— 证据在手、能被当前尺子复算"
           % (m["compiles_verifiable"], m["judged_verifiable"], m["compiles_verifiable_pct"]))
+    print("   ★ 可用交付 %d/%d（%s%%）—— worker 认领**且**本机语法通过，这才是真交付"
+          % (m["usable_verifiable"], m["judged_verifiable"], m["usable_verifiable_pct"]))
+    if m.get("stub_gap_pct") is not None:
+        print("   ⚠ 两者落差 %s 个百分点 = 能编译但没人认领的玩具代码，虚高的部分就在这里"
+              % m["stub_gap_pct"])
     print()
     bs = bucket_failures(rows)
     if not bs:
         print("没有失败样本。")
         return 0
-    print("| 原因 | 轮数 | 占比 | 可复验/总 | 语言分布 | 高发项目 | 下一刀切哪 |")
-    print("| --- | --- | --- | --- | --- | --- | --- |")
+    # 归责汇总放在最前面：桶的大小不等于"能修的量"。不先把这条讲清楚，
+    # 看到 placeholder 90 条就会去改提示词，改完发现数字不动——因为它不是
+    # 框架的锅。这一行决定了下面整张表该怎么读。
+    tot = {"framework": 0, "model": 0, "unknown": 0}
     for b in bs:
-        print("| %s | %d | %s%% | %d/%d | %s | %s | %s |"
-              % (b["reason"], b["n"], b["pct"], b["verifiable"], b["n"],
+        for k, v in b["blame"].items():
+            tot[k] = tot.get(k, 0) + v
+    fc = tot.get("framework-collector", 0)
+    fw = tot["framework"] + fc
+    md, un = tot["model"], tot["unknown"]
+    print("## 归责：这些失败该记在谁头上")
+    print()
+    print("| 归责 | 轮数 | 含义 | 该不该动框架 |")
+    print("| --- | --- | --- | --- |")
+    print("| framework | %d | 流程没起来（steps/agents 为 0）或输出取不全 | **该，这就是下一刀** |" % fw)
+    if fc:
+        print("| └ framework-collector | %d | 取数失败：任务可能跑满了，是客户端没取回来（查详情/续期出错），"
+              "steps/agents 为 0 是取不到、不是没发生 | **该，但修客户端，别动后端** |" % fc)
+    print("| model | %d | 流程跑满四步、三个 agent 都到场，仍写不出东西 | 不该，改框架无用 |" % md)
+    print("| unknown | %d | 旧口径残留，证据不在 | 先重测再谈 |" % un)
+    print()
+    print("> 依据：成功组与失败组的 steps 全为 4、agents 全为 3、交接 3.0 vs 2.84 次/轮，"
+          "框架行为一致；失败组只是 tokens 少 35%%、耗时多 65%%。**流程没坏，是模型写不出来。**")
+    print()
+    print("| 原因 | 轮数 | 占比 | 归责 | 可复验/总 | 语言分布 | 高发项目 | 下一刀切哪 |")
+    print("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    for b in bs:
+        bl = "/".join("%s=%d" % (k, v) for k, v in sorted(b["blame"].items(), key=lambda kv: -kv[1]))
+        print("| %s | %d | %s%% | %s | %d/%d | %s | %s | %s |"
+              % (b["reason"], b["n"], b["pct"], bl, b["verifiable"], b["n"],
                  " ".join("%s=%d" % (k, v) for k, v in b["langs"].items()),
                  "、".join("%s×%d" % (k, v) for k, v in b["top_projects"]),
                  b["hint"]))
@@ -528,17 +660,225 @@ def rejudge(include=""):
     return 0
 
 
+def _usable(r):
+    """与 soak_project.usable_of 同一口径：认领交付 + 本机实测能编译。"""
+    return r.get("delivered_code") is True and r.get("compiles") is True
+
+
+def show_decomp(include=""):
+    """分解重试的账：花多少、救回多少、救回的是哪一类。
+
+    只回答一个问题——**把"单轮"换成"最多两轮"，可用交付率动了几格，代价是什么**。
+    这是本系统唯一打算用来碰"模型能力边界"的框架手段：既然单轮写不出来，
+    就让它多轮写。所以它必须能被独立量化，否则加了这个开关也只是多烧一倍 CPU。
+
+    刻意与 metrics/judge_gen 分开：那是"这一代比上一代好不好"的代际判定，
+    这是"某个改动值不值"的机制评估。两者的分母与样本要求都不同，混在一起会互相污染。
+    """
+    dec = sorted(glob.glob(str(SOAK / "soak-*-decomp.jsonl")))
+    if include:
+        dec = [f for f in dec
+               if pathlib.Path(f).stem[len("soak-"):].startswith(include)]
+    if not dec:
+        print("没有分解重试记录。跑长跑时要加 `--decompose` 才会有。")
+        return 1
+
+    rows = []
+    for f in dec:
+        for line in io.open(f, encoding="utf-8", errors="replace"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except Exception:
+                continue
+    if not rows:
+        print("分解记录为空")
+        return 1
+
+    n = len(rows)
+    cnt = {}
+    for r in rows:
+        cnt[r.get("verdict")] = cnt.get(r.get("verdict"), 0) + 1
+    rescued = cnt.get("rescued", 0)
+    still = cnt.get("still-bad", 0)
+    misfire = cnt.get("first", 0)
+
+    # 按首轮失败原因分组：哪一类"多轮能救"决定了下一刀往哪里使劲。
+    # 如果 rescued 全部集中在某一种原因上，那就说明该原因本质是"一次写不完"，
+    # 而不是"根本不会写"——两者对应的修法完全不同。
+    by_r = {}
+    for r in rows:
+        k = ((r.get("first") or {}).get("reason")) or "?"
+        d = by_r.setdefault(k, {"n": 0, "rescued": 0})
+        d["n"] += 1
+        if r.get("verdict") == "rescued":
+            d["rescued"] += 1
+
+    extra_s = sum((r.get("second") or {}).get("elapsed") or 0 for r in rows)
+    extra_tok = sum((r.get("second") or {}).get("tokens") or 0 for r in rows)
+
+    print("## 分解重试：两轮 vs 一轮\n")
+    print("触发 %d 轮 | **救回 %d（%.1f%%）** | 仍不可用 %d | 误触发 %d"
+          % (n, rescued, pct(rescued, n), still, misfire))
+    print("额外成本：%.1f 分钟 / %d tokens（平均每轮 %.0fs、%d tok）"
+          % (extra_s / 60.0, extra_tok, extra_s / max(n, 1), extra_tok // max(n, 1)))
+    print()
+
+    base = load_samples(include=include)
+    if base:
+        nb = len(base)
+        u1 = sum(1 for r in base if _usable(r))
+        print("| 口径 | 可用交付 | 说明 |")
+        print("| --- | --- | --- |")
+        print("| 单轮（现状） | %d/%d（%.1f%%） | 只看首轮 |"
+              % (u1, nb, pct(u1, nb)))
+        print("| 两轮（最多重试一次） | %d/%d（**%.1f%%**） | 首轮不可用的再补一轮 |"
+              % (u1 + rescued, nb, pct(u1 + rescued, nb)))
+        print("| 净变化 | +%d 轮 | 占可修缺口的 %.1f%% |"
+              % (rescued, pct(rescued, max(nb - u1, 1))))
+        print()
+
+    print("| 首轮失败原因 | 触发 | 救回 | 救回率 |")
+    print("| --- | --- | --- | --- |")
+    for k in sorted(by_r, key=lambda x: -by_r[x]["n"]):
+        d = by_r[k]
+        print("| `%s` | %d | %d | %.1f%% |"
+              % (k, d["n"], d["rescued"], pct(d["rescued"], d["n"])))
+
+    if misfire:
+        print("\n注意：%d 轮「首轮本来就可用」的样本被送去重试了——判据与"
+              "触发条件不一致，先去查 usable_of，别先看这里的收益。" % misfire)
+    return 0
+
+
+def selftest() -> int:
+    """给归责与分桶这把尺子本身做体检——正样本 + 负样本 + 反例。
+
+    为什么尺子也要自检：本项目的核心教训是"假红和假绿同源"。归责逻辑一旦
+    系统性地偏，后面所有"下一刀"都会指向错的地方，而且看起来很有依据。
+    这里用构造样本，断言的是**归责判据的方向性**，不依赖任何真实数据。
+
+    三类样本各有各的作用：
+      正样本（该判 framework）—— 保证真框架问题没被漏掉；
+      负样本（该判 model）    —— 保证模型能力边界没被错怪到框架头上；
+      反例（同形不同因）      —— 保证"看起来一样"的两件事没被判成同一件事。
+    """
+    fails = []
+
+    def ck(name, want, got):
+        ok = want == got
+        print("  %-4s %s -> %s" % ("OK" if ok else "FAIL", name, got))
+        if not ok:
+            fails.append("%s: 期望 %r，实际 %r" % (name, want, got))
+
+    print("[selftest] 归责判据（blame_of）")
+
+    # ---- 正样本：框架 ----
+    ck("超时无输出 -> framework",
+       "framework", blame_of({"failure_reason": "timeout-no-output",
+                              "steps": 0, "agents": 0}))
+    ck("流程没起来（有原因、无步骤）-> framework",
+       "framework", blame_of({"failure_reason": "not-done",
+                              "steps": 0, "agents": 0}))
+    ck("流程跑满但输出取不全 -> framework",
+       "framework", blame_of({"failure_reason": "unverified",
+                              "steps": 4, "agents": 3}))
+
+    # ---- 负样本：模型 ----
+    ck("占位符（流程跑满）-> model",
+       "model", blame_of({"failure_reason": "placeholder-instead-of-code",
+                          "steps": 4, "agents": 3}))
+    ck("玩具代码 stub-pass -> model",
+       "model", blame_of({"failure_reason": "stub-pass",
+                          "steps": 4, "agents": 3}))
+    ck("流程跑满但一字未写 -> model",
+       "model", blame_of({"failure_reason": "no-code-at-all",
+                          "steps": 4, "agents": 3}))
+    ck("语法错（代码已拿到）-> model",
+       "model", blame_of({"failure_reason": "syntax-error",
+                          "steps": 4, "agents": 3}))
+
+    # ---- 边界 ----
+    ck("旧口径证据缺失 -> unknown",
+       "unknown", blame_of({"failure_reason": "legacy-unverified",
+                            "steps": 4, "agents": 3}))
+    # 成功轮在真实样本里长这样（camp-e/f 348 条无一例外）：
+    #   status=succeeded / done=True / delivered_code=True / failure_reason=""
+    ck("成功轮（达交付）-> None（不是失败，不能进分母）",
+       None, blame_of({"failure_reason": "", "status": "succeeded", "done": True,
+                       "delivered_code": True, "steps": 4, "agents": 3}))
+    # 已知设计，不是 bug：status 缺失时 reason_of 会推导成 timeout-no-output
+    # （"取不到状态"等同于"没等到返回"）。这条显式钉住，免得以后有人把它当缺陷改掉。
+    ck("字段全缺 -> 推成 timeout-no-output（已知设计）",
+       "framework", blame_of({"steps": 4, "agents": 3}))
+
+    # ---- 反例：同形不同因，这是本台最贵的一类 ----
+    # 取数失败时 steps/agents 也是 0，与"流程没起来"完全同形。
+    # 若不先判 detail_http，就会拿客户端 bug 的证据去改后端。
+    ck("取数失败但任务真跑了 -> framework-collector（不能并进 framework）",
+       "framework-collector",
+       blame_of({"failure_reason": "timeout-no-output", "steps": 0, "agents": 0,
+                 "detail_http": 401, "elapsed": 287.1, "task_id": "t-1"}))
+    ck("查详情 200 正常回来 -> 不被误判成取数失败",
+       "framework", blame_of({"failure_reason": "timeout-no-output",
+                              "steps": 0, "agents": 0, "detail_http": 200}))
+    # soak_project.failure_reason() 打出 collect-failed 时，前提就是查详情非 200。
+    # 要求它再带一份 detail_http 才算数，等于让所有老批次退回 framework。
+    ck("已定性取数失败但没带 detail_http -> 仍是 collector",
+       "framework-collector",
+       blame_of({"failure_reason": "collect-failed", "steps": 0, "agents": 0,
+                 "elapsed": 287.11}))
+
+    print("\n[selftest] 分桶方向性（bucket_failures）")
+    # 分桶必须能容忍混杂语言与缺失字段——历史上 sorted(g) 在 str/int 混排时崩过。
+    rows = [
+        {"failure_reason": "syntax-error", "code_lang": "python", "project": "P5",
+         "judge_evidence": {"code_full": "x=1"}},
+        {"failure_reason": "syntax-error", "code_lang": "rust", "project": "P2",
+         "judge_evidence": {"code_full": "fn main(){}"}},
+        {"failure_reason": "placeholder-instead-of-code", "code_lang": "", "project": "P9"},
+        {"failure_reason": "timeout-no-output", "code_lang": "python", "project": "P6",
+         "steps": 0, "agents": 0},
+        {"failure_reason": "", "status": "succeeded", "done": True,
+         "delivered_code": True, "code_lang": "python", "project": "P5"},  # 成功轮，必须被跳过
+    ]
+    try:
+        bs = bucket_failures(rows)
+        names = [b["reason"] for b in bs]
+        ck("成功轮不进桶", 4, sum(b["n"] for b in bs))
+        ck("三个原因分桶", 3, len(bs))
+        ck("按轮数降序（同数不崩）", True, names[0] == "syntax-error")
+    except Exception as e:  # noqa: BLE001
+        ck("bucket_failures 不抛异常", "no-raise", "%s: %s" % (type(e).__name__, e))
+
+    print()
+    if fails:
+        print("[selftest] 失败 %d 项：" % len(fails))
+        for f in fails:
+            print("  - " + f)
+        return 1
+    print("[selftest] 全绿")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--selftest", action="store_true", help="归责与分桶判据自检（不打真实数据）")
     ap.add_argument("--new-gen", action="store_true", help="把当前实测数据固化为新一代")
     ap.add_argument("--note", default="", help="本代做了什么改动")
     ap.add_argument("--include", default="")
     ap.add_argument("--delta", action="store_true")
     ap.add_argument("--buckets", action="store_true")
     ap.add_argument("--rejudge", action="store_true", help="用留存证据按当前判分逻辑重算")
+    ap.add_argument("--decomp", action="store_true",
+                    help="分解重试的两轮对照：救回率、额外成本、按首轮原因分类")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
+    if a.selftest:
+        return selftest()
     if a.new_gen:
         rows = load_samples(include=a.include)
         if not rows:
@@ -553,6 +893,8 @@ def main():
         return show_buckets(a.include)
     if a.rejudge:
         return rejudge(a.include)
+    if a.decomp:
+        return show_decomp(a.include)
     return show_delta()
 
 

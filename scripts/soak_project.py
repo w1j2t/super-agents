@@ -304,7 +304,12 @@ def compile_check(lang, code):
             src.write_text(code, encoding="utf-8")
             r = subprocess.run([exe, "--edition", "2021", "--emit=metadata",
                                 "-o", str(pathlib.Path(td) / "out.rmeta"), str(src)],
-                               capture_output=True, text=True, timeout=60)
+                               capture_output=True, text=True,
+                               # 不写 encoding 时 Windows 按 GBK 解码，rustc 回显含中文时
+                               # 读线程直接抛 UnicodeDecodeError 并被吞掉，stderr 变空，
+                               # compile_detail 退化成 rc=N，错误原因丢失。只影响诊断，
+                               # 不影响是否通过；但诊断丢了就会去修错的东西。
+                               encoding="utf-8", errors="replace", timeout=60)
             if r.returncode == 0:
                 return True, "ok"
             err = (r.stderr or "").strip().splitlines()
@@ -484,6 +489,9 @@ def judge(row):
         "elapsed": row.get("elapsed"),
         "http": row.get("http"),
         "note": row.get("note") or "",
+        # 取数失败必须落盘：查详情非 200 时 steps/agents 全是 0，和"流程没起来"
+        # 完全同形。不把这个字段传下去，evolve 的归责就只能二选一，必然判错一边。
+        "detail_http": row.get("detail_http"),
         # 失败证据必须留下来：只记"failed"等于没记。每步的成功与否、错误首行、
         # 产出开头，都是后面归因打磨时要看的原始材料。
         "step_detail": [
@@ -525,6 +533,12 @@ def failure_reason(j):
     """
     if j.get("compiles") is None:
         if not j.get("code_chars"):
+            # 取数失败优先判：查详情返回非 200 时 el/status/steps 全是空的，
+            # 与"超时无输出"同形。混进 timeout 桶，下一刀就会去调超时阈值和吞吐，
+            # 而真凶是客户端没把结果取回来（camp-e r249：任务跑满 287s，查询 401）。
+            dh = j.get("detail_http")
+            if dh is not None and str(dh) != "200":
+                return "collect-failed"
             if j.get("status") in (None, "", "unknown") or (j.get("elapsed") or 0) >= 580:
                 return "timeout-no-output"
             return "no-code-at-all"
@@ -545,6 +559,83 @@ def failure_reason(j):
     if not j.get("done"):
         return "not-done"
     return ""
+
+
+# --------------------------------------------------------- 分解重试（自进化闭环）
+
+def usable_of(j):
+    """可用交付：worker 认领交了，**且**本机实测能编译。
+
+    为什么不能只用 compiles：实测 26 条样本"明确没交付却编译通过"，全是空串与
+    `print('Hello World')` 这类语法合法的玩具代码。只问"能跑吗"会把编译率虚高
+    6.3 个百分点（95.7% vs 89.4%），而这个虚高恰好盖住了模型最常犯的错。
+
+    为什么 compiles 为 None 也算不可用：None 的语义是"输出取不全、本机复验不了"，
+    拿不到东西给人用，在交付意义上和"编译不过"同价。它不能进编译率的分母
+    （那是测量口径），但必须算作"这一轮没交出可用物"（那是任务口径）。
+    """
+    return bool(j.get("delivered_code") is True and j.get("compiles") is True)
+
+
+def _prev_code(j, cap=2400):
+    ev = j.get("judge_evidence") or {}
+    code = ev.get("code_full") or ""
+    return code[:cap].strip()
+
+
+def decompose_goal(goal, prev_code, lang="py"):
+    """首轮没交出可用代码时，造第二轮要跑的 goal。
+
+    这套闭环唯一需要判断的地方是"上一轮到底留下了什么"，据此分两种打法：
+
+    * **有骨架**（>=120 字符）：接力补全。把上轮代码原样塞回去，让模型在既有
+      结构上补，而不是从零重写。从零重写时最常见的退化就是"背模板"——
+      实测同一份 209 字符的 `print('Hello World')` 在五个不同轮次里反复出现。
+      骨架进了 prompt，至少把话题锚死在原任务上。
+    * **没骨架**：降粒度。只要一个核心函数，砍掉 main / 参数解析 / 测试。
+      CPU 上的 2B 用整包交付几乎必败，但"写一个函数"是它能过的量级。
+      先拿到"能 import 的东西"，比追求一次交完整件现实。
+
+    为什么只做两轮、不做三轮：两轮已经把单轮成本翻倍，第三轮的边际收益必须
+    先由数据证明。先拿到"两轮 vs 一轮"的干净对照，再决定要不要加码——
+    在尺子还没校准时引入第三个变量，等于自己废掉这次实验。
+    """
+    code = (prev_code or "").strip()
+    py = (lang or "py").lower() == "py"
+    fence = "python" if py else "rust"
+    minimal = ("能被 Python 直接 import 而不报错，函数体是真实逻辑" if py
+               else "能被 rustc 单文件编译通过（不引入外部 crate）")
+    if len(code) >= 120:
+        return (
+            "【第二轮·接力补全】上一轮已经写出了一个雏形，但没有达到可交付状态。\n"
+            "请在下面的代码基础上继续写完，**不要推倒重来，不要换文件名**。\n\n"
+            "已有代码：\n```%s\n%s\n```\n\n"
+            "原始任务要求：%s\n\n"
+            "本轮只做三件事：①补上缺失的函数体；②清掉所有 TODO / pass / ... 占位符；"
+            "③输出完整文件。只输出一个代码块，不要任何解释。"
+            % (fence, code, goal)
+        )
+    return (
+        "【第二轮·降粒度】上一轮没有产出可运行的代码。这一轮把要求降到最低：\n"
+        "只写**最核心的一个函数**，不要写 main、不要写参数解析、不要写测试。\n"
+        "要求：%s。\n\n"
+        "原始任务：%s\n\n"
+        "只输出一个代码块，不要任何解释，不要写 TODO 或省略号占位。"
+        % (minimal, goal)
+    )
+
+
+def decompose_verdict(j, j2):
+    """把两轮结果压成一个结论。只出三种值，便于直接计数。
+
+    rescued 是这套闭环唯一想增加的数：首轮不可用、第二轮可用。
+    它必须能单独统计出来，否则"分解有没有用"永远只能靠感觉说。
+    """
+    if usable_of(j):
+        return "first"                       # 首轮就好，根本不该重试（属误触发）
+    if usable_of(j2):
+        return "rescued"
+    return "still-bad"
 
 
 def append_jsonl(path, obj):
@@ -827,6 +918,37 @@ def selftest() -> int:
         got, was_cut = normalize_mode(raw)
         ck(f"mode 归一 {raw} -> {want}", got == want and was_cut == cut, (got, was_cut))
 
+    # 7. 可用交付与分解重试。这一组同样正负样本都要，理由同 4b：
+    #    只测"该重试的都重试了"，一个永远返回 False 的 usable_of 也能全绿。
+    ck("可用交付：认领+能编译 -> True",
+       usable_of({"delivered_code": True, "compiles": True}) is True)
+    ck("可用交付：认领但语法错 -> False",
+       usable_of({"delivered_code": True, "compiles": False}) is False)
+    ck("可用交付：能编译但没认领（玩具代码）-> False",
+       usable_of({"delivered_code": False, "compiles": True}) is False)
+    ck("可用交付：复验不了 -> False",
+       usable_of({"delivered_code": True, "compiles": None}) is False)
+
+    # 有骨架走接力、没骨架走降粒度：两者必须能区分，否则重试等于重跑同一条
+    g_relay = decompose_goal("写一个去重工具", "def dedup(paths):\n    pass\n" * 8, "py")
+    ck("有骨架 -> 接力补全", "接力补全" in g_relay and "已有代码" in g_relay, g_relay[:30])
+    ck("接力不漏原任务", "写一个去重工具" in g_relay)
+    g_min = decompose_goal("写一个去重工具", "...", "py")
+    ck("没骨架 -> 降粒度", "降粒度" in g_min and "只写**最核心的一个函数**" in g_min, g_min[:30])
+    # 语言必须跟着任务走：Rust 任务不能被要求"能被 Python import"
+    g_rs = decompose_goal("写一个 axum 限流中间件", "", "rs")
+    ck("Rust 降粒度不提 Python", "Python" not in g_rs and "rustc" in g_rs, g_rs[:40])
+
+    ck("两轮结论：首轮就好 -> first",
+       decompose_verdict({"delivered_code": True, "compiles": True},
+                         {"delivered_code": None, "compiles": None}) == "first")
+    ck("两轮结论：第二轮救回 -> rescued",
+       decompose_verdict({"delivered_code": False, "compiles": None},
+                         {"delivered_code": True, "compiles": True}) == "rescued")
+    ck("两轮结论：两轮都废 -> still-bad",
+       decompose_verdict({"delivered_code": False, "compiles": None},
+                         {"delivered_code": False, "compiles": True}) == "still-bad")
+
     print(f"\n[selftest] {len(fails)} 项失败" if fails else "\n[selftest] 全绿")
     return 1 if fails else 0
 
@@ -849,6 +971,9 @@ def main() -> int:
                          "rs=Rust 项目（2B 的能力天花板），all=混合按项目轮转")
     ap.add_argument("--order", default="easy-first", choices=["easy-first", "legacy"],
                     help="任务流排序：easy-first 先跑模型更可能完成的 Python 侧任务")
+    ap.add_argument("--decompose", action="store_true",
+                    help="首轮不可用时再跑一轮（接力补全/降粒度），默认关闭；"
+                         "开启后重试样本与结论分别落 -retry / -decomp 两个文件，不污染主口径")
     ap.add_argument("--tag", default="baseline")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--report-only", action="store_true")
@@ -860,6 +985,11 @@ def main() -> int:
         return selftest()
 
     out = EVID / f"soak-{args.tag}.jsonl"
+    # 分解重试的两本账刻意与主账分开：
+    # 主账只记首轮，任何口径都不该因为"开了个实验开关"而变；重试样本与结论
+    # 各自成文件，才能回答"两轮之后好了几条"而不动首轮成功率的可比性。
+    out_retry = EVID / f"soak-{args.tag}-retry.jsonl"
+    out_decomp = EVID / f"soak-{args.tag}-decomp.jsonl"
 
     if args.report_only:
         s = summarize(out, args.tag)
@@ -922,12 +1052,52 @@ def main() -> int:
                       "cycle": item["cycle"], "user": user,
                       "goal": item["goal"][:120]})
             j["failure_reason"] = failure_reason(j)
-            append_jsonl(out, j)
+            j["usable"] = usable_of(j)
+            append_jsonl(out, j)          # 先落首轮证据，再赌第二轮：中途断了底账还在
             ok_n += 1 if j["done"] else 0
             el = time.time() - t0
             print("[%4d/%d] %-14s st=%-9s agents=%d code=%s comp=%s %.0fs 累计完成 %d"
                   % (rnd, args.rounds, item["project"], j["status"], j["agents"],
                      j["code_chars"] or "-", j["compiles"], el, ok_n), flush=True)
+
+            # 分解重试：只处理"流程跑满了但没交出可用物"的轮次。
+            #
+            # 排除 timeout-no-output（steps=0）：那是框架侧没跑起来，分解只会
+            # 再多等 600 秒，白烧 CPU——这批归 framework，要靠超时阈值治，
+            # 不该混进"模型多轮能不能写出来"的实验里。
+            #
+            # 同样排除 unverified（camp-g r2/r3 反证）：那是"写了但取不全、本机
+            # 复验不了"，不是"没写出来"。把它当失败送进分解，等于让模型把一条
+            # 已经写好的完整实现（3293 字符）重写一遍，实测重写后只剩 802 与
+            # 116 字符、还带语法错。这和 A.7 是同一个错——取不到 ≠ 没有。
+            # 首轮已可用的不重试：若真触发，verdict 会记成 first，留证说明判据错了。
+            if (args.decompose and not j["usable"]
+                    and j["failure_reason"] not in ("timeout-no-output", "unverified")):
+                lang = _project_lang([item["goal"]])
+                g2 = decompose_goal(item["goal"], _prev_code(j), lang)
+                row2 = soak.run_task(base, g2, None, "%s-r%d-b" % (args.tag, rnd),
+                                     timeout=args.task_timeout)
+                j2 = judge(row2)
+                j2.update({"round": rnd, "attempt": 2, "project": item["project"],
+                           "stage": item["stage"], "cycle": item["cycle"],
+                           "user": user, "goal": g2[:120]})
+                j2["failure_reason"] = failure_reason(j2)
+                j2["usable"] = usable_of(j2)
+                append_jsonl(out_retry, j2)
+                v = decompose_verdict(j, j2)
+                append_jsonl(out_decomp, {
+                    "parent_round": rnd, "project": item["project"],
+                    "lang": lang, "verdict": v,
+                    "first": {"reason": j["failure_reason"], "code_chars": j["code_chars"],
+                              "compiles": j["compiles"], "delivered": j["delivered_code"],
+                              "tokens": j["tokens"], "elapsed": j.get("elapsed")},
+                    "second": {"reason": j2["failure_reason"], "code_chars": j2["code_chars"],
+                               "compiles": j2["compiles"], "delivered": j2["delivered_code"],
+                               "tokens": j2["tokens"], "elapsed": j2.get("elapsed")},
+                })
+                print("        └ 分解[%s] %s -> code=%s comp=%s 额外 %.0fs"
+                      % (v, j["failure_reason"], j2["code_chars"] or "-",
+                         j2["compiles"], time.time() - t0 - el), flush=True)
     finally:
         soak.stop(proc)
         if not args.keep:

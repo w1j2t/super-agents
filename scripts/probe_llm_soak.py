@@ -460,7 +460,19 @@ def run_task(base, goal, task_type, tag, timeout):
         return row
 
     row["task_id"] = task_id
-    _, detail = authed_call(base, "GET", f"/api/v1/tasks/{task_id}", timeout=60)
+    # 查详情必须看状态码。此前写成 `_, detail = authed_call(...)`，把 HTTP 状态丢了：
+    # 查询失败时 detail 是 {"detail":"访问令牌已过期"}，task_of() 取不到任务，
+    # 于是 task_status=None / agents=0 / code=0 —— 和"任务根本没跑起来"完全同形，
+    # 判分侧只能记成 timeout-no-output，真因被埋掉（evidence/soak/camp-e r249：
+    # elapsed=287s 说明任务真跑了，却因最后一步查询 401 被判成框架没跑）。
+    # 现在非 200 一律写明，宁可多一个 note，也不要多一条假因。
+    ensure_fresh(base)
+    d_st, detail = authed_call(base, "GET", f"/api/v1/tasks/{task_id}", timeout=60)
+    if d_st != 200:
+        row["detail_http"] = d_st
+        row["note"] = "查详情失败 HTTP %s: %s" % (
+            d_st, str((detail or {}).get("detail") or detail)[:160])
+        return row
     task = task_of(detail or {})
     row["task_status"] = task.get("status")
     row["tokens"] = int(task.get("tokens_used") or 0)
