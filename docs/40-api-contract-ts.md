@@ -13,8 +13,10 @@
 | B. 自动生成（类型） | `python scripts/gen-ts-types.py` 直接解析 Rust 源码生成 `generated/types.generated.ts` | 脚本（机器） |
 | C. 自动生成（接口） | `python scripts/gen-openapi.py` 解析路由表 + handler 签名，生成 `docs/openapi.json`（OpenAPI 3.1） | 脚本（机器） |
 
-**2026-11-09 实跑结果**：A 与 B 可交叉验证 `21` 个 interface，**字段差异 0 处**；共有枚举 `7` 个，**取值差异 0 处**。
-C 产出 **24 条路径 / 28 个操作 / 50 个 schema**，§2 的端点表已按 C 逐行复核（本轮据此修正了 4 处旧文档错误，见 §2 末尾的修订记录）。
+**2026-11-16 复核结果**：`python scripts/check-contract.py` 实测 A 与 B 交叉验证 `25` 个 interface，**字段差异 0 处**（源码结构体 91 个 / 文档手写 interface 25 个 / 查无同名 0）。
+`generated/types.generated.ts` 现为 `62` 个 interface + `12` 个联合类型（机器产物，以它为准）。
+C 产出 **29 条路径 / 33 个操作 / 51 个 schema**（其中 `/api/v1` 前缀下 26 条路径 / 30 个操作，根路径 `/healthz`、`/readyz`、`/metrics` 各 1 个操作），§2 的端点表已按 C 逐行复核。
+数字一致性现在由门禁 27 `scripts/check_docs_drift.py` 自动守着 —— 以后谁改了接口忘了改文档，门禁会直接报红，不必再靠人眼发现。
 复跑命令：
 
 ```powershell
@@ -84,7 +86,7 @@ interface ProblemBody {
 
 ## 2. 端点全表
 
-`/api/v1` 前缀下 **25 条路径 / 29 个操作**，另有 3 个运维端点挂在根路径（见 §2.2），合计 **28 条路径 / 32 个操作**，与 `docs/openapi.json` 的 `paths` 逐条对齐（`/memories`、`/memories/{id}`、`/tasks` 各承载 2 个方法，`/memories/{id}` 承载 3 个）。
+`/api/v1` 前缀下 **26 条路径 / 30 个操作**，另有 3 个运维端点挂在根路径（见 §2.2：`/healthz`、`/readyz`、`/metrics`），合计 **29 条路径 / 33 个操作**，与 `docs/openapi.json` 的 `paths` 逐条对齐（`/memories`、`/memories/{id}`、`/tasks` 各承载 2 个方法，`/memories/{id}` 承载 3 个）。
 
 | # | 方法 | 路径 | 鉴权 | 请求体 | 响应 |
 |---|---|---|---|---|---|

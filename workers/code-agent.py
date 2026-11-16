@@ -281,7 +281,14 @@ def syntax_check(lang: str, code: str) -> dict:
             res = subprocess.run(
                 [exe, "--edition", "2021", "--crate-type", "lib",
                  "--emit=metadata", "-o", str(pathlib.Path(td) / "p.rmeta"), str(src)],
-                capture_output=True, text=True, timeout=90)
+                capture_output=True, text=True,
+                # 必须显式给 encoding：不写时 Windows 按系统代码页（GBK）解码子进程
+                # 输出，rustc 回显里有中文（源码注释/字符串）或任何非 GBK 字节时，
+                # _readerthread 直接抛 UnicodeDecodeError 并把该流丢弃，res.stderr
+                # 变空、退出码还在。后果不是"编译判错"，而是**归因判错**：拿不到
+                # error[EXXXX] 就分不清"语法/类型错"与"模型根本没写对"，Rust 侧
+                # 的能力画像会整体失真。errors="replace" 保证诊断文本永不因编码丢失。
+                encoding="utf-8", errors="replace", timeout=90)
             err = (res.stderr or "")
             if res.returncode == 0:
                 return {"ok": True, "method": "rustc:lib", "detail": "编译通过"}

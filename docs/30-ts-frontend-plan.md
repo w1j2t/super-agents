@@ -142,7 +142,7 @@ async function request<T>(path: string, init: RequestInit & { auth?: boolean } =
 | `/tasks/new` | 新建任务 | 目标输入 + agent 选择 + 模型档位（默认 auto）+ 预算（可选，显示默认值） |
 | `/tasks/:id` | 任务详情 | 左：轨迹时间线；右：预算计量条、memory_refs、model_profile |
 | `/memories` | 记忆 | 三级作用域分栏（private/shared/system），system 只读提示"需管理员" |
-| `/agents` | Agent 目录 | 9 个卡片，显示模式（只读/读写）与能力数 |
+| `/agents` | Agent 目录 | 14 个卡片，显示模式（只读/读写）与能力数 |
 | `/capabilities` | 能力清单 | 26 项，按五要素（输入/输出/权限/计费/失败模式）展开 |
 | `/observability` | 概览+审计 | 需 admin 角色；审计表支持按事件类型筛选 |
 
@@ -164,8 +164,8 @@ async function request<T>(path: string, init: RequestInit & { auth?: boolean } =
 
 | 事实 | 位置 | 怎么用 |
 |---|---|---|
-| 接口契约 | `docs/openapi.json`（24 路径 / 28 操作 / 50 schema） | 前端跑 `openapi-typescript` 从**本地文件**生成类型，不依赖服务启动 |
-| TS 类型（另一条独立来源） | `generated/types.generated.ts`（40 interface + 9 联合类型） | 与上一条互相印证：两边接口名一致、字段一致才算对 |
+| 接口契约 | `docs/openapi.json`（29 路径 / 33 操作 / 51 schema，2026-11-16 复核） | 前端跑 `openapi-typescript` 从**本地文件**生成类型，不依赖服务启动 |
+| TS 类型（另一条独立来源） | `generated/types.generated.ts`（62 interface + 12 联合类型） | 与上一条互相印证：两边接口名一致、字段一致才算对 |
 
 ```bash
 pnpm add -D openapi-typescript
@@ -198,8 +198,14 @@ type TaskStatus =
   | 'failed' | 'aborted_budget' | 'cancelled';
 ```
 
-- 现有后端 `POST /tasks` 是**同步**返回终态（模拟执行秒回）。因此 v1 前端按"提交→直接拿终态"建模。
-- **为 Phase-2 流式预留**：以 `status === 'running'` 分支先行写好 UI（骨架屏 + 轮询 `GET /tasks/{id}/trace`，`refetchInterval: 1000`，终态自动停）。这样后端加 SSE 时前端无需重构，只需把轮询换成事件源。
+> **2026-11-16 实测更正（此前本节的"同步返回终态"已作废）**：`POST /tasks` 默认 `mode=async`，**返回 202 + 任务对象**（`status: "queued"`，`plan` 已展开为若干步），真正的执行在后台；随后用 `GET /tasks/{id}/events` 订阅 SSE 拿状态流。前端应按"提交→拿 id→订阅事件流"建模，不要再写"提交后秒回终态"。
+>
+> 实测帧序列（单次 curl 即可复现）：`id: 0` / `event: status` / `data: {...}` / 空行，随后 `: ping` 心跳帧，`content-type: text/event-stream`、`cache-control: no-cache`。
+>
+> **一个必须知道的坑**：`seq` 是**全站共享的进程内单调号**（`src/orchestration/events.rs` 的 `AtomicU64`），不是"本任务第几帧"。实测同一任务首帧 `seq=0`、第二个数据帧直接是 `seq=299`——这**不是丢帧**，中间是别人的事件占号。所以前端**不能**用 `seq` 是否 `+1` 来判断漏帧；判断"跟丢了"的唯一信号是重连后收到重复的快照帧，或观测 `sa_sse_replay_gap_total` 增长。`Last-Event-ID` 传最后收到的 `seq` 即可，服务端按 `> seq` 补发。
+
+- **v1 就这么写**：进 `/tasks/:id` 立刻连 SSE，`status` 为终态（`succeeded`/`failed`/`partially_succeeded`/`aborted_budget`/`cancelled`）时服务端主动 EOF，前端关连接即可。
+- 轮询只是**兜底**：SSE 连不上（代理不支持长连接）时退回 `GET /tasks/{id}`，`refetchInterval: 1500`，终态自动停。
 - 预算计量条：`used_tokens / budget_tokens`，≥80% 变琥珀色，`aborted_budget` 时直接展示原因文案。
 - 状态语义：`partially_succeeded` 表示部分步骤成功（**不是**失败，UI 用中性灰蓝而非红）；`failed` 才是整体失败。
 
@@ -261,7 +267,7 @@ type TaskStatus =
 | **A2 主链路**（2–3 天） | 注册→教程 6 步→新建任务→任务详情轨迹 | Playwright 跑通 E2E 主路径 |
 | **A3 全功能**（2–3 天） | 记忆三作用域、agents、capabilities、observability | 所有路由无空白页；错误态/空态/加载态齐全 |
 | **A4 打磨**（1–2 天） | 命令面板（⌘K）、键盘可达、深浅主题、任务列表虚拟滚动 | Lighthouse a11y ≥ 95；500 条列表不掉帧 |
-| **A5 接真执行**（Phase-2 后） | 轮询换 SSE、worker 状态可视化 | 任务执行进度实时可见 |
+| **A5 接真执行**（Phase-2 后） | ~~轮询换 SSE~~、worker 状态可视化 | **SSE 已就绪（2026-11-16 实测合规）**，v1 直接连事件流，无需后补 |
 
 ## 13. 三个容易被忽略但决定长期成败的点
 

@@ -2,6 +2,10 @@
 
 按阅读顺序排列。前三份是"现在的事实"，后两份是"接下来的路"。
 
+> **如果你是接手做前端的 Agent，只看一份文件：[88-frontend-handoff.md](88-frontend-handoff.md)。**
+> 那里写着后端怎么起、契约在哪、五个会让你白干的坑，目标是让你 30 分钟内提交出第一个任务。
+> 本文其余部分不用通读——需要查某个细节时再回来。
+
 > **只想核对、不想通读？直接看 [70-audit-handoff.md](70-audit-handoff.md)** —— 那是给第三方 AI/人用的审计交接书：
 > 交付物清单、5 分钟证伪路径、20 条"主张→证据→复现"对照、10 条"明确没做"的清单、7 处自检抓出的真缺陷。
 
@@ -13,9 +17,9 @@
 | **03** | [03-division-of-labor.md](03-division-of-labor.md) | **六部分③ 分工协作**：14 个 agent 的花名册与权限档位、路由打分与派发门槛（打不到信号即拒，不猜类型），**由源码生成** | 想确认"谁干什么" |
 | **04** | [04-interaction-spec.md](04-interaction-spec.md) | **六部分④ 交互规范**：鉴权流程、Problem 错误模型与**按操作真实分布的错误码**、任务与 SSE、取消、前端三条铁律 | 写前端 / 联调 |
 | **05** | [05-boundary-handling.md](05-boundary-handling.md) | **六部分⑤ 边界处理**：三道闸门、七权限、七条红线、预算降档、熔断阈值、限流配额、不可配置清单 | 想知道"什么会被拒绝" |
-| **06** | [06-acceptance-criteria.md](06-acceptance-criteria.md) | **六部分⑥ 验收标准**：26 道门禁逐条说明、命令清单、六部分验收矩阵、抽查项、已知未达标、准入准出 | **想知道"算不算做完"** |
+| **06** | [06-acceptance-criteria.md](06-acceptance-criteria.md) | **六部分⑥ 验收标准**：29 道门禁逐条说明、命令清单、六部分验收矩阵、抽查项、已知未达标、准入准出 | **想知道"算不算做完"** |
 | **07** | [07-api-reference.md](07-api-reference.md) | API 索引（**由 openapi 生成**）：路径 / 操作清单与数据结构一览 | 查接口 |
-| 10 | [10-verification-report.md](10-verification-report.md) | **后端验收报告**：**截至 2026-11-11 的时点为 131 单测 + 156 项端到端冒烟（json/memory 双后端各一遍）+ 14 道门禁全绿**（§11 与 `evidence/regress-all.txt`）；**当前口径以 `evidence/regress-all.txt` 与逐门禁 latest 为准（24 道门禁）**、3 个真实缺陷修复、环境变量清单、已知缺口清单 | 想知道"做完了没" |
+| 10 | [10-verification-report.md](10-verification-report.md) | **后端验收报告（历史时点）**：**截至 2026-11-11 为 131 单测 + 156 项端到端冒烟（json/memory 双后端各一遍）+ 14 道门禁全绿**；当前口径（29 道）见 `06` / `88`（§11 与 `evidence/regress-all.txt`）；**当前口径以 `evidence/regress-all.txt` 与逐门禁 latest 为准（24 道门禁）**、3 个真实缺陷修复、环境变量清单、已知缺口清单 | 想知道"做完了没" |
 | 20 | [20-rust-python-architecture.md](20-rust-python-architecture.md) | Rust 热路径 + Python 编排的落地设计：进程协议、延迟预算、可靠性、4 步迁移路径 | 决定下一步怎么演进 |
 | 30 | [30-ts-frontend-plan.md](30-ts-frontend-plan.md) | **TypeScript 前端完整方案**：选型理由、目录结构、数据流分层、双令牌会话、路由与页面、任务状态机、性能预算、5 阶段实施 | 要动手写前端 |
 | 40 | [40-api-contract-ts.md](40-api-contract-ts.md) | **API 契约逐字段对照源码**：24 条路径 / 28 个操作、全量 TS 类型、queryKey 规范、失效规则、SSE 预留契约、联调核对清单 | 写前端时放在手边 |
@@ -31,6 +35,11 @@
 | 85 | [85-llm-evidence-and-boundaries.md](85-llm-evidence-and-boundaries.md) | **真模型实测证据与两处刻意边界**：5 份 soak 证据总表（轮数/耗时/采纳率）、JSON 模式归因（-23%，只给方向性结论）、告警「只识别不处置」与压测撞限流的取舍、G1~G8 判据口径 | 想核对「模型到底有没有被采用」 |
 | 86 | [86-vertical-agents.md](86-vertical-agents.md) | **垂直 agent 的准入、增补与裁撤**：四道准入（任务类型/可评审产物/对错判据/独立知识库）、本轮 game/finance/legal/data 四域立册依据、`collab-agent` 归并判据、新增 agent 的**十三处同步清单**与 6 条守护测试 | 想加或想删一个 agent 时**先读这份** |
 | 87 | [87-cli-client.md](87-cli-client.md) | **CLI 客户端**：七个入口与"无参 = serve"的硬约定、令牌文件与取值优先级、**401 自愈里的真缺陷**（刷新漏查 `tokens` 一层，把已作废的旧 refresh 写回）、8 进程并发刷新的三级退避、`doctor` 十项与退出码三分、三个"看起来正常"的显示坑（显示宽度 / UTC 标签 / PowerShell 编码）、门禁 22 与 23 的分工 | 想用命令行提交任务时 |
+| 88 | [88-frontend-handoff.md](88-frontend-handoff.md) | **前端交接单（写给下一个对话）**：30 分钟内跑起前端并成功提交第一个任务的最小路径、必踩的坑、令牌与端口口径；文中每个数字都由门禁 27 实时比对代码，写错就变红 | 另开对话做前端时**先读这份** |
+| 89 | [89-agent-design-trends.md](89-agent-design-trends.md) | **Agent 设计趋势与本项目对照**：三条主线（从「能管住」到「会变好」）逐条打分，只挑三件便宜且收益大的事动手；含「裁判必须是确定性代码」这条硬约束与假绿事故复盘 | 想知道「下一步该往哪补」时 |
+| 90 | [90-metric-credibility.md](90-metric-credibility.md) | **指标可信度声明**：报表上哪些数字能做决策、哪些不能。camp-g 的编译率为何可信、重判修正后的读数自洽关系、以及**必须打折看的三处**（样本太少 / 两个语言桶未合并 / 三桶在真实会话上为空） | 要拿数字汇报或判断「模型行不行」之前 |
+| 91 | [91-split-strategy.md](91-split-strategy.md) | **切分策略：为什么实现了却默认不用**：整包任务「先骨架后填实」的 A/B 实测——纯重跑救回率高于三段切分近 2.5 倍且只花 43% 成本，McNemar 不显著但成本确定；附 `--retry-placeholder` 开关的正确用法与三条「为什么更差」真因 | 想改整包任务切分或加长流程前 |
+| 92 | [92-self-evolution-loop.md](92-self-evolution-loop.md) | **自进化闭环**：用本地小模型当探针、真实长跑当显微镜、主 Agent 负责修、再用同一把尺子量回来。含第一代真修了什么、以及怎么防止自己骗自己（假绿事故的三种形状） | 想知道「改完凭什么说变好了」时 |
 
 ## 可执行的自检工具
 
@@ -45,7 +54,7 @@
 | `scripts/check-modularity.py` | **模块化静态守护**：扫全部 `.rs`，禁止业务层出现具体后端名、禁止越级调 `backends::`/`audit::open`、校验 `StorageKind/RunnerKind/AuditKind::ALL` 与工厂分支同步、环境变量单点读取（仅 `config.rs`） | `python scripts/check-modularity.py`（退出码 0 = 15/15） |
 | `scripts/swap_drill.py` | **换件演练（行为级）**：同一套 18 个请求在 json/memory 与 memory/file 两组后端各跑一遍，比对状态码与响应结构签名；同一任务在 sim/process 下比对计划、权限档位、trace 口径、token 记账；另含**硬杀重启后台账可追溯**与坏配置拒启；开跑前先做**端口段体检**（这段口有人应答就自动顺移并 WARN，`D0` 验证检测器本身不失灵） | `python scripts/swap_drill.py`（退出码 0 = 23/23） |
 | `scripts/verify_runner.py` | **执行端口实测**：`SA_RUNNER=process` 真跑外部脚本，验证标记真的出现、治理未绕过、缺脚本是可重试失败、非法配置拒启 | `python scripts/verify_runner.py`（退出码 0 = 15/15） |
-| `scripts/regress_all.py` | **一键全量门禁（26 道）**：单测 + 冒烟×2 后端 + OpenAPI 语义/未漂移 + TS 同步 + 契约文档 + 执行端口 + 部件矩阵 + 换件演练 + 审计自检 + 响应形状 + 多节点集群 + worker 分词质量 + 异步受理与缺省；判定口径见 `docs/06` | `python scripts/regress_all.py`（退出码 0 = 26 道全绿；`--with-drills` 另跑负向演练，不计入门禁数） |
+| `scripts/regress_all.py` | **一键全量门禁（29 道）**：单测 + 冒烟×2 后端 + OpenAPI 语义/未漂移 + TS 同步 + 契约文档 + 执行端口 + 部件矩阵 + 换件演练 + 审计自检 + 响应形状 + 多节点集群 + worker 分词质量 + 异步受理与缺省；判定口径见 `docs/06` | `python scripts/regress_all.py`（退出码 0 = 26 道全绿；`--with-drills` 另跑负向演练，不计入门禁数） |
 | `scripts/build-exe.py` | **门禁 0：编译 + 自证二进制新鲜**。`cargo test` 不更新 `super-agents.exe`，于是出现过"12 道全绿、测的是 18:48 旧程序"的假绿；本脚本真编译并校验 exe mtime ≥ 最新源码，落后即红 | `python scripts/build-exe.py`（退出码 0 = 编译成功且新鲜） |
 | `scripts/check-prompt-coverage.py` | **门禁 12：需求覆盖对齐**。把首个提示词拆成术语清单，逐条查六部分文档有无落点，并校验源码 26 个能力 id 与设计公理 A1~A6 全覆盖；缺一即红（已做负向演练确认它会红） | `python scripts/check-prompt-coverage.py`（退出码 0 = 全覆盖） |
 | `scripts/probe_hallucination.py` | **门禁 13：防幻觉打点实测**。造 5 条长记忆压到上下文裁剪，再抓 `/metrics` 断言 `sa_hallucination_flags_total` 与 `sa_context_truncations_total` 真有值——治的是"规格写了、代码没打点" | `python scripts/probe_hallucination.py --exe <exe>`（退出码 0 = 13/13） |
@@ -63,7 +72,7 @@
 | `scripts/probe_sched.py` | **门禁 25：自动任务调度**。守第一件"会自己按时间动起来"的东西，防三类**沉默型退化**：①把执行顺手写进 `due()`（派发条数照对、心跳却被拖死，故用 AST 扫描 + 运行时桩 + 哨兵文件三重自证"它不动手"）；②`mark()` 只改内存不落盘（同实例连查天然幂等，重启后才暴露）；③漏跑诊断恒返回空（一个功能两个答案）。另守日历边界 8 例（月末 31 / 闰日 / 周日 0≡7 / 跨年首分钟）、CLI 与库同库且原子写无 `.tmp` 残留、坏行与非法 cron 不影响派发，19 项 | `python scripts/probe_sched.py`（退出码 0 = 19/19，约 0.3s；`--drill` 三种坏法须分别红在 G2 / G3 / G4c） |
 
 > 以下为 2026-11-09 的历史留档（**当时的单测/冒烟/门禁数已全部过时，勿据此判断当前状态**）；
-> 当前口径以 `docs/evidence/regress-all.raw.txt` 为准（**26 道门禁**），一条命令可复跑：`python scripts/regress_all.py`：
+> 当前口径以 `docs/evidence/regress-all.raw.txt` 为准（**29 道门禁**），一条命令可复跑：`python scripts/regress_all.py`：
 > 下列数字只描述当时那一次运行：
 > - `cargo test`：**80 passed / 0 failed**（含沙箱记账归属、审计部件、重启回读、坏行跳过、容量有界等守护）
 > - `smoke.py`：**123 项断言，123 通过 / 0 失败**，且 **json / memory 两套存储后端各跑一遍全绿**
