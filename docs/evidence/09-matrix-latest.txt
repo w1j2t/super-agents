@@ -1,6 +1,6 @@
 # 9 可插拔部件矩阵
-生成时间: 2026-11-16 08:54:27
-命令由 regress_all.py 编排执行，rc=0，耗时 34.0s
+生成时间: 2026-11-16 15:31:02
+命令由 regress_all.py 编排执行，rc=0，耗时 27.3s
 （原始输出如下，未做删改）
 ======================================================================
 
@@ -80,7 +80,7 @@
 [OK  ] F 指标换空实现 | 记忆读回  ->  实际=200 命中=True
 [OK  ] F 指标换空实现 | 指标端点可用  ->  实际=200
 
-===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794789687\\runner-scripts'} =====
+===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794813930\\runner-scripts'} =====
 [OK  ] G 执行换真实脚本 | 实例就绪
 [OK  ] G 执行换真实脚本 | 注册（首个用户 = owner）  ->  实际=201
 [OK  ] G 执行换真实脚本 | 登录  ->  实际=200

@@ -1,10 +1,10 @@
 # 19 可观测告警行为
-生成时间: 2026-11-16 08:54:27
-命令由 regress_all.py 编排执行，rc=0，耗时 11.2s
+生成时间: 2026-11-16 15:31:02
+命令由 regress_all.py 编排执行，rc=0，耗时 8.8s
 （原始输出如下，未做删改）
 ======================================================================
        二进制 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe（2026-11-15 16:21:16）
-       [A-default] 端口 18665 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\A-default-server.log
+       [A-default] 端口 8096 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\A-default-server.log
 [OK  ] A0 服务就绪（/readyz ready=true）
 [OK  ] A0b 注册管理员与普通成员  ->  status=201/201
 [OK  ] A1 无流量时无告警  ->  status=200 count=0
@@ -26,16 +26,16 @@
 [OK  ] A9b sa_alerts_deduped_total 落点（=9，与 stats.suppressed_total 一致）  ->  指标=9 stats=9
 [OK  ] A9c 命中＝发出＋压制 守恒（12 = 3 + 9）  ->  12 vs 3 + 9
 [OK  ] A10 auto_action 反映真实兜底机制（budget_downgrade）  ->  {"kind": "budget_downgrade", "detail": "预算超支已触发降档（sa_budget_downgrades_total 可核对）"}
-       [B-refire] 端口 18685 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\B-refire-server.log
+       [B-refire] 端口 8115 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\B-refire-server.log
 [OK  ] B0 服务就绪
 [OK  ] B0b 造出一次限流（第二次提交 429）  ->  [202, 429, 429]
 [OK  ] B1 首抓发出（fired=1）  ->  fired=1
 [OK  ] B2 窗口内再抓被压制（fired=0）  ->  fired=0
 [OK  ] B3 窗口过期后复发（fired=1）  ->  fired=1
-[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-16T00:53:35.099024100+00:00
-[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-16T00:53:35.099024100+00:00 -> 2026-11-16T00:53:36.513160400+00:00
+[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-16T07:30:30.978838800+00:00
+[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-16T07:30:30.978838800+00:00 -> 2026-11-16T07:30:32.394748500+00:00
 [OK  ] B4c 命中累计到 3 次（hits=3）  ->  hits=3
-       [C-storm] 端口 18698 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-085329\C-storm-server.log
+       [C-storm] 端口 8126 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\C-storm-server.log
 [OK  ] C0 服务就绪
 [OK  ] C0b 同时造出非严重（429）与严重（403）触发源  ->  [202, 429, 429] / [403, 403]
 [OK  ] C1 风暴时只发严重告警（active 只剩 authz_denied_spike）  ->  active=['authz_denied_spike']
