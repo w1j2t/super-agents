@@ -40,7 +40,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from _compact import compact, render, verify_recall  # noqa: E402
+from _compact import (compact, render, verify_recall,          # noqa: E402
+                      brief, render_brief, brief_check, should_brief)
 from _rag import RagIndex                             # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,9 +52,13 @@ INDEXABLE = (".md", ".py", ".txt", ".json", ".yaml", ".yml", ".toml", ".rs", ".t
 class Assistant:
     """一个能在本地答话的助手。构造期零副作用（不读盘、不建索引、不联网）。"""
 
-    def __init__(self, index_dir: str = DEFAULT_INDEX, budget: int = 6000) -> None:
+    def __init__(self, index_dir: str = DEFAULT_INDEX, budget: int = 6000,
+                 use_brief: bool = True) -> None:
         self.index_dir = index_dir
         self.budget = budget
+        # 简报默认开：不做简报时，"我们要干什么"这类不含路径/数字的方向句会被
+        #   当成叙述整段裁掉，压完细节齐全、方向没了——这种退化肉眼很难发现。
+        self.use_brief = use_brief
         self.rag = RagIndex(cache_dir=index_dir, lazy=True)
         self.events: list[dict] = []
 
@@ -140,7 +145,35 @@ class Assistant:
             # 丢细节就是缺陷，不当成小事：原样多带一份原文，并把这个事实写进输出
             note += "；⚠ 检出丢失：%s（已附原文兜底）" % ",".join(missed[:5])
             return "\n".join(m["content"] for m in msgs)[:self.budget], note
-        return render(small), note
+
+        body = render(small)
+        if self.use_brief and should_brief(msgs):
+            # 简报管方向（任务原句/计划/判据/下一步/产物指针），compact 管细节。
+            #   不是二选一：只给细节会"答得细但方向错"，只给方向会"对但没料"。
+            #   这也是 arXiv:2611.05306 附录 A 的意思——好压缩是给下一次执行挑材料，
+            #   不是把执行历史写成故事。
+            br = brief(msgs, budget=max(200, self.budget // 4))
+            probs = brief_check(msgs, br)
+            groups = len([a for a in br["artifacts"] if a.get("folded")])
+            seg = ("简报侧：任务 %d 字、计划 %d、判据 %d、下一步 %d、产物指针 %d 项"
+                   % (len(br["task"]["text"]) if br["task"]["segments"] else 0,
+                      br["stats"]["counts"]["plan"], br["stats"]["counts"]["criteria"],
+                      br["stats"]["counts"]["next"], br["stats"]["artifacts"]))
+            if br["stats"]["artifact_items"] != br["stats"]["artifacts"]:
+                seg += "（原始 %d 条，折叠 %d 组）" % (br["stats"]["artifact_items"], groups)
+            if br["task"]["truncated"]:
+                seg += "；任务原文过长已截尾，全句见 %s" % (br["task"]["segments"][0]["ref"],)
+            if br["stats"]["expanded"]:
+                # 简报比原文长时必须说出来：只报 ratio 不报方向，等于挑好看的说。
+                seg += "；⚠ 本段简报比原文长（%d→%d 字）" % (
+                    br["stats"]["chars_in"], br["stats"]["chars_out"])
+            if probs:
+                # 简报自身不合格就不硬塞，宁可回退原文——退化的简报比不压更危险。
+                seg += "；⚠ 简报自检未过：%s（已附原文兜底）" % "；".join(probs[:3])
+                return "\n".join(m["content"] for m in msgs)[:self.budget * 2], note + "；" + seg
+            note += "；" + seg
+            body = render_brief(br) + "\n\n" + body
+        return body, note
 
     def _generate(self, question: str, context: str, session_ctx: str) -> str:
         """可选：走本机 Ollama。拿不到就返回空串，由上层降级——不抛异常。"""
