@@ -1,16 +1,16 @@
 ===== 0 编译与二进制新鲜度 (rc=0) =====
-编译完成 0.3s
-二进制与源码同版本：exe=12:49:12 指纹 767c523e280a…
+编译完成 0.5s
+二进制与源码同版本：exe=16:21:16 指纹 595651975000…
 
 
 
 ===== 1 单元测试 cargo test (rc=0) =====
 
-running 176 tests
-....................................................................................... 87/176
-....................................................................................... 174/176
-..
-test result: ok. 176 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.09s
+running 180 tests
+....................................................................................... 87/180
+....................................................................................... 174/180
+......
+test result: ok. 180 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.20s
 
 
 running 0 tests
@@ -89,14 +89,14 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
 [OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
-[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/8f534bca-b7c7-4f5c-bb9b-d4d4099e064b status=200 形状一致
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/6a63d861-34cc-495e-915f-826a73ec12c6 status=200 形状一致
 [OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
 [OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
-[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/8f534bca-b7c7-4f5c-bb9b-d4d4099e064b/trace status=200 形状一致
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/6a63d861-34cc-495e-915f-826a73ec12c6/trace status=200 形状一致
 [OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
 [OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
-[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/32c0c2dc-b248-4078-8d7f-9a641dff7b45/cancel status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/0f3c6ddc-2179-4d1d-92e7-513b29de0108/cancel status=202 形状一致
 [OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
 [OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
 [OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
@@ -105,7 +105,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
 [OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
 [OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
-[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/1d4a9c1b-afb7-4975-94f9-3e3b9b87ca8f status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/f3ba3c01-453b-43ea-9cc5-c8c744fada68 status=200 形状一致
 [OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
 [OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
 [OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
@@ -115,7 +115,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
 [OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
 [OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
-[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/4b7d931f-fd7d-47db-825a-fa98acf083f9 status=404 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/5f226b38-0eda-4af3-9d58-f849260776ed status=404 形状一致
 [OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
 [OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
 [OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致
@@ -180,7 +180,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 ===== 22 CLI 外壳行为 (rc=0) =====
 门禁 22 · CLI 外壳行为探针
 被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-22
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-37
 --------------------------------------------------------------------
 [PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
 [PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
@@ -213,9 +213,9 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] G1 _sched --selftest                         rc=0，13 项断言，失败 0
 [OK  ] G2a 源码无执行类调用                                 干净
 [OK  ] G2b 运行时未触发执行                                 执行被调用 0 次，哨兵文件不存在
-[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_nnu9682d\\sentinel.txt'
+[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_hzo_ttdr\\sentinel.txt'
 [OK  ] G3 重启后同分钟不重复派发                               首派 1 条，重启后同分钟再派 0 条
-[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_983db1ca", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
+[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_dc6083fb", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
 [OK  ] G4b 补跑过的不再报漏跑，且不连环补                          missed=[]，同分钟再派 0 条
 [OK  ] G4c 从未跑的必须报出来                                missed=['从未跑']
 [OK  ] G5 月末 31 日命中                                 0 0 31 * * @ 2026-12-31 00:00 → True（期望 True）
@@ -234,6 +234,106 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] G8c 停用任务不被判成漏跑                               问题=['任务已停用'] 提示=[]
 [OK  ] G8d explain 只读：store 逐字不变                    250 字节
 [OK  ] G8e 查不到时给候选而不是猜                              候选 3 条
+[OK  ] G8f 一次性时刻已过必须点名补跑开关                          问题=['设定时刻 2026-11-15T09:00 已过去，且补跑没开（--catch-up）']
+[OK  ] G8g 准点被越过要报漏跑，且不误判成故障                        问题=[] 提示=['之后的准点 2026-11-15T03:00 尚未执行（心跳够密的话，这就是漏跑）']
+[OK  ] G8h 名称撞多个任务时给候选不猜                            候选=['夜备份', '日备份']
+[OK  ] G8i 上面三次追问都只读：store 逐字不变                     345 字节
 
-合计 24 项断言 | 通过 24 | 失败 0 | 分组 8/8
+合计 28 项断言 | 通过 28 | 失败 0 | 分组 8/8
 
+
+
+===== 26 判据防伪 (rc=0) =====
+==============================================================================
+一、真代码不许被误杀（判据太严 = 另一种骗）
+==============================================================================
+PASS 真代码判通过：py 多函数实现                                compiles=True ok
+PASS 真代码判实质：py 多函数实现                                ok
+PASS 真代码判通过：py 单行真实现                                compiles=True ok
+PASS 真代码判实质：py 单行真实现                                ok
+PASS 真代码判通过：rust 函数实现                               compiles=True ok
+PASS 真代码判实质：rust 函数实现                               ok
+PASS 真代码判通过：rust 结构体+impl                           compiles=True ok
+PASS 真代码判实质：rust 结构体+impl                           ok
+
+==============================================================================
+二、假代码不许被记成'编译通过'（判据太松 = 数字虚高）
+==============================================================================
+PASS 假交付被拦下：py-pass 空函数                             compiles=None src=hollow
+PASS   归因正确：py-pass 空函数                             reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：py-ellipsis 空函数                         compiles=None src=hollow
+PASS   归因正确：py-ellipsis 空函数                         reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：py-NotImplementedError                  compiles=None src=hollow
+PASS   归因正确：py-NotImplementedError                  reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：rust-todo 空函数                           compiles=None src=hollow
+PASS   归因正确：rust-todo 空函数                           reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：rust-unimplemented                      compiles=None src=hollow
+PASS   归因正确：rust-unimplemented                      reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：hello-world 玩具                          compiles=None src=hollow
+PASS   归因正确：hello-world 玩具                          reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：纯注释                                     compiles=None src=placeholder
+PASS   归因正确：纯注释                                     reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+PASS 假交付被拦下：尖括号占位                                   compiles=None src=placeholder
+PASS   归因正确：尖括号占位                                   reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+PASS 假交付被拦下：三点省略                                    compiles=None src=placeholder
+PASS   归因正确：三点省略                                    reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+
+==============================================================================
+三、真语法错必须判失败（不能把'错'也放过）
+==============================================================================
+PASS py 语法错判失败                                      SyntaxError:invalid syntax:1
+PASS rust 语法错判失败                                    error: this file contains an unclosed delimiter
+
+==============================================================================
+四、端到端：可用交付口径（假交付不能算可用）
+==============================================================================
+PASS 空函数不算可用交付                                      usable=False reason=hollow-pass
+PASS 真实现算可用交付                                       usable=True compiles=True
+PASS 语法错不算可用交付                                      compiles=False
+
+==============================================================================
+合计 31 项 | 通过 31 | 失败 0 | 跳过 0
+
+
+
+===== 27 文档数字防漂移 (rc=0) =====
+实时真值: agents=14 | capabilities=26 | interface=62 | onboarding_required=5 | ops=33 | paths=29 | schemas=51 | union=12
+扫描文档 6 篇，命中数字断言 14 处
+PASS 文档数字与代码/契约一致
+
+
+
+===== 28 子进程解码纪律 (rc=0) =====
+[subproc-encoding] 根目录 C:\Users\94355\Desktop\新建文件夹(7)
+[subproc-encoding] 本机首选编码 cp936 / PYTHONUTF8=None / PYTHONIOENCODING='utf-8'
+OK    静态：subprocess 文本调用必须显式编码  -> 共扫 74 文件、44 处调用，不合规 0 处
+OK    行为：encoding+errors 能吞掉非法字节  -> stdout='�� hello'
+OK    行为：裸 text=True 在本机确实会崩（复现 camp-g 真因）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：只设 encoding 不设 errors 输出照样被吞（errors 不可省）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：正常中文输出原样保留  -> hello 正常文本
+OK    行为：rc 与 stderr 不被解码设置掩盖  -> rc=7，stderr 可见
+
+[subproc-encoding] 6 项：OK 6 / FAIL 0 / SKIP 0
+[subproc-encoding] PASS 子进程文本解码口径一致
+
+Exception in thread Thread-3 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xab in position 0: illegal multibyte sequence
+Exception in thread Thread-5 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xab in position 0: invalid start byte

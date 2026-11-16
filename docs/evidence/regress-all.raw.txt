@@ -1,5 +1,5 @@
 ===== 0 编译与二进制新鲜度 (rc=0) =====
-编译完成 0.5s
+编译完成 0.3s
 二进制与源码同版本：exe=16:21:16 指纹 595651975000…
 
 
@@ -10,7 +10,7 @@ running 180 tests
 ....................................................................................... 87/180
 ....................................................................................... 174/180
 ......
-test result: ok. 180 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.12s
+test result: ok. 180 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.15s
 
 
 running 0 tests
@@ -51,10 +51,10 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S14 重复用户名被拒  ->  实际=409 | {"code": "conflict", "message": "用户名已被占用"}
 [OK  ] S15 弱密码被拒（422）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"password": "密码至少 10 个字符"}}
 [OK  ] S16 正确密码登录 200  ->  实际=200
-[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-16T07:25:05.662397800Z
+[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-16T13:44:19.203447300Z
 [OK  ] S18 错误密码 401  ->  实际=401 | {"code": "unauthorized", "message": "账号或密码不正确"}
 [OK  ] S19 带令牌取 /auth/me 200  ->  实际=200
-[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_c95d44fe
+[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_174ddd5d
 [OK  ] S21 无令牌访问 /auth/me 必须 401  ->  实际=401
 [OK  ] S22 用 refresh_token 冒充 access_token 必须 401（类型校验）  ->  实际=401
 [OK  ] S23 刷新令牌 200  ->  实际=200
@@ -83,7 +83,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S44c 记忆 q 过滤能排除  ->  共 0 条
 [OK  ] S44d scope=private 过滤真生效  ->  共 1 条
 [OK  ] S44f 关键词能命中 tags（不只是 key/content）  ->  命中 1 条
-[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['ebf0f836-a678-4a9f-8a5c-12acfa95b32a'] / ['b5fce6f4-2aa4-4d38-a1cf-afeec7f99931']
+[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['25a0ee84-54e2-44d0-853f-a3eb9e2d97f3'] / ['38397cc4-6fc1-455c-b500-e3c69d24f35b']
 [OK  ] S45 记忆详情 200  ->  实际=200
 [OK  ] S46 详情内容是 v2  ->  实际=v2
 [OK  ] S47 更新记忆 200  ->  实际=200
@@ -105,7 +105,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S63 任务详情 200  ->  实际=200
 [OK  ] S64 任务 trace 200  ->  实际=200
 [OK  ] S65 trace 非空且含 execute 阶段  ->  条目数=8
-[OK  ] S66 trace 累计 tokens>0  ->  累计=6180
+[OK  ] S66 trace 累计 tokens>0  ->  累计=6644
 [OK  ] S67 任务列表 200  ->  实际=200
 [OK  ] S68 列表包含刚提交的任务  ->  共 1 个
 [OK  ] S68b status=succeeded 过滤真生效  ->  共 1 条
@@ -115,7 +115,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S68f 任务 q 关键字过滤命中  ->  共 1 条
 [OK  ] S68g 任务 q 过滤能排除  ->  共 0 条
 [OK  ] S68h task_type=coding 过滤真生效  ->  共 1 条
-[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['7fe81233-0a08-400b-af45-ab4bbb2fb195'] / ['90c5ce3c-2f68-4af7-9107-401ee5f94da2']
+[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['2ec450c1-e461-421d-a8d2-99b9e2d56b2e'] / ['3a783bb6-b1a4-4c02-9678-b2f253147af3']
 [OK  ] S69 空目标被拒 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"goal": "任务目标至少 4 个字符"}}
 [OK  ] S70 未知任务 404  ->  实际=404 | {"code": "not_found", "message": "任务不存在"}
 [OK  ] S71a 预算低于下限（100<200）被 422 拒绝  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"budget_tokens": "预算过低（最少 200）"
@@ -127,7 +127,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S74 member 读他人任务被拒（404 或 403）  ->  实际=403 期望=[403, 404] | {"code": "forbidden", "message": "无权访问他人的任务"}
 [OK  ] S75 member 可提交自己的任务 201  ->  实际=201
 [OK  ] S76 member 访问管理员概览被拒（403 或 422）  ->  实际=403 期望=[403, 422] | {"code": "forbidden", "message": "角色 member 缺少权限 admin"} ← 若返回 422 说明越权与校验仍共用错误码
-[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "35125125-b219-4672-98d8-665ad8726c33", "scope": "shared", "owner_
+[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "ca3fd496-4601-4219-b610-e825e37f1f0e", "scope": "shared", "owner_
 [OK  ] S77c member 写 system 记忆必须 403  ->  实际=403 | {"code": "forbidden", "message": "角色 member 缺少权限 memory_write_system"}
 [OK  ] S77d member 看不到 owner 的私有记忆  ->  返回 0 条
 [OK  ] S78 管理员概览 200  ->  实际=200
@@ -157,24 +157,24 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}}
 [OK  ] S96 超上限 limit 明确 422 并回报收到值  ->  实际=422
 [OK  ] S97 async 提交返回 202/201 且状态为 queued  ->  实际=202 status=queued
-[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "4d661efe-1964-4dd6-ad66-f7c89e4de5f8", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
+[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "e83c4f50-c947-40aa-84bd-cf69ca400343", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
 [OK  ] S98b 取消请求写进了 trace（phase=cancel/requested）  ->  cancel 条目=1
 [OK  ] S99 取消后任务最终收敛为 cancelled（不是 succeeded/failed）  ->  实际终态=cancelled
 [OK  ] S99b 取消任务的 result_summary 讲清了原因  ->  任务「slow-step 异步任务用于验证取消真能生效」执行已取消（类型 coding，共 4 步）。
-终止原因：任务已被用户取消，第 0 层起未执行
+终止原因：任务已被用户取消，第 1 层起未执行
 执行明细
 [OK  ] S99c 已取消任务能被 status=cancelled 过滤出来  ->  共 1 条
 [OK  ] S99d 对已终结任务再取消返回 409（不返回 200 骗人）  ->  实际=409 {"code": "conflict", "message": "任务已结束（cancelled），无法取消；如需重跑请重新提交"}
 [OK  ] S99e 取消不存在的任务返回 404  ->  实际=404
 [OK  ] S99f 他人无法取消我的任务（403/404）  ->  实际=403
-[OK  ] S99h 写穿落盘计数器已接线且真的刷过盘（sa_store_write_through_total > 0）  ->  实际=19.0
+[OK  ] S99h 写穿落盘计数器已接线且真的刷过盘（sa_store_write_through_total > 0）  ->  实际=20.0
 [OK  ] S99g 同步任务跑完后取消返回 409（语义诚实）  ->  实际=409
 [OK  ] S100 SSE 测试用户注册成功（拿到独立令牌）  ->  实际=201
 [OK  ] S100b 事件流用的异步任务已受理  ->  实际=202
 [OK  ] S101 SSE 建连成功且媒体类型是 text/event-stream  ->  实际状态=200 Content-Type=text/event-stream
-[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "78bf63e9-4e32-4175-acfa-b5a340af19d6", "status": "running", "at": "2026-11-16T07:25:10.953767Z", 
-[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 18, 19]
-[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'running', 'succeeded']
+[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "f4d5a480-d6ea-428d-bb11-7b13d387949d", "status": "running", "at": "2026-11-16T13:44:24.625790400Z
+[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 19]
+[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'succeeded']
 [OK  ] S101e 事件流最终推送终态且与服务端状态一致  ->  末帧状态=succeeded
 [OK  ] S101f 终态之后服务端主动 EOF（不挂住连接）  ->  读到 HTTP EOF
 [OK  ] S101g 已终结任务订阅：先给快照再立刻 EOF  ->  实际状态=200 帧数=1 EOF=True
@@ -198,18 +198,18 @@ warning: struct `FakeRunner` is never constructed
 合计 157 项 | 通过 157 | 失败 0
 
 服务日志尾部：
-[2m2026-11-16T07:25:02.963972Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794813902\db.json
-[2m2026-11-16T07:25:02.964095Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
-[2m2026-11-16T07:25:02.964118Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
-[2m2026-11-16T07:25:02.964618Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
-[2m2026-11-16T07:25:02.964644Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
-[2m2026-11-16T07:25:02.964655Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-16T07:25:02.964705Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794813902\cluster [3mnode_id[0m[2m=[0mWLM-16620 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
-[2m2026-11-16T07:25:02.967847Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
-[2m2026-11-16T07:25:08.049518Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m978bc431-1463-4a9e-ae72-54bb772b2560 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m978bc431-1463-4a9e-ae72-54bb772b2560 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
-[2m2026-11-16T07:25:09.734227Z[0m [31mERROR[0m 写穿落盘失败 [3merror[0m[2m=[0m存储读取失败: 系统找不到指定的文件。 (os error 2)
-[2m2026-11-16T07:25:09.736982Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m978bc431-1463-4a9e-ae72-54bb772b2560 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m4d661efe-1964-4dd6-ad66-f7c89e4de5f8 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m2703562e-f930-4a35-bc63-65233d0a8970
-[2m2026-11-16T07:25:12.832520Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m82a8c825-8e17-4c67-9ad6-c97b1b3b5892 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m2c56729c-bc96-4134-a984-6365067cd798 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m11994654-bb5b-40da-850a-85ec67d41458
+[2m2026-11-16T13:44:16.509603Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\secret.key
+[2m2026-11-16T13:44:16.510222Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\db.json
+[2m2026-11-16T13:44:16.510314Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
+[2m2026-11-16T13:44:16.510337Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
+[2m2026-11-16T13:44:16.510492Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
+[2m2026-11-16T13:44:16.510527Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
+[2m2026-11-16T13:44:16.510550Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
+[2m2026-11-16T13:44:16.510613Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\cluster [3mnode_id[0m[2m=[0mWLM-39532 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-16T13:44:16.514578Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
+[2m2026-11-16T13:44:21.304807Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
+[2m2026-11-16T13:44:23.423446Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0me83c4f50-c947-40aa-84bd-cf69ca400343 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m67be27aa-ea6a-4c9e-8253-4c7bb1379c1b
+[2m2026-11-16T13:44:26.481801Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m3d0cdf09-22b4-411b-8a26-ebad1f88bd2b [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m34ba8728-67cb-41d3-91e3-6f63b9beb5e5 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m88a305aa-ccc9-4153-bee5-38b7a84415fa
 ================================================================
 
 
@@ -232,10 +232,10 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S14 重复用户名被拒  ->  实际=409 | {"code": "conflict", "message": "用户名已被占用"}
 [OK  ] S15 弱密码被拒（422）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"password": "密码至少 10 个字符"}}
 [OK  ] S16 正确密码登录 200  ->  实际=200
-[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-16T07:25:17.364636800Z
+[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-16T13:44:30.869384200Z
 [OK  ] S18 错误密码 401  ->  实际=401 | {"code": "unauthorized", "message": "账号或密码不正确"}
 [OK  ] S19 带令牌取 /auth/me 200  ->  实际=200
-[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_f88e330c
+[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_08f30701
 [OK  ] S21 无令牌访问 /auth/me 必须 401  ->  实际=401
 [OK  ] S22 用 refresh_token 冒充 access_token 必须 401（类型校验）  ->  实际=401
 [OK  ] S23 刷新令牌 200  ->  实际=200
@@ -264,7 +264,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S44c 记忆 q 过滤能排除  ->  共 0 条
 [OK  ] S44d scope=private 过滤真生效  ->  共 1 条
 [OK  ] S44f 关键词能命中 tags（不只是 key/content）  ->  命中 1 条
-[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['bf8476a8-eb78-4119-b761-01a0f88b9b0d'] / ['fcc83487-b98d-43c0-8ccf-6ab420cff874']
+[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['3496fca0-ce0d-416d-8b45-0c37cefe4b5a'] / ['b3ce2573-cbc4-41ea-a51c-33142f0ae191']
 [OK  ] S45 记忆详情 200  ->  实际=200
 [OK  ] S46 详情内容是 v2  ->  实际=v2
 [OK  ] S47 更新记忆 200  ->  实际=200
@@ -286,7 +286,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S63 任务详情 200  ->  实际=200
 [OK  ] S64 任务 trace 200  ->  实际=200
 [OK  ] S65 trace 非空且含 execute 阶段  ->  条目数=8
-[OK  ] S66 trace 累计 tokens>0  ->  累计=7132
+[OK  ] S66 trace 累计 tokens>0  ->  累计=6072
 [OK  ] S67 任务列表 200  ->  实际=200
 [OK  ] S68 列表包含刚提交的任务  ->  共 1 个
 [OK  ] S68b status=succeeded 过滤真生效  ->  共 1 条
@@ -296,7 +296,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S68f 任务 q 关键字过滤命中  ->  共 1 条
 [OK  ] S68g 任务 q 过滤能排除  ->  共 0 条
 [OK  ] S68h task_type=coding 过滤真生效  ->  共 1 条
-[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['49c20364-d94f-454b-a12e-4ff3c3cac68c'] / ['9100f96a-e36c-4c43-8b1e-e3b191f5cef7']
+[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['41e4ddc0-ad76-40f9-9010-87c74a3846c8'] / ['331013bf-ae4e-4198-8a34-de1de03cd84a']
 [OK  ] S69 空目标被拒 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"goal": "任务目标至少 4 个字符"}}
 [OK  ] S70 未知任务 404  ->  实际=404 | {"code": "not_found", "message": "任务不存在"}
 [OK  ] S71a 预算低于下限（100<200）被 422 拒绝  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"budget_tokens": "预算过低（最少 200）"
@@ -308,7 +308,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S74 member 读他人任务被拒（404 或 403）  ->  实际=403 期望=[403, 404] | {"code": "forbidden", "message": "无权访问他人的任务"}
 [OK  ] S75 member 可提交自己的任务 201  ->  实际=201
 [OK  ] S76 member 访问管理员概览被拒（403 或 422）  ->  实际=403 期望=[403, 422] | {"code": "forbidden", "message": "角色 member 缺少权限 admin"} ← 若返回 422 说明越权与校验仍共用错误码
-[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "fa5f5555-5a65-4562-90de-abdacd558d49", "scope": "shared", "owner_
+[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "6658e216-6531-4b25-bc73-0f92009852dd", "scope": "shared", "owner_
 [OK  ] S77c member 写 system 记忆必须 403  ->  实际=403 | {"code": "forbidden", "message": "角色 member 缺少权限 memory_write_system"}
 [OK  ] S77d member 看不到 owner 的私有记忆  ->  返回 0 条
 [OK  ] S78 管理员概览 200  ->  实际=200
@@ -338,7 +338,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}}
 [OK  ] S96 超上限 limit 明确 422 并回报收到值  ->  实际=422
 [OK  ] S97 async 提交返回 202/201 且状态为 queued  ->  实际=202 status=queued
-[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "482eff53-4ab0-4792-bdd2-ced2708d8be5", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
+[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "231027aa-4616-496f-99ce-fb9eae2720ec", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
 [OK  ] S98b 取消请求写进了 trace（phase=cancel/requested）  ->  cancel 条目=1
 [OK  ] S99 取消后任务最终收敛为 cancelled（不是 succeeded/failed）  ->  实际终态=cancelled
 [OK  ] S99b 取消任务的 result_summary 讲清了原因  ->  任务「slow-step 异步任务用于验证取消真能生效」执行已取消（类型 coding，共 4 步）。
@@ -353,7 +353,7 @@ warning: struct `FakeRunner` is never constructed
 [OK  ] S100 SSE 测试用户注册成功（拿到独立令牌）  ->  实际=201
 [OK  ] S100b 事件流用的异步任务已受理  ->  实际=202
 [OK  ] S101 SSE 建连成功且媒体类型是 text/event-stream  ->  实际状态=200 Content-Type=text/event-stream
-[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "eada05c1-0ece-49a4-9271-b949ce8ecce2", "status": "running", "at": "2026-11-16T07:25:23.113739400Z
+[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "bab650a5-f1b8-492a-a834-2ab6235e6132", "status": "running", "at": "2026-11-16T13:44:36.072976300Z
 [OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 19]
 [OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'succeeded']
 [OK  ] S101e 事件流最终推送终态且与服务端状态一致  ->  末帧状态=succeeded
@@ -379,18 +379,18 @@ warning: struct `FakeRunner` is never constructed
 合计 157 项 | 通过 157 | 失败 0
 
 服务日志尾部：
-[2m2026-11-16T07:25:14.672182Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794813914\secret.key
-[2m2026-11-16T07:25:14.672665Z[0m [33m WARN[0m 当前为纯内存后端：进程退出即清空数据，仅用于压测/演示 [3mstorage[0m[2m=[0mmemory
-[2m2026-11-16T07:25:14.672820Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
-[2m2026-11-16T07:25:14.672843Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
-[2m2026-11-16T07:25:14.674870Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
-[2m2026-11-16T07:25:14.674902Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
-[2m2026-11-16T07:25:14.674914Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-16T07:25:14.674984Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794813914\cluster [3mnode_id[0m[2m=[0mWLM-38648 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
-[2m2026-11-16T07:25:14.679799Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18097 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mmemory [3mrunner[0m[2m=[0msim
-[2m2026-11-16T07:25:19.892950Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mbe87c02a-7042-4bc2-aaca-feeb84151bce [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0mbe87c02a-7042-4bc2-aaca-feeb84151bce [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
-[2m2026-11-16T07:25:21.864019Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mbe87c02a-7042-4bc2-aaca-feeb84151bce [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m482eff53-4ab0-4792-bdd2-ced2708d8be5 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m10eb7f36-ce0a-4998-9e75-7f3ba88de325
-[2m2026-11-16T07:25:24.948543Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mcaa06757-dbd5-4f35-b2e7-ec776c1bfed9 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0mf1661347-2d39-4d1c-b06e-8b931b9ed34c [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m27913d2c-18f9-4567-bf0b-a92053fffbad
+[2m2026-11-16T13:44:28.185981Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836668\secret.key
+[2m2026-11-16T13:44:28.186307Z[0m [33m WARN[0m 当前为纯内存后端：进程退出即清空数据，仅用于压测/演示 [3mstorage[0m[2m=[0mmemory
+[2m2026-11-16T13:44:28.186387Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
+[2m2026-11-16T13:44:28.186407Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
+[2m2026-11-16T13:44:28.186808Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
+[2m2026-11-16T13:44:28.186821Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
+[2m2026-11-16T13:44:28.186829Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
+[2m2026-11-16T13:44:28.186862Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836668\cluster [3mnode_id[0m[2m=[0mWLM-22204 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-16T13:44:28.189410Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18097 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mmemory [3mrunner[0m[2m=[0msim
+[2m2026-11-16T13:44:32.965139Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m8836c590-d633-4352-bc20-17ff3e9b5b47 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m8836c590-d633-4352-bc20-17ff3e9b5b47 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
+[2m2026-11-16T13:44:34.920318Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m8836c590-d633-4352-bc20-17ff3e9b5b47 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m231027aa-4616-496f-99ce-fb9eae2720ec [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0me7c97282-f08d-4282-8da1-255e77a763f9
+[2m2026-11-16T13:44:37.885443Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m9874643a-76b2-4e2a-934c-92279720a37d [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0mc198eb99-fc71-414c-b202-4d99d43231b8 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0me1135e05-c498-4b8f-9422-4a5611ce6647
 ================================================================
 
 
@@ -424,10 +424,10 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 
 
 ===== 8 执行端口实测 (rc=0) =====
-[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-alonapag\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
+[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-7i3tdb5p\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
 [OK  ] R1b 账号初始化
-[OK  ] R2a 提交任务 201  -> 实际=201 {'id': '0c803c40-bfb7-4fc3-b9f8-6f0e3d45f80b', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
-[OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-4631A9E872 命中=True
+[OK  ] R2a 提交任务 201  -> 实际=201 {'id': 'c9596dd1-0d36-4041-92e1-f65d7c29c804', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
+[OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-9795DEAE71 命中=True
 [OK  ] R2c 全部步骤成功且回填了 agent/step 环境变量  -> 步骤数=4 成功=4
 [OK  ] R2d 任务状态 succeeded  -> 实际=succeeded
 [OK  ] R3a 指标可抓取 200  -> 实际=200
@@ -441,48 +441,8 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R5b 非法 SA_RUNNER 值被拒（不是忽略）  -> 退出码=1
 --------------------------------------------------------------
 合计 15 项 | 通过 15 | 失败 0
-临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-alonapag
+临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-7i3tdb5p
 
-Exception in thread Exception in thread Thread-1 (_readerthread):
-Traceback (most recent call last):
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
-Thread-2 (_readerthread):
-Traceback (most recent call last):
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
-    self.run()
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
-    self.run()
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
-    self._target(*self._args, **self._kwargs)
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
-    self._target(*self._args, **self._kwargs)
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
-    buffer.append(fh.read())
-       buffer.append(fh.read()) 
-                                ^^^^^^^^^^^^^^^^
-UnicodeDecodeError^: 'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence^
-UnicodeDecodeError
-: 'gbk' codec can't decode byte 0x9a in position 46: illegal multibyte sequence
-Exception in thread Exception in thread Thread-3 (_readerthread):
-Thread-4 (_readerthread):
-Traceback (most recent call last):
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
-Traceback (most recent call last):
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
-    self.run()
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
-    self.run()
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
-    self._target(*self._args, **self._kwargs)
-  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
-    buffer.append(fh.read())
-         self._target(*self._args, **self._kwargs) 
-   File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
-           ^^^^^^^^^
-UnicodeDecodeError: 'gbk' codec can't decode byte 0xaf in position 31: illegal multibyte sequence
-    buffer.append(fh.read())
-                  ^^^^^^^^^
-UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal multibyte sequence
 
 
 ===== 9 可插拔部件矩阵 (rc=0) =====
@@ -563,7 +523,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] F 指标换空实现 | 记忆读回  ->  实际=200 命中=True
 [OK  ] F 指标换空实现 | 指标端点可用  ->  实际=200
 
-===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794813930\\runner-scripts'} =====
+===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794836683\\runner-scripts'} =====
 [OK  ] G 执行换真实脚本 | 实例就绪
 [OK  ] G 执行换真实脚本 | 注册（首个用户 = owner）  ->  实际=201
 [OK  ] G 执行换真实脚本 | 登录  ->  实际=200
@@ -637,7 +597,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 11 审计启动自检 (rc=0) =====
-工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-u04cii45
+工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-cbuy_vt2
 [OK  ] A file 后端 | 实例启动并就绪  ->  端口 18131
 [OK  ] A file 后端 | /readyz 如实报告审计状态  ->  {"backend": "file", "degraded": false, "degraded_reason": null, "durable": true}
 [OK  ] A file 后端 | 注册 owner 账号  ->  实际=201
@@ -649,7 +609,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] A file 后端 | 每次启动都留下一条 boot（重启可追溯）  ->  累计=2
 [OK  ] A file 后端 | 两条 boot 是不同事件（id 不重复）  ->  唯一 id=2
 [OK  ] B 拒绝启动 | 不可用路径下进程拒绝启动  ->  退出码=1
-[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-u04cii45\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
+[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-cbuy_vt2\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
 [OK  ] C memory 后端 | 实例就绪
 [OK  ] C memory 后端 | 如实报告不落盘（durable=false / degraded=false）  ->  {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}
 [OK  ] C memory 后端 | 内存后端不产生 audit.jsonl
@@ -677,7 +637,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 13 防幻觉打点实测 (rc=0) =====
-[OK  ] H0                     服务就绪  http://127.0.0.1:2339
+[OK  ] H0                     服务就绪  http://127.0.0.1:7593
 [OK  ] H0                     注册  rc=201
 [OK  ] H0                     登录  token 已取得
 [OK  ] H1                     写入长记忆 0  rc=201
@@ -709,14 +669,14 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
 [OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
-[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/5e488067-7f04-47ad-8f4e-62e2c7b1c691 status=200 形状一致
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/68c88645-da8f-4253-8aab-b7da408ae936 status=200 形状一致
 [OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
 [OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
-[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/5e488067-7f04-47ad-8f4e-62e2c7b1c691/trace status=200 形状一致
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/68c88645-da8f-4253-8aab-b7da408ae936/trace status=200 形状一致
 [OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
 [OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
-[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/d0c30109-40c5-4e54-bdd4-433b3da4df0a/cancel status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/dcda60b3-0104-4637-8d72-66b2b9820be8/cancel status=202 形状一致
 [OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
 [OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
 [OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
@@ -725,7 +685,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
 [OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
 [OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
-[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/5b80f9fa-aa7f-423d-b2ef-5b665038540a status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/bd6e2a39-ebe4-4098-9464-5a3dc2495d77 status=200 形状一致
 [OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
 [OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
 [OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
@@ -735,7 +695,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
 [OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
 [OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
-[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/eafcd062-47cd-4639-8fc4-725fc609e8ca status=404 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/924e823b-0a03-4a42-b578-fa38f7df1efd status=404 形状一致
 [OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
 [OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
 [OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致
@@ -746,8 +706,8 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 15 多节点集群双进程 (rc=0) =====
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-h2jxf3zn
-共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-h2jxf3zn\shared-cluster
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-ofugv8uh
+共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-ofugv8uh\shared-cluster
 被测二进制: C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 心跳 TTL=5s  周期=1s  清理线=30s
 
@@ -770,7 +730,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] C2 B 的列表里自己排第一  -> 首位=node-b/local
 [OK  ] C2 A 把 B 认成 peer（不是 local）  -> source=peer
 [OK  ] C2 A 侧看到的 B 不 stale  -> stale=False
-[OK  ] C2 peer 节点带 updated_at（看板才能显示'几秒前'）  -> updated_at=2026-11-16T07:27:13.063505700Z
+[OK  ] C2 peer 节点带 updated_at（看板才能显示'几秒前'）  -> updated_at=2026-11-16T13:46:26.938354200Z
 [OK  ] C2 汇总节点数=2  -> 实际=2 期望=[2]
 [OK  ] C2 汇总 offline_nodes=0  -> offline_nodes=0
 [OK  ] C2 totals.agents_total == 各节点求和  -> 汇总=28 明细和=28
@@ -786,7 +746,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 --- C4 心跳实时性：一个周期内数字跟着涨 ---
 [OK  ] C4 总数从 3 涨到 5（心跳把新负载带过来了）  -> totals.tasks.total=5 期望=5
-[OK  ] C4 B 的 updated_at 被推进（不是一份永远不变的旧快照）  -> 旧=2026-11-16 07:27:16.064354+00:00 新=2026-11-16 07:27:18.064093+00:00
+[OK  ] C4 B 的 updated_at 被推进（不是一份永远不变的旧快照）  -> 旧=2026-11-16 13:46:29.939303+00:00 新=2026-11-16 13:46:31.927560+00:00
 
 --- C5 崩溃掉线：标 stale，且不污染汇总 ---
 [OK  ] C5 强杀后 B 的心跳文件还在（没人来得及删，正是要验的情形）  -> node-b.json
@@ -813,7 +773,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 ====================================================================
 合计 44 项 | 通过 44 | 失败 0
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-h2jxf3zn（可用 --keep 保留以便复查）
+演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-ofugv8uh（可用 --keep 保留以便复查）
 
 
 
@@ -851,40 +811,40 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 17 异步受理与缺省 (rc=0) =====
-       数据目录 C:\Users\94355\AppData\Local\Temp\sa-async-probe-ihg6bmmk
-       服务日志 C:\Users\94355\AppData\Local\Temp\sa-async-probe-ihg6bmmk-server.log
-       服务地址 http://127.0.0.1:52085
+       数据目录 C:\Users\94355\AppData\Local\Temp\sa-async-probe-p4g5v7s0
+       服务日志 C:\Users\94355\AppData\Local\Temp\sa-async-probe-p4g5v7s0-server.log
+       服务地址 http://127.0.0.1:47172
        slow-step 每步 800ms
 [OK  ] A0 服务就绪（/readyz ready=true）
 [OK  ] A0b 注册并拿到令牌  ->  status=201
-       A1 缺省提交：status=202 耗时=0.01s 返回状态=queued 分支头=async
-[OK  ] A1 缺省提交即异步受理（202 + queued，不等执行完）  ->  status=202 返回状态=queued 耗时=0.01s
-[OK  ] A1b 缺省提交的耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.01s（一步 800ms）
+       A1 缺省提交：status=202 耗时=0.02s 返回状态=queued 分支头=async
+[OK  ] A1 缺省提交即异步受理（202 + queued，不等执行完）  ->  status=202 返回状态=queued 耗时=0.02s
+[OK  ] A1b 缺省提交的耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.02s（一步 800ms）
 [OK  ] A1c 响应头 X-SA-Exec-Mode 自证走了 async 分支  ->  X-SA-Exec-Mode=async
-[OK  ] A1d 202 带 Location 指向该任务资源（RFC 9110 对 202 的要求）  ->  Location=/api/v1/tasks/c0ac20b8-8c1c-400f-a326-dc6e12080c69 task_id=c0ac20b8-8c1c-400f-a326-dc6e12080c69
+[OK  ] A1d 202 带 Location 指向该任务资源（RFC 9110 对 202 的要求）  ->  Location=/api/v1/tasks/65f2d96d-d336-42f4-9805-e6c42e6e14c6 task_id=65f2d96d-d336-42f4-9805-e6c42e6e14c6
 [OK  ] A1e 显式 mode=sync 仍返回 201 + 终态  ->  status=201 返回状态=succeeded
 [OK  ] A1f 显式 sync 的分支头为 sync  ->  X-SA-Exec-Mode=sync
-[OK  ] A2 mode=async 返回 202 且状态 queued  ->  status=202 返回状态=queued 耗时=0.01s
-[OK  ] A2b 受理耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.01s（一步 800ms，四步约 3.2s）
-[OK  ] A3 异步任务最终收敛到 succeeded  ->  终态=succeeded 轮询=17 次 耗时=3.34s
-[OK  ] A4 事件流收到帧  ->  帧数=2 事件名=['status']
-[OK  ] A4b 事件流出现 running 中间态（不是只有首尾两帧）  ->  状态序列=['running', 'succeeded']
-[OK  ] A4c seq 严格递增且不重复  ->  seq 序列=[0, 14]
+[OK  ] A2 mode=async 返回 202 且状态 queued  ->  status=202 返回状态=queued 耗时=0.03s
+[OK  ] A2b 受理耗时远小于执行耗时（真的没在等）  ->  受理耗时=0.03s（一步 800ms，四步约 3.2s）
+[OK  ] A3 异步任务最终收敛到 succeeded  ->  终态=succeeded 轮询=17 次 耗时=3.27s
+[OK  ] A4 事件流收到帧  ->  帧数=3 事件名=['status']
+[OK  ] A4b 事件流出现 running 中间态（不是只有首尾两帧）  ->  状态序列=['running', 'running', 'succeeded']
+[OK  ] A4c seq 严格递增且不重复  ->  seq 序列=[0, 13, 14]
 [OK  ] A5 顶到并发上限时返回 429  ->  受理 3 条 / 被拒 3 条（上限 3）：[429, 429, 429]
        429 文案：后台执行队列已满（上限 3 个并发任务），请稍后重试；已提交内容未消耗任何预算
 [OK  ] A5b 被拒的提交没有留下永远停在 queued 的幽灵任务  ->  疑似幽灵 0 条
 [OK  ] A6 取消异步任务返回 202（立旗，不假装已完成）  ->  status=202
-[OK  ] A6b 取消后收敛为 cancelled  ->  终态=cancelled 耗时=0.84s
+[OK  ] A6b 取消后收敛为 cancelled  ->  终态=cancelled 耗时=0.00s
        A7 首连收到 3 帧 状态=['running', 'running', 'succeeded'] 锚点=40
 [OK  ] A7 重连带 Last-Event-ID 真的走了续传分支（sa_sse_replay_total 增长，未退化成快照）  ->  replay 0.0→1.0 gap 0.0→0.0 续传 1 帧 seq=[41]
 [OK  ] A7b 续传补到断线之后的事件，且首帧 seq 严格大于 Last-Event-ID（不重发已收到的）  ->  首帧 seq=41 Last-Event-ID=40 共 1 帧
 [OK  ] A7c 续传不重推 seq=0 快照（那是首次连接才有的待遇）  ->  seq 序列=[41]
 [OK  ] A7d 非法 Last-Event-ID 退回首次连接（给 seq=0 快照，且不计入 sa_sse_replay_gap_total）  ->  首帧 seq=[0] gap None→None
-[OK  ] A7e 任务已终态后重连：立刻拿到终态快照（不用回查 detail），且不空等挂连接  ->  首帧 seq=[0] status=['succeeded'] 耗时=0.01s
-[OK  ] A7f 锚点超前且无帧可补时不挂连接（快速 EOF），不白占一个订阅位  ->  帧数=0 EOF 耗时=0.01s
-[OK  ] A7g 锚点=最后一帧且任务已终态：秒回 EOF，不挂住连接（原误报路径的正向断言）  ->  锚点=41 帧数=0 seq=[] EOF 耗时=0.01s
-       数据目录已保留（未自动清理）：C:\Users\94355\AppData\Local\Temp\sa-async-probe-ihg6bmmk
-       服务日志：C:\Users\94355\AppData\Local\Temp\sa-async-probe-ihg6bmmk-server.log
+[OK  ] A7e 任务已终态后重连：立刻拿到终态快照（不用回查 detail），且不空等挂连接  ->  首帧 seq=[0] status=['succeeded'] 耗时=0.02s
+[OK  ] A7f 锚点超前且无帧可补时不挂连接（快速 EOF），不白占一个订阅位  ->  帧数=0 EOF 耗时=0.02s
+[OK  ] A7g 锚点=最后一帧且任务已终态：秒回 EOF，不挂住连接（原误报路径的正向断言）  ->  锚点=41 帧数=0 seq=[] EOF 耗时=0.02s
+       数据目录已保留（未自动清理）：C:\Users\94355\AppData\Local\Temp\sa-async-probe-p4g5v7s0
+       服务日志：C:\Users\94355\AppData\Local\Temp\sa-async-probe-p4g5v7s0-server.log
 ==============================================================================
 合计 25 项 | 通过 25 | 失败 0
 
@@ -902,10 +862,10 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
    ⚠ fast 轮数 2 < 用例数 14：末尾目标不会被覆盖
    ⚠ model 轮数 3 < 用例数 4：末尾目标不会被覆盖
    ⚠ guard 轮数 2 < 用例数 6：末尾用例不会被覆盖
-[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 55.69s tok=541 OK
-[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 35.0s tok=495 OK
-[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 33.64s tok=520 OK
-[4/7] fast  planning      succeeded  0.38s OK
+[1/7] model 轮 1: 写一份单元测试覆盖率的周报，说明本周新增的测试与剩余风险…  succeeded 46.19s tok=499 OK
+[2/7] model 轮 2: 写一份把本地小模型接入任务编排的试点报告，含模型名、接线…  succeeded 27.58s tok=480 OK
+[3/7] model 轮 3: 写一份后端上线前的检查清单文档，覆盖认证、限流、审计三部…  succeeded 29.59s tok=500 OK
+[4/7] fast  planning      succeeded  0.47s OK
 [5/7] fast  planning      succeeded  0.41s OK
 [6/7] guard 空目标必须 400            HTTP 422 OK
 [7/7] guard 过短目标必须 400           HTTP 422 OK
@@ -927,13 +887,13 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
    rounds_total             7
    model_rounds             3
    fast_rounds              2
-   model_elapsed_avg_s      41.4
-   model_elapsed_min_s      33.6
-   model_elapsed_max_s      55.7
-   model_tokens_avg         518.7
-   model_tokens_min         495
-   model_tokens_max         541
-   fast_elapsed_avg_s       0.4
+   model_elapsed_avg_s      34.5
+   model_elapsed_min_s      27.6
+   model_elapsed_max_s      46.2
+   model_tokens_avg         493
+   model_tokens_min         480
+   model_tokens_max         500
+   fast_elapsed_avg_s       0.44
    model_adopted_rounds     3
    auth_refreshes           0
    accounts                 ['soak_owner', 'soak_u2', 'soak_u3']
@@ -943,9 +903,9 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
    route_hits               {'super-agent': 10, 'doc-agent': 3, 'guard-agent': 5, 'planner-agent': 2}
 
 == 模型轮次逐轮 ==
-   #1   55.69s tok= 541 doc_tok= 328 attempts=1 succeeded  采用
-   #2    35.0s tok= 495 doc_tok= 256 attempts=1 succeeded  采用
-   #3   33.64s tok= 520 doc_tok= 287 attempts=1 succeeded  采用
+   #1   46.19s tok= 499 doc_tok= 286 attempts=1 succeeded  采用
+   #2   27.58s tok= 480 doc_tok= 241 attempts=1 succeeded  采用
+   #3   29.59s tok= 500 doc_tok= 267 attempts=1 succeeded  采用
 
 结论： 全绿
    证据： C:\Users\94355\Desktop\新建文件夹(7)\docs\evidence\soak-gate18-latest.json
@@ -954,7 +914,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 ===== 19 可观测告警行为 (rc=0) =====
        二进制 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe（2026-11-15 16:21:16）
-       [A-default] 端口 8096 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\A-default-server.log
+       [A-default] 端口 1963 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\A-default-server.log
 [OK  ] A0 服务就绪（/readyz ready=true）
 [OK  ] A0b 注册管理员与普通成员  ->  status=201/201
 [OK  ] A1 无流量时无告警  ->  status=200 count=0
@@ -976,16 +936,16 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] A9b sa_alerts_deduped_total 落点（=9，与 stats.suppressed_total 一致）  ->  指标=9 stats=9
 [OK  ] A9c 命中＝发出＋压制 守恒（12 = 3 + 9）  ->  12 vs 3 + 9
 [OK  ] A10 auto_action 反映真实兜底机制（budget_downgrade）  ->  {"kind": "budget_downgrade", "detail": "预算超支已触发降档（sa_budget_downgrades_total 可核对）"}
-       [B-refire] 端口 8115 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\B-refire-server.log
+       [B-refire] 端口 1981 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\B-refire-server.log
 [OK  ] B0 服务就绪
 [OK  ] B0b 造出一次限流（第二次提交 429）  ->  [202, 429, 429]
 [OK  ] B1 首抓发出（fired=1）  ->  fired=1
 [OK  ] B2 窗口内再抓被压制（fired=0）  ->  fired=0
 [OK  ] B3 窗口过期后复发（fired=1）  ->  fired=1
-[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-16T07:30:30.978838800+00:00
-[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-16T07:30:30.978838800+00:00 -> 2026-11-16T07:30:32.394748500+00:00
+[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-16T13:49:23.321757700+00:00
+[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-16T13:49:23.321757700+00:00 -> 2026-11-16T13:49:24.746626800+00:00
 [OK  ] B4c 命中累计到 3 次（hits=3）  ->  hits=3
-       [C-storm] 端口 8126 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-153026\C-storm-server.log
+       [C-storm] 端口 19603 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\C-storm-server.log
 [OK  ] C0 服务就绪
 [OK  ] C0b 同时造出非严重（429）与严重（403）触发源  ->  [202, 429, 429] / [403, 403]
 [OK  ] C1 风暴时只发严重告警（active 只剩 authz_denied_spike）  ->  active=['authz_denied_spike']
@@ -1053,7 +1013,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 ===== 22 CLI 外壳行为 (rc=0) =====
 门禁 22 · CLI 外壳行为探针
 被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-34
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-43
 --------------------------------------------------------------------
 [PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
 [PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
@@ -1085,7 +1045,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 ===== 23 CLI 客户端行为 (rc=0) =====
 门禁 23 · CLI 客户端子命令探针
 被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-38
+现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-45
 ------------------------------------------------------------------------------
 [BOOT] 服务：就绪（就绪）
 [BOOT] 注册：token=288 位
@@ -1122,7 +1082,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [PASS] D  D1 submit(sync) rc=0                   rc=0
 [PASS] D  D2 submit 回显含 HTTP 状态                  已提交 HTTP 201
 [PASS] D  D3 submit 中文 goal 不改字                  命中=True
-[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=5fe82459
+[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=e0e64e6f
 [PASS] D  D5 ls rc=0                             rc=0
 [PASS] D  D6 ls 表头存在                             id                                   状态 
 [PASS] D  D7 表头与数据行按显示宽度逐列对齐                     
@@ -1146,7 +1106,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [PASS] F  F2 成功任务：终态 succeeded 且 rc=0            终态=succeeded rc=0
 [PASS] F  F3 帧序号严格递增（无回放）                        序列=[0, 7, 8]
 [PASS] F  F4 非成功终态时 rc 非 0                       终态=aborted_budget rc=2
-[PASS] F  F5 同步+follow 如实说无进度可跟                  提示=True 帧数=0 rc=0 原文=已提交 HTTP 201 id b315956a-fd0f-4eb6-b6a6-6cb5c6f22d6a 状态 succeeded 类型 writing 模型 standard tokens 5650/7015 一致度 0.79 创建(UTC) 2026-11-16 07:30:58 更新(UTC)
+[PASS] F  F5 同步+follow 如实说无进度可跟                  提示=True 帧数=0 rc=0 原文=已提交 HTTP 201 id 18813929-bdf8-40a5-96cb-1cf48781352e 状态 succeeded 类型 writing 模型 standard tokens 5110/7015 一致度 0.79 创建(UTC) 2026-11-16 13:49:49 更新(UTC)
 [PASS] F  F6 --json 每行独立可解析且末行是终态                行数=4 坏行=无 末状态=succeeded
 ------------------------------------------------------------------------------
 合计 59 项 | 通过 59 | 失败 0
@@ -1176,9 +1136,9 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] G1 _sched --selftest                         rc=0，13 项断言，失败 0
 [OK  ] G2a 源码无执行类调用                                 干净
 [OK  ] G2b 运行时未触发执行                                 执行被调用 0 次，哨兵文件不存在
-[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_bzuh62br\\sentinel.txt'
+[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_a2b7adbd\\sentinel.txt'
 [OK  ] G3 重启后同分钟不重复派发                               首派 1 条，重启后同分钟再派 0 条
-[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_c80a75d0", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
+[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_8170be42", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
 [OK  ] G4b 补跑过的不再报漏跑，且不连环补                          missed=[]，同分钟再派 0 条
 [OK  ] G4c 从未跑的必须报出来                                missed=['从未跑']
 [OK  ] G5 月末 31 日命中                                 0 0 31 * * @ 2026-12-31 00:00 → True（期望 True）
@@ -1204,3 +1164,99 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 合计 28 项断言 | 通过 28 | 失败 0 | 分组 8/8
 
+
+
+===== 26 判据防伪 (rc=0) =====
+==============================================================================
+一、真代码不许被误杀（判据太严 = 另一种骗）
+==============================================================================
+PASS 真代码判通过：py 多函数实现                                compiles=True ok
+PASS 真代码判实质：py 多函数实现                                ok
+PASS 真代码判通过：py 单行真实现                                compiles=True ok
+PASS 真代码判实质：py 单行真实现                                ok
+PASS 真代码判通过：rust 函数实现                               compiles=True ok
+PASS 真代码判实质：rust 函数实现                               ok
+PASS 真代码判通过：rust 结构体+impl                           compiles=True ok
+PASS 真代码判实质：rust 结构体+impl                           ok
+
+==============================================================================
+二、假代码不许被记成'编译通过'（判据太松 = 数字虚高）
+==============================================================================
+PASS 假交付被拦下：py-pass 空函数                             compiles=None src=hollow
+PASS   归因正确：py-pass 空函数                             reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：py-ellipsis 空函数                         compiles=None src=hollow
+PASS   归因正确：py-ellipsis 空函数                         reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：py-NotImplementedError                  compiles=None src=hollow
+PASS   归因正确：py-NotImplementedError                  reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：rust-todo 空函数                           compiles=None src=hollow
+PASS   归因正确：rust-todo 空函数                           reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：rust-unimplemented                      compiles=None src=hollow
+PASS   归因正确：rust-unimplemented                      reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：hello-world 玩具                          compiles=None src=hollow
+PASS   归因正确：hello-world 玩具                          reason=hollow-pass 期望=hollow-pass
+PASS 假交付被拦下：纯注释                                     compiles=None src=placeholder
+PASS   归因正确：纯注释                                     reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+PASS 假交付被拦下：尖括号占位                                   compiles=None src=placeholder
+PASS   归因正确：尖括号占位                                   reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+PASS 假交付被拦下：三点省略                                    compiles=None src=placeholder
+PASS   归因正确：三点省略                                    reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
+
+==============================================================================
+三、真语法错必须判失败（不能把'错'也放过）
+==============================================================================
+PASS py 语法错判失败                                      SyntaxError:invalid syntax:1
+PASS rust 语法错判失败                                    error: this file contains an unclosed delimiter
+
+==============================================================================
+四、端到端：可用交付口径（假交付不能算可用）
+==============================================================================
+PASS 空函数不算可用交付                                      usable=False reason=hollow-pass
+PASS 真实现算可用交付                                       usable=True compiles=True
+PASS 语法错不算可用交付                                      compiles=False
+
+==============================================================================
+合计 31 项 | 通过 31 | 失败 0 | 跳过 0
+
+
+
+===== 27 文档数字防漂移 (rc=0) =====
+实时真值: agents=14 | capabilities=26 | interface=62 | onboarding_required=5 | ops=33 | paths=29 | schemas=51 | union=12
+扫描文档 6 篇，命中数字断言 19 处
+PASS 文档数字与代码/契约一致
+
+
+
+===== 28 子进程解码纪律 (rc=0) =====
+[subproc-encoding] 根目录 C:\Users\94355\Desktop\新建文件夹(7)
+[subproc-encoding] 本机首选编码 cp936 / PYTHONUTF8=None / PYTHONIOENCODING='utf-8'
+OK    静态：subprocess 文本调用必须显式编码  -> 共扫 74 文件、44 处调用，不合规 0 处
+OK    行为：encoding+errors 能吞掉非法字节  -> stdout='�� hello'
+OK    行为：裸 text=True 在本机确实会崩（复现 camp-g 真因）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：只设 encoding 不设 errors 输出照样被吞（errors 不可省）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：正常中文输出原样保留  -> hello 正常文本
+OK    行为：rc 与 stderr 不被解码设置掩盖  -> rc=7，stderr 可见
+
+[subproc-encoding] 6 项：OK 6 / FAIL 0 / SKIP 0
+[subproc-encoding] PASS 子进程文本解码口径一致
+
+Exception in thread Thread-3 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xab in position 0: illegal multibyte sequence
+Exception in thread Thread-5 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xab in position 0: invalid start byte

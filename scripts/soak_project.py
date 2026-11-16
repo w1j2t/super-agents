@@ -253,6 +253,89 @@ def is_placeholder(code):
     return len(s) < 40 and no_struct
 
 
+# 空洞标记：这些写法在语法上都合法，编译一律通过，但语义上"什么也没实现"。
+# 它们与 is_placeholder 的 `<code here>` 是两回事：占位符是**假代码**（编译必抛
+# SyntaxError），空洞是**真代码但没内容**（编译必过）。后者更危险——它不会被
+# 任何语法检查拦住，只会安静地抬高编译率。
+_HOLLOW_RE = re.compile(
+    r"\btodo!\(\)|\bunimplemented!\(\)|\bunreachable!\(\)"
+    r"|raise\s+NotImplementedError"
+    r"|^\s*pass\s*$|^\s*\.\.\.\s*$"
+    r"|#\s*(?:TODO|FIXME)\b|//\s*(?:TODO|FIXME)\b"
+    r"|待实现|待补充|此处省略|略",
+    re.I | re.M,
+)
+
+# 判断"这段代码里到底有没有实现结构"，与 is_placeholder 用的 _STRUCT_RE **故意分开**。
+# 那个正则里有 `\w\s*\(` 和 `=`，本意是"认得像代码的样子"，判占位符够用；
+# 但拿它判"有没有实现"会把 `print('Hello World')` 认成有结构（它有括号），
+# 于是玩具代码一路通关。判"有没有实现"必须只看**定义与逻辑**关键字，不看调用。
+_DEF_RE = re.compile(
+    r"\b(?:def|class|fn|impl|struct|enum|trait|pub|let|mut|mod|use|return"
+    r"|yield|lambda|match|if|else|elif|for|while|with|try|except|import|from)\b"
+)
+
+
+def _code_lines(s):
+    """去掉空行与纯注释行，只留"真的执行了什么"的行。
+
+    注释必须先剥：一份 12 行、全是 `// TODO: 在这里写逻辑` 的 Rust 文件，
+    按行数看很像认真写的，实际零实现。
+    """
+    out = []
+    for ln in (s or "").splitlines():
+        t = ln.strip()
+        if not t:
+            continue
+        if t.startswith(("#", "//", "/*", "*", "*/")):
+            continue
+        out.append(t)
+    return out
+
+
+def is_substantive(code, lang=""):
+    """这份代码是不是"真实现"。返回 (ok, reason)。
+
+    为什么必须单判：`compiles=True` 只说明语法合法，它对下列写法一律放行——
+        `def solve(x): pass`          /  `def solve(x): ...`
+        `fn solve(x: i32) { todo!() }` /  `print('Hello World')`
+    而它们正是 2B 模型交不出活时最常见的产物。历史 26 条"明确没交付却编译通过"
+    全是这一类，把编译率虚高 6.3 个百分点（95.7% vs 89.4%），**而虚高的部分
+    恰好盖住了模型最常犯的错**——报表因此看起来比实际能交付得多。
+
+    三档而不是两档：
+      hollow = 假交付，必须从"可用"里剔除（不进编译率分子也不进交付分子）；
+      micro  = 真实现但极小（单行 return 之类），保留但单独计数，不当假货杀；
+       ok    = 正常实现。
+    分成三档是因为"宁可错杀"和"宁可放过"在这台机器上代价不同：把 micro 判成
+    hollow 会凭空抹掉模型的真实产出，那是另一种失真。
+    """
+    s = (code or "").strip()
+    if not s:
+        return False, "hollow:空"
+    lines = _code_lines(s)
+    if not lines:
+        return False, "hollow:只有注释没有语句"
+    body = "\n".join(lines)
+    hollow_lines = [ln for ln in lines if _HOLLOW_RE.search(ln)]
+    real_lines = [ln for ln in lines if not _HOLLOW_RE.search(ln)]
+    if hollow_lines and len(real_lines) <= 2:
+        return False, "hollow:实质语句仅 %d 行，其余是 TODO/占位（%s）" % (
+            len(real_lines), hollow_lines[0][:40])
+    has_struct = bool(_DEF_RE.search(body))
+    if not has_struct and len(body) < 40:
+        return False, "hollow:仅 %d 字符且无函数/结构定义，属玩具代码" % len(body)
+    if len(real_lines) <= 1 and not has_struct:
+        return False, "hollow:只有单行语句（%s）" % real_lines[0][:40]
+    # 单行调用（`print('Hello World')`）和有定义的单行（`pub struct Foo;`）要分开：
+    # 前者是"跑了一下"，后者是"定义了东西"。都不长，但只有后者是交付物。
+    if len(real_lines) <= 1 and not _DEF_RE.search(real_lines[0]):
+        return False, "hollow:单行调用而非定义（%s）" % real_lines[0][:40]
+    if len(real_lines) <= 1:
+        return True, "micro:单行定义"
+    return True, "ok"
+
+
 def extract_code(text: str):
     """从步骤产出里抽出最长的代码块。返回 (lang, body, lang_source)。
 
@@ -302,10 +385,17 @@ def compile_check(lang, code):
         with tempfile.TemporaryDirectory() as td:
             src = pathlib.Path(td) / "probe.rs"
             src.write_text(code, encoding="utf-8")
-            r = subprocess.run([exe, "--edition", "2021", "--emit=metadata",
+            r = subprocess.run([exe, "--edition", "2021", "--crate-type", "lib",
+                                "--emit=metadata",
                                 "-o", str(pathlib.Path(td) / "out.rmeta"), str(src)],
                                capture_output=True, text=True,
-                               # 不写 encoding 时 Windows 按 GBK 解码，rustc 回显含中文时
+                               # ① --crate-type lib 必须有：不加时 rustc 按可执行程序
+                               # 编译、强制要求 main，而任务大多是"写函数/结构体"的库
+                               # 形态，合法的库代码会被 E0601(main not found) 一律判死
+                               # ——实测 Rust 通过率 2.0% 的样本里混着这条系统误差，
+                               # "2B 完全不会 Rust"的结论一度被它放大（重放见
+                               # docs/evidence/judge-replay-*.txt）。
+                               # ② 不写 encoding 时 Windows 按 GBK 解码，rustc 回显含中文时
                                # 读线程直接抛 UnicodeDecodeError 并被吞掉，stderr 变空，
                                # compile_detail 退化成 rc=N，错误原因丢失。只影响诊断，
                                # 不影响是否通过；但诊断丢了就会去修错的东西。
@@ -432,6 +522,9 @@ def judge(row):
         if lang == "unknown":
             lang, lang_src = "py", "fallback-py"
     ok, cdetail = compile_check(lang, code)
+    raw_ok = ok        # 原始编译结论（未经占位符/语言猜测/空洞三道闸）。留着是为了
+                       # 跨批次对照：口径收紧后编译率会**变低**，没有它就无法回答
+                       # "低了多少、是不是改判据改出来的"。
     # 取不到完整代码时（平台截断），本机就没法验证语法了。
     #
     # 这里曾经写成 ok = bool(mark_deliv)：结果把"worker 自报交付"当成了"能编译"。
@@ -458,6 +551,17 @@ def judge(row):
         ok = None
         csrc = "lang-guessed"
         cdetail = ("语言靠默认兜底（%s），编译前提不成立；不计入编译率" % lang_src)
+    # 第五刀：空洞通过。占位符瞒不过编译器，但 `pass` / `todo!()` / hello-world
+    # 玩具代码**能过**——它们语法完全合法，所以任何只看语法的判据都会把它们记成
+    # "编译通过"，进而被 usable_of 当成"可用交付"。这类样本的共同特征是"有代码
+    # 形状、无实现内容"，口径与占位符同源：编译前提不成立 -> 记 None、不进分母。
+    # compiles_raw 保留修复前的原始结论，跨批次对照与事后翻案都要用它。
+    sub_ok, sub_reason = is_substantive(code, lang)
+    if ok is True and not sub_ok:
+        ok = None
+        csrc = "hollow"
+        cdetail = ("语法合法但无实现内容（%s）；不计入编译率，也不计为可用交付"
+                   % sub_reason)
     if not code and mark_deliv is not None:
         ok = None
         csrc = "worker-unverified"
@@ -483,8 +587,15 @@ def judge(row):
         "delivered_code": delivered,
         "mode": modes[-1] if modes else "",
         "compiles": ok,
+        # 未过闸的原始编译结论：`...` / `pass` / hello-world 这类"语法合法但没内容"
+        # 的样本在这里记 True，在 compiles 里记 None。两者之差就是判据的收紧量。
+        "compiles_raw": raw_ok,
         "compile_source": csrc,
         "compile_detail": cdetail,
+        # 有没有"实打实的实现"（见 is_substantive）。无代码时记 None（无法判定），
+        # 不能记 False——那是把"没看见"说成"看见了是假的"。
+        "substantive": (sub_ok if code else None),
+        "substantive_reason": (sub_reason if code else ""),
         "tokens": int(row.get("tokens") or 0),
         "elapsed": row.get("elapsed"),
         "http": row.get("http"),
@@ -549,6 +660,11 @@ def failure_reason(j):
             return "placeholder-instead-of-code"
         if j.get("compile_source") == "lang-guessed":
             return "lang-guessed"
+        # 空洞通过：语法合法、内容为空（pass / todo!() / 玩具代码）。与 placeholder
+        # 分开成桶，因为下一步动作不同——占位符要改"要求它真给代码"的提示词，
+        # 空洞要改"要求实现体而非骨架"的提示词，两者治的不是同一种病。
+        if j.get("compile_source") == "hollow":
+            return "hollow-pass"
         # 有代码痕迹但本机复验不了（平台截断）。这不是"编译失败"，也不是"成功"，
         # 单独成一桶：统计时既不进分母也不进分子，只作为观测缺口挂着。
         return "unverified"
@@ -635,6 +751,135 @@ def decompose_verdict(j, j2):
         return "first"                       # 首轮就好，根本不该重试（属误触发）
     if usable_of(j2):
         return "rescued"
+    return "still-bad"
+
+
+def rerun_verdict(first, retries):
+    """占位符纯重跑的结论聚合（冲刺二配套能力）。
+
+    和 decompose_verdict 的区别是"重跑时改不改编任务"：
+    decompose 会**改写** goal（接力补全 / 降粒度），收益里混着"换了个问法"的功劳；
+    纯重跑用**完全相同的 goal** 再发一次，唯一变的是采样随机性。
+    这样算出来的救回率才是"什么都不改、只是再试一次"的净收益。
+
+    为什么需要它：2026-11-16 的 holder 对照实验（docs/91-split-strategy.md）里，
+    A 臂就是纯重跑，21 条占位符题救回 10 条（47.6%），而花 2.3 倍成本的三段切分
+    只救回 4 条。这说明"再试一次"本身才是主要收益来源，值得做成一个显式开关。
+
+    判据从严：只有 retries 里真出现条目才算数，空列表不返回 rescued——
+    否则"开了开关但一条没重试"会被读成"重试很有效"。
+    """
+    if usable_of(first):
+        return "first"
+    for r in (retries or []):
+        if usable_of(r):
+            return "rescued"
+    return "still-bad"
+
+
+# ── 整包任务"先骨架、后填实"的主动切分（冲刺二）─────────────────────────
+# 2026-11-16 实测：占位符 21 条几乎全集中在 P10/P9/P6 的**整包型**第一条任务
+# （"写一个完整程序，要能直接运行，含 main"）。事后补救（decompose）救回率
+# 只有 10.7%，因为模型在第一段就已经写飞了，第二轮是在废墟上打补丁。
+# 这里的假设：对小模型，"先给骨架契约、再逐件填、最后拼装"比"一次交整件"
+# 更接近它能承受的量级。三段都是真实请求，最终判分以最后一段为准。
+
+# 整包信号只看"要一个能跑起来的完整程序"这类措辞。刻意不收"完整代码"：
+# 修 bug 类的第三阶段（"请修复并给出完整代码"）也带这四个字，收进来会把
+# 本该单轮修完的简单任务误切成三刀。
+WHOLE_RE = re.compile(r"要能直接运行|可直接运行|要能直接跑|含\s*main|带\s*main")
+
+
+def is_whole_package(goal: str) -> bool:
+    """任务是不是"整包交付"型：需要 main / 直接运行 / 完整程序。"""
+    return bool(WHOLE_RE.search(goal or ""))
+
+
+def _split_fence(lang):
+    return "python" if (lang or "py").lower() == "py" else "rust"
+
+
+def split_goal(goal, step, prev, lang="py"):
+    """整包任务的三段接力 prompt。step=1/2/3，prev 是上一段产出的代码。
+
+    三段各自的唯一目标都写在开头，避免 2B 模型自己猜"这轮要我干嘛"：
+    * 段1 契约：只要函数/数据结构签名，函数体一律占位。产出量小，
+      模型在这里几乎不会写飞；它给后两段锚定了"这程序该长什么样"。
+    * 段2 填实：在骨架内填函数体。禁止改签名、禁止加函数、禁止写 main，
+      把"组织结构"从"写代码"里剥离出去，只留一件最重的事。
+    * 段3 拼装：补 main + 参数解析 + 清占位，输出完整单文件。这轮开始
+      前实现已经过半，模型不用再从零组织一个程序。
+    任何一段交不出代码，调用方就跳到降粒度兜底（复用 decompose_goal 的
+    最小函数分支），整条仍算 split 未救回，不虚记。
+    """
+    fence = _split_fence(lang)
+    goal_t = (goal or "").strip()
+    if step == 1:
+        return (
+            "【切分·第 1 段：只出骨架，不写实现】\n"
+            "这是一个要交付整件程序的任务，一次写完对小模型太难，我们把过程拆成三段。\n"
+            "这一轮**只做一件事**：列出这个程序需要的全部函数与数据结构。\n"
+            "每个函数/结构体给出一行签名 + 一行中文注释说明它做什么。\n"
+            "函数体一律写 `pass`（不要写真实逻辑），不要写 main，不要写示例调用。\n\n"
+            "原始任务：%s\n\n"
+            "只输出一个代码块，语言标记 %s。" % (goal_t, fence)
+        )
+    if step == 2:
+        return (
+            "【切分·第 2 段：按骨架填实现】\n"
+            "下面是上一轮确定的骨架。这一轮**只填函数体**：\n"
+            "① 不要改任何函数名与签名；② 不要新增函数或类；③ 不要写 main 与参数解析。\n"
+            "骨架里函数太多的话，先填最核心的 3 个（排序靠前的优先），其余保持 pass 占位。\n\n"
+            "已有骨架：\n```%s\n%s\n```\n\n"
+            "原始任务：%s\n\n"
+            "只输出一个代码块，函数体必须是真实逻辑，禁止 pass / ... / TODO 占位。"
+            % (fence, (prev or "").strip(), goal_t)
+        )
+    return (
+        "【切分·第 3 段：补完并拼装成完整程序】\n"
+        "下面是已经填了一部分实现的代码。这一轮：\n"
+        "① 补齐仍为 pass / TODO 的剩余函数；② 补上 main 与必要的参数解析；\n"
+        "③ 输出**完整可运行的单个文件**。不要删掉已有实现，不要换函数名。\n\n"
+        "已有代码：\n```%s\n%s\n```\n\n"
+        "原始任务：%s\n\n"
+        "只输出一个代码块。"
+        % (fence, (prev or "").strip(), goal_t)
+    )
+
+
+def _skel_ok(code, lang="py"):
+    """段1 产出是否算"骨架合格"：至少 2 个定义行（def/class/struct/fn）。"""
+    return len(re.findall(r"^\s*(?:def|class|fn|struct|impl)\s+\w", code or "",
+                          flags=re.M)) >= 2
+
+
+def _usable_flag(j):
+    """判断一条判分记录是否"可用交付"。
+
+    优先读记录里已算好的 `usable` 字段，没有再回落到 usable_of 重算。
+    为什么要这个回落分支：`split_verdict` 的调用方（probe_split）传进来的
+    是精简过的记录（只有 delivered / compiles / usable 几个键），键名与
+    judge() 全量记录不同（判据要的是 delivered_code）。直接重算会**恒 False**，
+    把"三段都成了"记成"一条都没成"——这个 bug 是自检抓出来的，不是看代码看出来的。
+    """
+    if j is None:
+        return False
+    if "usable" in j:
+        return bool(j["usable"])
+    return usable_of(j)
+
+
+def split_verdict(s2, s3):
+    """三段切分的最终结论。s2=段2判分、s3=段3判分（dict 或 None）。
+
+    以段3为准：它是拼装完成态。段3没交出来但段2已可用的，也算救回
+    （有可用物总比没有强），但记 split_partial 以便分清"完整救回"与
+    "半截救回"两个台阶。
+    """
+    if _usable_flag(s3):
+        return "rescued"
+    if _usable_flag(s2):
+        return "partial"
     return "still-bad"
 
 
@@ -949,6 +1194,85 @@ def selftest() -> int:
        decompose_verdict({"delivered_code": False, "compiles": None},
                          {"delivered_code": False, "compiles": True}) == "still-bad")
 
+    # 7b. 纯重跑的结论聚合。这组守的是"救回"这个数不许注水：
+    #     * 空重跑列表不能算救回（否则"开了开关但一条没重试"会被读成有效）
+    #     * 多个重跑里只要有一个可用就该算救回（否则会低估重试收益）
+    #     * 首轮已可用时不重试（误触发要能被看见，verdict 记 first）
+    #     正负样本都给：只测"该救回的救回了"，一个恒返回 rescued 的实现也能全绿。
+    ck("纯重跑：一次就救回 -> rescued",
+       rerun_verdict({"delivered_code": True, "compiles": None},
+                     [{"delivered_code": True, "compiles": True}]) == "rescued")
+    ck("纯重跑：第 3 次才救回 -> rescued",
+       rerun_verdict({"delivered_code": True, "compiles": None},
+                     [{"delivered_code": True, "compiles": None},
+                      {"delivered_code": True, "compiles": False},
+                      {"delivered_code": True, "compiles": True}]) == "rescued")
+    ck("纯重跑：一次没救回 -> still-bad",
+       rerun_verdict({"delivered_code": True, "compiles": None},
+                     [{"delivered_code": True, "compiles": None}]) == "still-bad")
+    ck("纯重跑：一条都没重试 -> still-bad（不许注水）",
+       rerun_verdict({"delivered_code": True, "compiles": None}, []) == "still-bad")
+    ck("纯重跑：首轮已可用 -> first",
+       rerun_verdict({"delivered_code": True, "compiles": True},
+                     [{"delivered_code": True, "compiles": True}]) == "first")
+    ck("纯重跑：重跑能编译但没认领 -> still-bad（玩具代码不算救回）",
+       rerun_verdict({"delivered_code": True, "compiles": None},
+                     [{"delivered_code": False, "compiles": True}]) == "still-bad")
+
+    # 8. 空洞判据（is_substantive）。这一组全是"语法合法但没实现"的写法，
+    #    它们在修判据之前一律被记成"编译通过"。正负样本都给：只测"假货要拦"
+    #    的话，一个永远返回 False 的实现也能全绿，而它会把真产出全抹掉。
+    for bad in ("def solve(x):\n    pass", "def solve(x):\n    ...",
+                "def solve(x):\n    raise NotImplementedError",
+                "fn solve(x: i32) -> i32 {\n    todo!()\n}",
+                "print('Hello World')",
+                "# TODO: 实现\n# 先读文件"):
+        sub, why = is_substantive(bad)
+        ck("空洞必须拦住：%r" % bad.replace("\n", "\\n")[:28], sub is False, why)
+    for good in ("def load(p):\n    with open(p, encoding='utf-8') as fh:\n        return fh.read()",
+                 "pub fn add(a: i32, b: i32) -> i32 {\n    a + b\n}",
+                 "def double(x):\n    return x * 2 + 1"):
+        sub, why = is_substantive(good)
+        ck("真实现不能被误杀：%r" % good.replace("\n", "\\n")[:28], sub is True, why)
+
+    # 9. 编译判据本身：合法库形态的 Rust 必须能过。这条挡的是 2026-11-16 查出的
+    #    真事故——漏了 --crate-type lib，rustc 要 main，一整类合法库代码被判死。
+    ok_rs, d_rs = compile_check(
+        "rs", "pub struct Slot {\n    pub id: u64,\n}\n\nimpl Slot {\n"
+              "    pub fn new(id: u64) -> Self {\n        Self { id }\n    }\n}")
+    if ok_rs is None:
+        pass          # 环境无 rustc：不判，也不假装通过
+    else:
+        ck("Rust 合法库代码能编译（漏 crate-type 会红）", ok_rs is True, (d_rs or "")[:40])
+    ok_bad, _ = compile_check("py", "def broken(:\n    return 1")
+    ck("py 真语法错必须判失败", ok_bad is False)
+
+    # 10. 整包切分判据。这三条守的是"切不切"和"切完怎么算分"，
+    #     它们错了不会让程序崩，只会让整包任务被漏切、或把半截交付算成完整交付。
+    ck("整包任务要认出来", is_whole_package("写一个脚本。要能直接运行，含 main 与参数解析。"))
+    ck("整包任务要认出来（可直接运行）", is_whole_package("给一个服务，可直接运行。"))
+    ck("修 bug 阶段不许误判成整包",
+       not is_whole_package("遇到乱码行会崩溃。请定位并修复，给出完整代码。"))
+    ck("只写测试阶段不许误判成整包",
+       not is_whole_package("给这个服务写测试代码：创建成功、重复创建冲突。"))
+    # 三段必须互不相同、且都带着上一段的产出（否则接力断链，模型看到的是空手重新开始）
+    s1 = split_goal("G", 1, "")
+    s2 = split_goal("G", 2, "def a():\n    pass")
+    s3 = split_goal("G", 3, "def a():\n    return 1")
+    ck("三段 prompt 互不相同", len({s1, s2, s3}) == 3)
+    ck("段2 带上了骨架", "def a():" in s2)
+    ck("段3 带上了已有实现", "return 1" in s3)
+    ck("每段都重申原始任务", all("G" in s for s in (s1, s2, s3)))
+    # 骨架合格判定：两个定义才算骨架，一个 hello-world 不算
+    ck("两个函数算骨架", _skel_ok("def a():\n    pass\ndef b():\n    pass"))
+    ck("单行调用不算骨架", not _skel_ok("print('Hello World')"))
+    # verdict 三个台阶必须分得开：全拼成 / 只到半截 / 都没成
+    ck("段3 可用算 rescued", split_verdict({"usable": False}, {"usable": True}) == "rescued")
+    ck("只有段2 可用算 partial", split_verdict({"usable": True}, {"usable": False}) == "partial")
+    ck("两段都不可用算 still-bad",
+       split_verdict({"usable": False}, {"usable": False}) == "still-bad")
+    ck("段3 缺失但段2 可用仍算 partial", split_verdict({"usable": True}, None) == "partial")
+
     print(f"\n[selftest] {len(fails)} 项失败" if fails else "\n[selftest] 全绿")
     return 1 if fails else 0
 
@@ -974,6 +1298,10 @@ def main() -> int:
     ap.add_argument("--decompose", action="store_true",
                     help="首轮不可用时再跑一轮（接力补全/降粒度），默认关闭；"
                          "开启后重试样本与结论分别落 -retry / -decomp 两个文件，不污染主口径")
+    ap.add_argument("--retry-placeholder", type=int, default=0, metavar="N",
+                    help="占位符样本用**完全相同**的 goal 纯重跑 N 次（默认 0=关闭，行为与"
+                         "历史批次完全一致）。与 --decompose 互斥：两者都改写/不改写任务，"
+                         "混在一起跑会把收益归因搅成一锅。结论落 -rerun.jsonl")
     ap.add_argument("--tag", default="baseline")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--report-only", action="store_true")
@@ -990,6 +1318,18 @@ def main() -> int:
     # 各自成文件，才能回答"两轮之后好了几条"而不动首轮成功率的可比性。
     out_retry = EVID / f"soak-{args.tag}-retry.jsonl"
     out_decomp = EVID / f"soak-{args.tag}-decomp.jsonl"
+    # 纯重跑单独一本账：主账只记首轮，-retry 记每一条重跑样本，-rerun 记每题
+    # 聚合后的结论（几个重跑里只要有一个可用就算救回）。三本账分开，才能回答
+    # "纯重跑救回几条"而不动首轮任何口径的可比性。
+    out_rerun = EVID / f"soak-{args.tag}-rerun.jsonl"
+
+    # 两个开关互斥：decompose 会改写任务（换问法），纯重跑不改写。
+    # 同时开时样本会同时进两条路径，谁都说不清救回来的那条是"换问法"的功劳
+    # 还是"多试一次"的功劳——这种混淆在事后无法拆开，只能在开跑前拒绝。
+    if args.decompose and args.retry_placeholder > 0:
+        print("[SOAK] --decompose 与 --retry-placeholder 不能同时开："
+              "前者改写任务、后者不改写，混跑无法归因。请分两批跑。")
+        return 2
 
     if args.report_only:
         s = summarize(out, args.tag)
@@ -1059,6 +1399,55 @@ def main() -> int:
             print("[%4d/%d] %-14s st=%-9s agents=%d code=%s comp=%s %.0fs 累计完成 %d"
                   % (rnd, args.rounds, item["project"], j["status"], j["agents"],
                      j["code_chars"] or "-", j["compiles"], el, ok_n), flush=True)
+
+            # 占位符纯重跑（冲刺二配套，默认关闭）。
+            #
+            # 只对 placeholder-instead-of-code 生效，理由是这个桶的病因最干净：
+            # 模型把 `<code here>` / `...` 当成了代码交上来，任务本身没被理解错、
+            # 也没被截断、本机也能复验——它缺的只是"这次没认真写"。其余桶各有
+            # 自己的病灶（syntax-error 是真写错了，no-code-at-all 是根本没动笔，
+            # unverified 是本机看不见），拿重跑去治它们等于用运气冒充疗效。
+            #
+            # goal 一个字都不改：不加提示词、不塞上轮代码、不允许它换问法。
+            # 唯一变量是采样随机性，这样算出来的救回率才是"再试一次"的净收益。
+            # 与 --decompose 的写法对照，正是 docs/91 里 A 臂 / B 臂的做法。
+            if (args.retry_placeholder > 0 and not j["usable"]
+                    and j["failure_reason"] == "placeholder-instead-of-code"):
+                tries = []
+                for k in range(args.retry_placeholder):
+                    rowr = soak.run_task(base, item["goal"], None,
+                                         "%s-r%d-p%d" % (args.tag, rnd, k + 2),
+                                         timeout=args.task_timeout)
+                    jr = judge(rowr)
+                    jr.update({"round": rnd, "attempt": k + 2,
+                               "retry_kind": "placeholder-rerun",
+                               "project": item["project"], "stage": item["stage"],
+                               "cycle": item["cycle"], "user": user,
+                               "goal": item["goal"][:120]})
+                    jr["failure_reason"] = failure_reason(jr)
+                    jr["usable"] = usable_of(jr)
+                    append_jsonl(out_retry, jr)
+                    tries.append(jr)
+                    print("        └ 纯重跑 %d/%d code=%s comp=%s usable=%s"
+                          % (k + 1, args.retry_placeholder, jr["code_chars"] or "-",
+                             jr["compiles"], jr["usable"]), flush=True)
+                v = rerun_verdict(j, tries)
+                append_jsonl(out_rerun, {
+                    "parent_round": rnd, "project": item["project"],
+                    "lang": _project_lang([item["goal"]]),
+                    "attempts": 1 + len(tries), "verdict": v,
+                    "first": {"reason": j["failure_reason"],
+                              "code_chars": j["code_chars"],
+                              "compiles": j["compiles"], "usable": j["usable"]},
+                    "retry": [{"attempt": t["attempt"],
+                               "reason": t["failure_reason"],
+                               "code_chars": t["code_chars"],
+                               "compiles": t["compiles"],
+                               "usable": t["usable"],
+                               "elapsed": t.get("elapsed")} for t in tries],
+                })
+                print("        └ 纯重跑结论[%s] %s，共 %d 次"
+                      % (v, j["failure_reason"], 1 + len(tries)), flush=True)
 
             # 分解重试：只处理"流程跑满了但没交出可用物"的轮次。
             #

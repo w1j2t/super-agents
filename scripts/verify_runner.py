@@ -246,10 +246,16 @@ def main():
     # ---------- R5：非法配置拒启 ----------
     base_env = {**os.environ, "SA_METRICS_TOKEN": METRICS_TOKEN}
     e1 = dict(base_env, SA_DATA_DIR=str(root / "data3"), SA_BIND="127.0.0.1:18112", SA_RUNNER="process")
-    r1 = subprocess.run([exe], env=e1, capture_output=True, text=True, timeout=30)
+    r1 = subprocess.run([exe], env=e1, capture_output=True, text=True,
+                        # 显式 encoding：Windows 不给时按 GBK 解码 exe 的 stderr，
+                        # 中文启动报错（"缺少 SA_RUNNER_DIR"）里的非 GBK 字节会让读线程
+                        # 抛 UnicodeDecodeError、把 stderr 丢空。这里只判退出码所以不
+                        # 影响结论，但诊断文本一丢，红了也说不清红在哪。
+                        encoding="utf-8", errors="replace", timeout=30)
     rec("R5a process 后端缺 SA_RUNNER_DIR 时拒绝启动", r1.returncode != 0, "退出码=%s" % r1.returncode)
     e2 = dict(base_env, SA_DATA_DIR=str(root / "data4"), SA_BIND="127.0.0.1:18113", SA_RUNNER="not-a-runner")
-    r2 = subprocess.run([exe], env=e2, capture_output=True, text=True, timeout=30)
+    r2 = subprocess.run([exe], env=e2, capture_output=True, text=True,
+                        encoding="utf-8", errors="replace", timeout=30)
     rec("R5b 非法 SA_RUNNER 值被拒（不是忽略）", r2.returncode != 0, "退出码=%s" % r2.returncode)
 
     total = len(RESULTS)

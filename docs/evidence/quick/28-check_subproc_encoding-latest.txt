@@ -1,0 +1,39 @@
+# 28 子进程解码纪律
+生成时间: 2026-11-16 20:37:05
+命令由 regress_all.py 编排执行，rc=0，耗时 1.3s
+（原始输出如下，未做删改）
+======================================================================
+[subproc-encoding] 根目录 C:\Users\94355\Desktop\新建文件夹(7)
+[subproc-encoding] 本机首选编码 cp936 / PYTHONUTF8=None / PYTHONIOENCODING='utf-8'
+OK    静态：subprocess 文本调用必须显式编码  -> 共扫 74 文件、44 处调用，不合规 0 处
+OK    行为：encoding+errors 能吞掉非法字节  -> stdout='�� hello'
+OK    行为：裸 text=True 在本机确实会崩（复现 camp-g 真因）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：只设 encoding 不设 errors 输出照样被吞（errors 不可省）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
+OK    行为：正常中文输出原样保留  -> hello 正常文本
+OK    行为：rc 与 stderr 不被解码设置掩盖  -> rc=7，stderr 可见
+
+[subproc-encoding] 6 项：OK 6 / FAIL 0 / SKIP 0
+[subproc-encoding] PASS 子进程文本解码口径一致
+
+Exception in thread Thread-3 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xab in position 0: illegal multibyte sequence
+Exception in thread Thread-5 (_readerthread):
+Traceback (most recent call last):
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python311\Lib\subprocess.py", line 1597, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xab in position 0: invalid start byte
+
