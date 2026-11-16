@@ -46,7 +46,31 @@ import time
 from typing import Any
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKILL_ROOTS = [os.path.join(ROOT, "skills")]
+
+
+def market_roots() -> list[str]:
+    """引入的外部货架：marketplace/<vendor>/skills。
+
+    自建技能与搬来的技能**分开放**，不是为了好看，是为了出问题能一眼分清
+    "我写的那条坏了"还是"搬来的那条水土不服"——这两类故障的修法完全不同。
+    """
+    base = os.path.join(ROOT, "marketplace")
+    out: list[str] = []
+    if not os.path.isdir(base):
+        return out
+    for vendor in sorted(os.listdir(base)):
+        p = os.path.join(base, vendor, "skills")
+        if os.path.isdir(p):
+            out.append(p)
+    return out
+
+
+#: 自建在前、外来的在后：同名冲突时自建的优先被选中（refresh 里按 score 排，
+#: 但同分时 sorted 顺序决定先来后到，自建排在前面才不会被外来件顶掉）。
+SKILL_ROOTS = [os.path.join(ROOT, "skills")] + market_roots()
+
+#: 市场清单文件（Anthropic 的 .claude-plugin/marketplace.json）位置
+MANIFEST_REL = os.path.join(".claude-plugin", "marketplace.json")
 
 FM_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 KV_RE = re.compile(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$")
@@ -62,19 +86,113 @@ def parse_frontmatter(text: str) -> dict[str, Any]:
     if not m:
         return {}
     out: dict[str, Any] = {}
-    for line in m.group(1).splitlines():
-        line = line.strip()
+    lines = m.group(1).splitlines()
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        line = raw.strip()
+        i += 1
         if not line or line.startswith("#"):
             continue
         kv = KV_RE.match(line)
         if not kv:
             continue
         key, val = kv.group(1).strip(), kv.group(2).strip()
+
+        # YAML 块标量：`description: >-` / `|` 之后凡是更深缩进的行都归这个键。
+        # 这条不是洁癖：Anthropic 的技能清单一律用折叠块写描述，旧实现把 ">-"
+        # 当成描述本身（2 个字符），于是 claude-api 这类大技能在市场里显示成空壳，
+        # 检索也就永远搜不到它——搬了一屋子货，标牌全是空白。
+        if val in ("|", ">", "|-", ">-", "|+", ">+"):
+            base = len(raw) - len(raw.lstrip())
+            buf: list[str] = []
+            while i < len(lines):
+                nxt = lines[i]
+                if not nxt.strip():
+                    if buf:
+                        buf.append("")
+                    i += 1
+                    continue
+                if len(nxt) - len(nxt.lstrip()) <= base:
+                    break
+                buf.append(nxt.strip())
+                i += 1
+            while buf and not buf[-1]:
+                buf.pop()
+            out[key] = ("\n" if val.startswith("|") else " ").join(buf).strip()
+            continue
+
+        # 块列表：`tags:` 后面跟若干 "- x" 行
+        if val == "":
+            items: list[str] = []
+            j = i
+            while j < len(lines):
+                nxt = lines[j].strip()
+                if nxt.startswith("- "):
+                    items.append(nxt[2:].strip().strip("'\""))
+                    j += 1
+                elif not nxt:
+                    j += 1
+                else:
+                    break
+            if items:
+                out[key] = items
+                i = j
+                continue
+
         if val.startswith("[") and val.endswith("]"):
             out[key] = [v.strip().strip("'\"") for v in val[1:-1].split(",") if v.strip()]
         else:
             out[key] = val.strip("'\"")
     return out
+
+
+def read_manifest(path: str) -> dict[str, Any] | None:
+    """读 vendor 的 marketplace.json。坏清单返回 None 而不是抛异常：
+    货架塌了只该降级成"看不见分组"，不该把整个市场扫描一起打挂。
+    """
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+#: 需求侧说法 → 技能侧写法。
+#: 搬来的技能是英文写的（"any time a .pptx file is involved"），老板嘴里说的是"做个 PPT"。
+#: 中间不接这层翻译，检索就永远漏掉最该命中的那一个——这不是算法不够聪明，
+#: 是两种语言压根没接上线。
+QUERY_ALIASES: dict[str, tuple[str, ...]] = {
+    "ppt": ("pptx", "powerpoint", "slide", "presentation"),
+    "幻灯片": ("pptx", "slide", "presentation"),
+    "演示": ("pptx", "presentation", "slide"),
+    "表格": ("xlsx", "spreadsheet", "excel"),
+    "excel": ("xlsx", "spreadsheet"),
+    "word": ("docx", "document"),
+    "文档": ("docx", "document", "pdf"),
+    "设计": ("design", "canvas", "art"),
+    "前端": ("frontend",),
+    "网页": ("web", "frontend", "artifact"),
+    "测试": ("testing", "webapp", "test"),
+    "品牌": ("brand",),
+    "技能": ("skill", "mcp"),
+    "动图": ("gif",),
+}
+
+
+def expand_query(q: str) -> list[str]:
+    """把一句人话扩成若干可搜的词，原词永远排第一（排序时占优先位）。"""
+    terms = [q]
+    low = (q or "").lower().strip()
+    if not low:
+        return terms
+    for key, vals in QUERY_ALIASES.items():
+        if key in low or (len(low) >= 2 and low in key):
+            for v in vals:
+                if v not in terms:
+                    terms.append(v)
+    return terms
 
 
 class Skill:
@@ -217,24 +335,37 @@ class SkillMarket:
         q = (query or "").lower()
         if not q:
             return self.list()
+        terms = expand_query(q)
         hits = []
         for s in self._skills.values():
             head = " ".join([s.name, s.description, " ".join(map(str, s.tags))]).lower()
             hay = head + " " + s.body[:2000].lower()
-            if q not in hay:
-                continue
             # 三级排序：名字命中 > 描述/标签命中 > 仅正文命中。
             #   只分两级的后果实测过——搜"门禁"时三个技能全落在正文级，顺序由目录名决定，
             #   真正讲门禁的那个反而不在首位。
-            if q in s.name.lower():
-                rank = 0
-            elif q in head:
-                rank = 1
+            matched = 1
+            if q in hay:
+                rank = 0 if q in s.name.lower() else (1 if q in head else 2)
             else:
-                rank = 2
-            hits.append((rank, -s.score()["score"], s.name, s.info()))
-        hits.sort(key=lambda x: (x[0], x[1], x[2]))
-        return [h[3] for h in hits]
+                # 别名翻译命中记 3+ 子级：能救回漏网的那一个，但不许抢直接命中的位置。
+                #   子级仍要分名字/描述/正文，并且命中词数多的优先——否则「前端设计」
+                #   会把名字里凑巧带 art 的技能排到 frontend-design 前面，
+                #   那就成了翻译反而帮倒忙。
+                sub: int | None = None
+                matched = 0
+                for t in terms[1:]:
+                    in_name, in_head, in_hay = t in s.name.lower(), t in head, t in hay
+                    if not (in_name or in_head or in_hay):
+                        continue
+                    matched += 1
+                    lv = 0 if in_name else (1 if in_head else 2)
+                    sub = lv if sub is None or lv < sub else sub
+                rank = None if sub is None else 3 + sub
+            if rank is None:
+                continue
+            hits.append((rank, -matched, -s.score()["score"], s.name, s.info()))
+        hits.sort(key=lambda x: (x[0], x[1], x[2], x[3]))
+        return [h[4] for h in hits]
 
     def info(self, name: str) -> dict[str, Any] | None:
         if not self._loaded:
@@ -266,6 +397,47 @@ class SkillMarket:
         return {"roots": self.roots, "scanned": self._loaded,
                 "skills": len(self._skills), "lazy_loads": self.lazy_loads,
                 "scan_ms": self.scan_ms, "conflicts": len(self.conflicts)}
+
+    # -- 货架（marketplace 清单）-------------------------------------------
+    def marketplace(self) -> dict[str, Any]:
+        """把各 vendor 的 marketplace.json 读成"分组 → 技能"的货架视图。
+
+        为什么需要这一层：扫盘只能回答"我这儿有哪些技能"，回答不了"这批技能
+        是谁按什么主题打包搬进来的"。老板要关掉/换掉某个来源时，得能整包看清，
+        而不是在一堆平铺的名字里猜。
+        """
+        if not self._loaded:
+            self.refresh()
+        shelves: list[dict[str, Any]] = []
+        for root in self.roots:
+            vendor_dir = os.path.dirname(root)          # marketplace/<vendor>/skills → ../
+            manifest = os.path.join(vendor_dir, MANIFEST_REL)
+            if not os.path.isfile(manifest):
+                continue
+            data = read_manifest(manifest)
+            if data is None:
+                shelves.append({"vendor": os.path.basename(vendor_dir),
+                                "path": manifest, "error": "manifest 解析失败",
+                                "groups": []})
+                continue
+            groups = []
+            for plug in data.get("plugins") or []:
+                names = [os.path.basename(str(s).rstrip("/\\"))
+                         for s in (plug.get("skills") or [])]
+                groups.append({
+                    "name": plug.get("name") or "",
+                    "description": (plug.get("description") or "").strip(),
+                    "declared": len(names),
+                    # 清单写了但盘上没有 = 搬家时漏件；盘上有但清单没写 = 野技能。
+                    # 两种都要报，否则"市场里明明有 19 个"会一直对不上账。
+                    "resolved": [n for n in names if n in self._skills],
+                    "missing": [n for n in names if n not in self._skills],
+                })
+            shelves.append({"vendor": os.path.basename(vendor_dir),
+                            "name": data.get("name") or "",
+                            "version": str((data.get("metadata") or {}).get("version") or ""),
+                            "path": manifest, "groups": groups})
+        return {"shelves": shelves, "skills_total": len(self._skills)}
 
 
 # ---------------------------------------------------------------------------
@@ -376,6 +548,67 @@ def _selftest() -> int:
     r = real.refresh()
     print("[OK ] 真实根目录扫描：%d 个技能，冲突 %d（目录不存在则计 0，不算失败）"
           % (r["skills"], r["conflicts"]))
+
+    # 11) 货架对账：manifest 声明的技能，盘上必须全在。
+    #     这条是"搬进来"这个动作唯一可信的验收——不数文件、数清单与盘的对账结果。
+    mk = real.marketplace()
+    declared = missing = 0
+    for sh in mk["shelves"]:
+        for g in sh["groups"]:
+            declared += g["declared"]
+            missing += len(g["missing"])
+    if mk["shelves"]:
+        if missing == 0:
+            print("[OK ] 货架对账：%d 个 vendor、清单声明 %d 个技能，盘上零缺件"
+                  % (len(mk["shelves"]), declared))
+        else:
+            bad = [(sh["vendor"], g["name"], g["missing"]) for sh in mk["shelves"]
+                   for g in sh["groups"] if g["missing"]]
+            print("[FAIL] 清单有货、盘上没有：%s" % bad)
+            rc = 1
+    else:
+        print("[OK ] 无外部货架（marketplace/ 未引入，不判失败）")
+
+    # 12) 搬来的技能要"能被老板的说法查到"，不是"躺在硬盘里"——
+    #     这里一律用中文/口语查询，因为那才是真实入口；用英文原名搜属于自欺欺人。
+    for q, expect in (("帮我做个 PPT", "pptx"),
+                      ("弄个表格", "xlsx"),
+                      ("前端设计", "frontend-design")):
+        if not any(os.path.isdir(p) for p in real.roots[1:]):
+            break
+        hits = [it["name"] for it in real.search(q)]
+        # 验收口径：进前三即算"查得到"。要求必居首位就成了排序调参，
+        # 而这里要保证的是"搬来的货不会被中文需求绕过"，不是名次。
+        ok = expect in hits[:3]
+        rank = (hits.index(expect) + 1) if expect in hits else None
+        print(("[OK ] 口语可检索：「%s」→ %s 第 %s 位" % (q, hits[:3], rank)) if ok
+              else "[FAIL] 「%s」前三查不到 %s，实际 %s" % (q, expect, hits[:5]))
+        rc |= 0 if ok else 1
+
+    # 13) 元数据合格率：搬进来的技能若大面积没 description，等于搬了一堆空壳
+    if any(os.path.isdir(p) for p in real.roots[1:]):
+        ext = [it for it in real.list() if it["path"].lower().endswith("skill.md")
+               and "marketplace" in it["path"].replace("\\", "/").lower()]
+        good = [it for it in ext if it["checks"]["has_desc"] and it["checks"]["has_body"]]
+        ratio = (len(good) / len(ext)) if ext else 0.0
+        ok = ext and ratio >= 0.9
+        print(("[OK ] 外来技能元数据合格：%d/%d（%.0f%%）有描述且有正文"
+               % (len(good), len(ext), ratio * 100)) if ok
+              else "[FAIL] 外来技能空壳过多：%d/%d" % (len(good), len(ext)))
+        rc |= 0 if ok else 1
+
+    # 14) YAML 折叠块描述必须被完整读进来。
+    #     旧实现把 ">-" 当描述（2 字符），claude-api 那种十几万字符的大技能
+    #     在市场里显示为空壳，检索永远搜不到——"搬了一屋子货，标牌全是空白"。
+    fm = parse_frontmatter("---\nname: x\ndescription: >-\n  第一行\n  第二行\n"
+                           "tags:\n  - a\n  - b\n---\n正文\n")
+    ok = ("第一行" in str(fm.get("description", ""))
+          and "第二行" in str(fm.get("description", ""))
+          and fm.get("tags") == ["a", "b"])
+    print(("[OK ] 折叠块/块列表解析：desc=%r tags=%s"
+           % (str(fm.get("description"))[:20], fm.get("tags"))) if ok
+          else "[FAIL] 多行 frontmatter 解析失败：%s" % fm)
+    rc |= 0 if ok else 1
     return rc
 
 
@@ -396,10 +629,26 @@ def main(argv: list[str]) -> int:
             print("%-16s %d/5  %s" % (it["name"], it["score"], it["description"][:56]))
     if "--info" in argv:
         print(json.dumps(m.info(arg("--info")), ensure_ascii=False, indent=2))
+    if "--marketplace" in argv:
+        mk = m.marketplace()
+        if "--json" in argv:
+            print(json.dumps(mk, ensure_ascii=False, indent=2))
+        else:
+            for sh in mk["shelves"]:
+                print("货架 %s（%s v%s）" % (sh.get("vendor"), sh.get("name", ""),
+                                           sh.get("version", "-")))
+                for g in sh["groups"]:
+                    flag = "" if not g["missing"] else "  缺件:%s" % g["missing"]
+                    print("  · %-16s %2d 个技能  %s%s"
+                          % (g["name"], g["declared"], g["description"][:40], flag))
+            if not mk["shelves"]:
+                print("没有引入外部货架（marketplace/<vendor>/skills 不存在）")
     if "--json" in argv:
         print(json.dumps({"skills": m.list(), "conflicts": m.conflicts,
-                          "stats": m.stats()}, ensure_ascii=False, indent=2))
-    if not any(k in argv for k in ("--list", "--search", "--info", "--json")):
+                          "stats": m.stats(), "marketplace": m.marketplace()},
+                         ensure_ascii=False, indent=2))
+    if not any(k in argv for k in ("--list", "--search", "--info", "--json",
+                                   "--marketplace")):
         print(__doc__)
     return 0
 
