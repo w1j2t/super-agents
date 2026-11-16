@@ -1,3 +1,7 @@
+> **这是 2026-11-15 的历史证据（24 次请求口径），已被 `split-ab-holder.md`（21 对、同一批占位符样本）取代。**
+> 结论方向一致（切分更贵且救得少），但**数字不要混用**：本文件 24 次请求，那份 21 对。
+> 对外引用一律引 `docs/91-split-strategy.md` 与 `split-ab-holder.md`。
+
 # 整包任务切分策略 A/B 对照（split-ab）
 
 > 由 `scripts/probe_split.py` 生成。判分口径与主账一致（`soak_project.judge`），未新造尺子。样本 24 次请求。

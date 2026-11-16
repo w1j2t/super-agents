@@ -1,6 +1,6 @@
 # 14 真实响应形状 vs schema
-生成时间: 2026-11-16 20:37:05
-命令由 regress_all.py 编排执行，rc=0，耗时 4.5s
+生成时间: 2026-11-17 00:25:09
+命令由 regress_all.py 编排执行，rc=0，耗时 5.0s
 （原始输出如下，未做删改）
 ======================================================================
 [OK  ] R00 服务就绪（/readyz ready=true）
@@ -13,14 +13,14 @@
 [OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
 [OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
-[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/6a63d861-34cc-495e-915f-826a73ec12c6 status=200 形状一致
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/a69a355e-8375-4040-bf7f-80f9f57397ec status=200 形状一致
 [OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
 [OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
-[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/6a63d861-34cc-495e-915f-826a73ec12c6/trace status=200 形状一致
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/a69a355e-8375-4040-bf7f-80f9f57397ec/trace status=200 形状一致
 [OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
 [OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
-[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/0f3c6ddc-2179-4d1d-92e7-513b29de0108/cancel status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/7ba52730-a742-4b8b-837f-61c094751a20/cancel status=202 形状一致
 [OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
 [OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
 [OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
@@ -29,7 +29,7 @@
 [OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
 [OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
 [OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
-[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/f3ba3c01-453b-43ea-9cc5-c8c744fada68 status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/72995dfd-9019-462e-996e-802cd54b8aee status=200 形状一致
 [OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
 [OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
 [OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
@@ -39,7 +39,7 @@
 [OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
 [OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
 [OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
-[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/5f226b38-0eda-4af3-9d58-f849260776ed status=404 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/4a682166-d5ed-4bc6-8b76-4a3f33a6bd04 status=404 形状一致
 [OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
 [OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
 [OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致

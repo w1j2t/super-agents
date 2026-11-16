@@ -57,7 +57,7 @@
 # 二进制（现成的，不用编译）
 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 
-# 起服务（默认 8080，建议前端开发用固定端口）
+# 起服务（默认 127.0.0.1:8088；换端口用 $env:SA_BIND）
 $env:SA_DATA_DIR = "C:\Users\94355\Desktop\新建文件夹(7)\temp\sa-dev-data"
 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 ```
@@ -71,10 +71,19 @@ C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 | `SA_LLM_TIMEOUT` | 单次调用超时（秒） | `300` |
 | `SA_LLM_MAX_TOKENS` | 单次上限 | `2400` |
 
-就绪探测：`GET /healthz`（存活）、`GET /readyz`（可服务）、`GET /metrics`（Prometheus 文本）。
+就绪探测：`GET /healthz`（存活）、`GET /readyz`（可服务）、`GET /metrics`（Prometheus 文本，**另需静态令牌** `SA_METRICS_TOKEN`，见 §3）。
+
+**起服务前先跑一次只读自检**（不起服务、不写业务状态，10 项一次看完）：
+
+```powershell
+C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe doctor
+```
+
+它会直接告诉你：端口是否空闲、数据目录能否写、`runner=sim` 还是 `process`、模型端点配没配、集群心跳看没看到。
+`doctor` 报 `runner=sim` 时任务照样成功，但执行是**确定性模拟**——前端别把它当真实执行来验收。
 
 > 没有 LLM 也能开发前端：任务会成功、会返回结果，只是内容质量差。
-> **别拿"结果不好"当前端 bug 查**，先看 `/observability/overview` 里 `runner_backend` 是不是 `process`。
+> **别拿"结果不好"当前端 bug 查**，先看 `/api/v1/observability/overview` 里 `runner_backend` 是不是 `process`（注意带 `/api/v1` 前缀，裸路径是 404）。
 
 ---
 
@@ -84,10 +93,20 @@ C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 
 | 端点 | 是否要 Bearer |
 |------|---------------|
-| `/healthz` `/readyz` `/metrics` | 不要 |
-| `/api/v1/agents` | **不要**（登录页要展示系统里有谁，所以免鉴权） |
-| `/api/v1/capabilities` | **不要**（同上） |
-| 其余全部 | **要** |
+| `/healthz` `/readyz` | 不要 |
+| `/api/v1/auth/register` `/login` `/refresh` `/logout` | **不要**（logout 走 body 里的 `refresh_token`，不靠 Bearer） |
+| `/api/v1/agents` `/agents/{id}` `/capabilities` `/capabilities/{id}` | **不要**（登录页要展示系统里有谁，所以免鉴权） |
+| `/metrics` | **不要 access_token，但要另一把钥匙**：静态令牌 `SA_METRICS_TOKEN`（`X-Authorization` 或 `Authorization: Bearer <该令牌>`），没设就是 401 |
+| 其余全部（`/tasks/*`、`/memories/*`、`/observability/*`、`/auth/me`、`/auth/password` 等） | **要** |
+
+> 这一张表不是抄来的：2026-11-16 我逐个端点空手打过一遍。`/metrics` 当时返回 `401 Authorization 未授权`，
+> 与「运维端点都不需要令牌」的直觉相反 —— 别在登录页把 `/metrics` 当免鉴权探针用。
+>
+> **注册链路可以自给自足**：`POST /api/v1/auth/register` 字段是 `username` / `email` / `password`（三者必填），
+> 建完直接 `POST /api/v1/auth/login`，body 用 `{"account": "<username 或 email>", "password": "..."}`
+> 拿 `access_token` + `refresh_token`。**不需要任何预置账号或在数据库里手插一行**，前端联调从零就能跑。
+>
+> 权威清单在 `docs/40-api-contract-ts.md` §鉴权行，与 `openapi.json` 一致；本文若与它冲突，以它为准。
 
 流程：`POST /api/v1/auth/login` 拿 `access_token` + `refresh_token` → 后续 `Authorization: Bearer <access_token>`。
 
@@ -247,3 +266,19 @@ $py = "D:\Program Files\Tencent\Marvis\MarvisAgent\1.60.3400.795\runtime\python3
 5. 最后做 observability（图表多，但都是只读数据）。
 
 做完第 3 步就能给用户看东西了，别按页面顺序做。
+
+---
+
+## 附：本文每句话的可信度分级
+
+写交接单最容易犯的错，是把「文档里抄的」和「我真跑过的」混在一起，让下一棒分不清该信谁。
+所以这里明码标价：
+
+| 级别 | 内容 | 依据 |
+|---|---|---|
+| **A 实测过** | 默认监听 `127.0.0.1:8088`、换端口用 `SA_BIND`；`/healthz` `/readyz` `/api/v1/agents` `/api/v1/capabilities` 空手可打；`/metrics` 空手返回 401；裸 `/observability/overview` 返回 404；`doctor` 10 项输出 | 2026-11-16 直接起进程、直接发请求 |
+| **B 契约保证** | 29 条路径 / 33 个操作 / 51 个 schema；注册字段 `username`+`email`+`password`；登录用 `account` 字段；`POST /tasks` 返回 202 + `status: queued` | `docs/openapi.json`（门禁 6 与 14 双向守着：契约与代码不一致会红，响应形状与契约不一致也会红） |
+| **C 他人验证** | SSE 帧序列、`mode=async` 默认值、取消语义、刷新单飞的三条铁律 | 上一轮联调记录，本轮未复跑 |
+| **D 没验过** | 前端真跑起来之后的行为、浏览器里的 CORS 细节、Vite 代理配置 | 前端一行代码都还没有，无可验 |
+
+**用法**：C 级内容当"很可能对但要自己确认"，D 级内容当"没人知道"。发现 A 级错了请直接改本文并注明日期 —— A 级写错会误导下一棒去查不存在的东西（本轮就修掉了两处：把 `8088` 写成 `8080`、把 `/metrics` 写成免鉴权）。
