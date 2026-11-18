@@ -38,6 +38,13 @@ pub struct AppState {
     /// 异步任务的取消登记簿：让 `cancelled` 成为真能到达的状态。
     /// 它不是可替换部件（没有第二套实现的意义），所以不进 `ports` 注册表。
     pub cancellations: Arc<Cancellations>,
+    /// 后台异步任务的并发准入门（容量 = `SA_ASYNC_MAX_RUNNING`）。
+    ///
+    /// 为什么是信号量而不是"数一下 cancellations.active()"：后者是 check-then-act，
+    /// 两个请求可以同时读到"还差一个名额"而一起放行，并发上限在高压下必然被突破——
+    /// 而这条上限恰恰是给高压准备的。`try_acquire_owned` 是原子判定，
+    /// 拿不到就当场拒绝，不存在"看了再决定"的窗口。
+    pub async_slots: Arc<tokio::sync::Semaphore>,
     /// 任务状态事件总线（SSE 进度的数据源）。
     /// 与 `cancellations` 同理：它是进程内广播，不是"可换实现"的槽位。
     pub events: Arc<EventBus>,
@@ -80,15 +87,26 @@ impl AppState {
             "",
             crate::domain::capability::CAPABILITIES.len() as f64,
         );
-        let limiter = config.limiter.build();
         // 集群登记表必须在 `config` 被 move 进 `Arc` 之前装配：它要读
         // `cluster_dir` / `node_id` / `cluster_ttl_secs` 三个字段。
         // 关闭（`SA_CLUSTER=off`）时拿到的是空操作实例，所以这里不需要 if——
         // 把判断留在这里，就等于在五个调用点各留一颗定时炸弹。
         let cluster = Arc::new(ClusterRegistry::from_config(&config));
+        // 限流器在集群模式下按活跃节点数切分配额：进程内令牌桶各节点独立，
+        // 不切分等于 N 个节点把配额放大 N 倍（三方审查 H3）。`peers()` 不含自身，
+        // 所以节点总数 = peers + 1。单机（集群关闭）恒为 1，行为与此前完全一致。
+        let nodes = (cluster.peers().len() + 1).max(1) as u32;
+        let limiter = if config.cluster_enabled {
+            config.limiter.build_sharded(nodes)
+        } else {
+            config.limiter.build()
+        };
         // 告警策略在构造时就定下来：运行中改环境变量不会生效，
         // 这是刻意的——阈值中途变化会让"这条到底报没报过"失去可比性。
         let alerts = Arc::new(Alerter::new(config.alert.clone()));
+        // 容量取自配置、且至少 1：配成 0 会让异步模式彻底不可用，
+        // 这种"静默全拒"比启动失败更难排查，所以在这里夹住。
+        let async_slots = Arc::new(tokio::sync::Semaphore::new(config.async_max_running.max(1)));
         Ok(Self {
             config: Arc::new(config),
             store: Arc::new(store),
@@ -97,6 +115,7 @@ impl AppState {
             limiter,
             runner,
             cancellations: Arc::new(Cancellations::new()),
+            async_slots,
             // 事件总线：每个订阅者独立缓冲（256 条），一条任务只产生 3 条事件，
             // 缓冲足够容纳"刚连上就补齐最近状态"；发布永不阻塞执行线程。
             events: Arc::new(EventBus::new()),
@@ -200,7 +219,9 @@ impl AppState {
             metrics: self.metrics.as_ref(),
             audit: self.audit.as_ref(),
             retry_limit: self.config.task_retry_limit,
-            max_failed_steps: 2,
+            // 熔断阈值只认配置。此处曾硬编码 2，与 executor::MAX_FAILED_STEPS=3 构成双源，
+            // 导致单测验的是"失败 3 步熔断"、生产实际 2 步就熔断。
+            max_failed_steps: self.config.max_failed_steps,
             backoff_ms: 200,
             runner: self.runner.as_deref(),
             cancel,

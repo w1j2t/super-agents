@@ -13,6 +13,10 @@ use std::collections::{BTreeMap, HashMap};
 pub const SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+// FIX-003：缺字段不再等于整库损坏。结构级 `default` 让缺失字段回落到
+// `Db::default()` 的同名字段，而多出来的未知字段 serde 默认忽略——
+// 于是"加字段"这一侧是前向兼容的；反向的"库比程序新"由 json.rs 的版本闸门拒绝。
+#[serde(default)]
 pub struct Db {
     pub schema_version: u32,
     /// user_id -> User

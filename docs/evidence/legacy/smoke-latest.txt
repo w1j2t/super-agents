@@ -1,4 +1,4 @@
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"data_dir": "C:\\Users\\94355\\AppData\\Local\\Temp\\sa-smoke-1794316647", "ready": true, "schema_version": 1, "storage
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"data_dir": "%USERPROFILE%\\AppData\\Local\\Temp\\sa-smoke-1794316647", "ready": true, "schema_version": 1, "storage
 [OK  ] S01b 存储后端可识别  ->  storage=json durable=True
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -159,8 +159,8 @@
 合计 154 项 | 通过 154 | 失败 0
 
 服务日志尾部：
-[2m2026-11-10T13:17:27.417129Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794316647\secret.key
-[2m2026-11-10T13:17:27.417786Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794316647\db.json
+[2m2026-11-10T13:17:27.417129Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794316647\secret.key
+[2m2026-11-10T13:17:27.417786Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794316647\db.json
 [2m2026-11-10T13:17:27.417955Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
 [2m2026-11-10T13:17:27.417979Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
 [2m2026-11-10T13:17:27.419820Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory

@@ -16,6 +16,26 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Instant;
 
+/// 锁中毒恢复口径（三方审查 M2）。
+///
+/// 持锁线程 panic 会让锁永久中毒；继续 `unwrap`/`expect` 会把"一次 panic"
+/// 放大成"此后每个请求都 panic"的雪崩。审计流水、计数器、限流桶在 panic 时
+/// 并不处于不一致状态（要么未改，要么改完才放锁），所以恢复内部值继续服务；
+/// 告警只打一次，避免刷屏把首因埋掉。
+fn recover_poison<T>(res: std::sync::LockResult<T>, tag: &'static str) -> T {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static WARNED: AtomicBool = AtomicBool::new(false);
+    match res {
+        Ok(v) => v,
+        Err(e) => {
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                tracing::error!(tag, "锁中毒，已恢复内部数据；请排查持锁线程的 panic");
+            }
+            e.into_inner()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Quota {
     pub capacity: f64,
@@ -29,9 +49,47 @@ impl Quota {
             refill_per_sec,
         }
     }
+
+    /// 多节点部署的配额切分：把单机配额按节点数等分。
+    ///
+    /// 进程内令牌桶的各节点状态互不可见，N 个节点等于把配额放大 N 倍（三方审查 H3：
+    /// 登录限流是暴力破解的唯一防线，放大 N 倍等于防线失效）。切分后
+    /// 「N 节点合计 ≈ 单机配额」，绕过成本回到预期。
+    ///
+    /// 容量至少留 1：切到 0 会让所有请求被静默拒绝，这种"限流成拒绝服务"比绕过更难查。
+    pub fn shard(self, nodes: u32) -> Self {
+        let n = nodes.max(1) as f64;
+        if n <= 1.0 {
+            return self;
+        }
+        Self {
+            capacity: (self.capacity / n).max(1.0),
+            refill_per_sec: (self.refill_per_sec / n).max(0.000_001),
+        }
+    }
 }
 
 /// 一次取令牌的结果。
+/// 桶表容量硬上限（FIX-006）。取 2 万：正常单机使用（每用户几个键）远达不到，
+/// 而攻击者刷键空间时能尽早触发"过载拒绝"，而不是把内存吃光。
+const MAX_BUCKETS: usize = 20_000;
+
+/// 限流键长度上限（FIX-006）。键里带 IP / user_id 这类外部输入，
+/// 不截断就等于让外部决定单个桶占多少内存。
+const MAX_KEY_BYTES: usize = 128;
+
+/// 按字符边界截断限流键：直接按字节切会切碎 UTF-8 触发 panic。
+fn clip_key(key: &str) -> &str {
+    if key.len() <= MAX_KEY_BYTES {
+        return key;
+    }
+    let mut end = MAX_KEY_BYTES;
+    while end > 0 && !key.is_char_boundary(end) {
+        end -= 1;
+    }
+    &key[..end]
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LimitOutcome {
     pub allowed: bool,
@@ -91,6 +149,9 @@ struct Bucket {
 
 pub struct RateLimiter {
     buckets: Mutex<HashMap<String, Bucket>>,
+    /// 集群节点数（单机恒为 1）。构造时确定：扩容后需重启才重算，
+    /// 否则"运行中节点数变了、配额跟着抖"会让限流行为不可复现。
+    shard: u32,
 }
 
 impl Default for RateLimiter {
@@ -101,9 +162,20 @@ impl Default for RateLimiter {
 
 impl RateLimiter {
     pub fn new() -> Self {
+        Self::with_shard(1)
+    }
+
+    /// 集群模式构造：`nodes` 为活跃节点总数（含自身）。
+    pub fn with_shard(nodes: u32) -> Self {
         Self {
             buckets: Mutex::new(HashMap::new()),
+            shard: nodes.max(1),
         }
+    }
+
+    /// 当前分片数（排障/门禁断言用）。
+    pub fn shard(&self) -> u32 {
+        self.shard
     }
 
     /// 当前桶数量（注册表 / 排障时看"是不是桶爆了"）。
@@ -114,12 +186,32 @@ impl RateLimiter {
 
 impl Limiter for RateLimiter {
     fn acquire(&self, key: &str, quota: Quota) -> LimitOutcome {
+        // 多节点时按节点数等分配额，保证总量不随节点数放大
+        let quota = quota.shard(self.shard);
         let now = Instant::now();
         let limit = quota.capacity.max(0.0) as u32;
-        let mut map = self.buckets.lock().expect("限流器锁未被毒化");
-        // 简单容量控制：桶数量超过 10k 时清掉 1 小时没动过的记录，避免内存无限增长
-        if map.len() > 10_000 {
+        let key = clip_key(key);
+        let mut map = recover_poison(self.buckets.lock(), "ratelimit.buckets");
+        // FIX-006：桶表必须有硬上限，而且上限不能只靠"清理过期"来保证。
+        // 旧实现只在 len > 10_000 时 retain 一次：当键全是新近创建的（刷 login:{ip}、
+        // refresh:{sub}、register:{ip} 这类带攻击者可控成分的键）时过期清理等于空转，
+        // 表会一路长到 OOM。现在的顺序是：表满 → 先清过期 → 仍满则按"过载"拒绝。
+        // 拒绝而不是放行，是因为"内存快被撑爆"时放行等于把限流器本身变成攻击面。
+        if !map.contains_key(key) && map.len() >= MAX_BUCKETS {
             map.retain(|_, b| now.duration_since(b.last).as_secs() < 3600);
+            if map.len() >= MAX_BUCKETS {
+                tracing::warn!(
+                    buckets = map.len(),
+                    key = key,
+                    "限流桶表已满，新键被拒绝（疑似对注册/登录/刷新接口的键空间扫描）"
+                );
+                return LimitOutcome {
+                    allowed: false,
+                    retry_after_secs: 60,
+                    remaining: 0,
+                    limit,
+                };
+            }
         }
         let bucket = map.entry(key.to_string()).or_insert(Bucket {
             tokens: quota.capacity,
@@ -215,8 +307,13 @@ impl LimiterKind {
     }
 
     pub fn build(self) -> std::sync::Arc<dyn Limiter> {
+        self.build_sharded(1)
+    }
+
+    /// 集群模式：按活跃节点数切分配额（`Noop` 不受影响——它本来就放行）。
+    pub fn build_sharded(self, nodes: u32) -> std::sync::Arc<dyn Limiter> {
         match self {
-            LimiterKind::Memory => std::sync::Arc::new(RateLimiter::new()),
+            LimiterKind::Memory => std::sync::Arc::new(RateLimiter::with_shard(nodes)),
             LimiterKind::Noop => std::sync::Arc::new(NoopLimiter::new()),
         }
     }
@@ -225,6 +322,44 @@ impl LimiterKind {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cluster_shard_divides_quota_instead_of_multiplying_it() {
+        // H3：不切分时 4 个节点等于把配额放大 4 倍；切分后单节点只拿 1/4
+        let base = Quota::new(10.0, 10.0 / 60.0);
+        assert_eq!(base.shard(1).capacity, 10.0, "单机不切分，行为与改动前一致");
+
+        let sharded = base.shard(4);
+        assert!((sharded.capacity - 2.5).abs() < 1e-9, "容量按节点数等分");
+        assert!(
+            (sharded.refill_per_sec * 4.0 - base.refill_per_sec).abs() < 1e-9,
+            "补充速率同样等分，N 节点合计 ≈ 单机"
+        );
+
+        // 容量最少留 1：否则节点多到一定程度就变成"全员拒绝"
+        assert_eq!(base.shard(1000).capacity, 1.0);
+        assert_eq!(base.shard(0).capacity, 10.0, "0 节点按单机处理，不做除法恐慌");
+    }
+
+    #[test]
+    fn sharded_limiter_gives_each_node_a_quarter() {
+        let q = Quota::new(4.0, 0.0);
+        let a = RateLimiter::with_shard(4);
+        let b = RateLimiter::with_shard(4);
+        assert_eq!(a.shard(), 4);
+        // 每个节点只放行 1 次（4/4），而不是 4 次
+        assert!(a.acquire("login:1.2.3.4", q).allowed);
+        assert!(!a.acquire("login:1.2.3.4", q).allowed);
+        // 两个节点合计仍只有 2 次（4 节点总配额 4 次）
+        assert!(b.acquire("login:1.2.3.4", q).allowed);
+        assert!(!b.acquire("login:1.2.3.4", q).allowed);
+        // 单机实例照旧拿满 4 次
+        let solo = RateLimiter::new();
+        for _ in 0..4 {
+            assert!(solo.acquire("login:1.2.3.4", q).allowed);
+        }
+        assert!(!solo.acquire("login:1.2.3.4", q).allowed);
+    }
 
     #[test]
     fn burst_then_throttle() {

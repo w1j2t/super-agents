@@ -1,0 +1,168 @@
+[
+  {
+    "desc": "limit=0 应 422 并给出范围",
+    "method": "GET",
+    "path": "/api/v1/memories?limit=0",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"limit\":\"允许范围 1..=200，不传"
+  },
+  {
+    "desc": "limit=-1 应 422 并给出范围",
+    "method": "GET",
+    "path": "/api/v1/memories?limit=-1",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"limit\":\"必须是非负整数\"}}"
+  },
+  {
+    "desc": "limit 超上限应 422 并给出范围",
+    "method": "GET",
+    "path": "/api/v1/memories?limit=100000",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"limit\":\"允许范围 1..=200，不传"
+  },
+  {
+    "desc": "超大 offset 是否空页而非 panic",
+    "method": "GET",
+    "path": "/api/v1/memories?offset=999999",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "pass": true,
+    "body": "{\"total\":0,\"count\":0,\"limit\":50,\"offset\":999999,\"has_more\":false,\"items\":[]}"
+  },
+  {
+    "desc": "超长 q 是否仍可用",
+    "method": "GET",
+    "path": "/api/v1/memories?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "status": 422,
+    "expected": [
+      200
+    ],
+    "pass": false,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"q\":\"搜索关键词最多 200 个字�"
+  },
+  {
+    "desc": "非法枚举是否 422",
+    "method": "GET",
+    "path": "/api/v1/tasks?status=BOGUS",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"status\":\"可选 queued / running / su"
+  },
+  {
+    "desc": "非数字 limit 是否 422",
+    "method": "GET",
+    "path": "/api/v1/tasks?limit=abc",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"limit\":\"必须是非负整数\"}}"
+  },
+  {
+    "desc": "非法 id 是否 404 而非 500",
+    "method": "GET",
+    "path": "/api/v1/memories/not-a-uuid",
+    "status": 404,
+    "expected": [
+      404
+    ],
+    "pass": true,
+    "body": "{\"code\":\"not_found\",\"message\":\"记忆不存在\"}"
+  },
+  {
+    "desc": "不存在 id 是否 404",
+    "method": "GET",
+    "path": "/api/v1/memories/00000000-0000-0000-0000-000000000000",
+    "status": 404,
+    "expected": [
+      404
+    ],
+    "pass": true,
+    "body": "{\"code\":\"not_found\",\"message\":\"记忆不存在\"}"
+  },
+  {
+    "desc": "审计 limit=0 应 422 并给出范围",
+    "method": "GET",
+    "path": "/api/v1/observability/audit?limit=0",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"limit\":\"允许范围 1..=500，不传"
+  },
+  {
+    "desc": "未知路径是否 404 而非 500",
+    "method": "GET",
+    "path": "/api/v1/nonexistent/path",
+    "status": 404,
+    "expected": [
+      404
+    ],
+    "pass": true,
+    "body": "{\"code\":\"not_found\",\"message\":\"接口不存在，请检查请求路径与方法\"}"
+  },
+  {
+    "desc": "空目标是否 422",
+    "method": "POST",
+    "path": "/api/v1/tasks",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"goal\":\"任务目标至少 4 个字符"
+  },
+  {
+    "desc": "100KB 目标必须明确拒绝",
+    "method": "POST",
+    "path": "/api/v1/tasks",
+    "status": 422,
+    "expected": [
+      413,
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"goal\":\"任务目标最多 2000 个字"
+  },
+  {
+    "desc": "纯空白目标必须 422",
+    "method": "POST",
+    "path": "/api/v1/tasks",
+    "status": 422,
+    "expected": [
+      422
+    ],
+    "pass": true,
+    "body": "{\"code\":\"unprocessable_entity\",\"message\":\"请求参数校验未通过\",\"details\":{\"goal\":\"任务目标至少 4 个字符"
+  },
+  {
+    "desc": "正常分页基线",
+    "method": "GET",
+    "path": "/api/v1/memories?limit=1&offset=0",
+    "status": 200,
+    "expected": [
+      200
+    ],
+    "pass": true,
+    "body": "{\"total\":0,\"count\":0,\"limit\":1,\"offset\":0,\"has_more\":false,\"items\":[]}"
+  }
+]

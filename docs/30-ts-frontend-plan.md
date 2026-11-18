@@ -181,7 +181,7 @@ pnpm openapi-typescript ..\docs\openapi.json -o src/shared/api/types.gen.ts
 **后端一改，前端怎么知道**：
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 python scripts\gen-openapi.py --check   # 退出码 1 → 契约文件过期，提醒你重新生成并重跑 openapi-typescript
 ```
 

@@ -35,7 +35,7 @@ WARN: list[str] = []
 
 # 这些是运行时内部结构（锁、频率桶、存储句柄），不构成 HTTP 契约，生成到前端只会误导。
 SKIP_STRUCTS = {
-    "Hist", "Bucket", "RateLimiter", "Metrics", "Store", "Db", "AuditSink",
+    "Hist", "Bucket", "RateLimiter", "LoginGuard", "Metrics", "Store", "Db", "AuditSink",
     "MetricsSnapshot", "Claims", "AuthService", "Config",
     # 可插拔部件的实现类：不是 HTTP 契约，生成到前端只会误导
     "MemoryAuditSink", "FileAuditSink", "AuditKind",

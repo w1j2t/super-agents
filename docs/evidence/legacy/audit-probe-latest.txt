@@ -1,8 +1,8 @@
 审计启动自检实测（audit-probe-test.py）
 生成时间: 2026-11-11 17:44
-可执行文件: C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+可执行文件: C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe
 
-工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-fs5244b3
+工作目录：C:\Users\<user>\AppData\Local\Temp\sa-audit-probe-fs5244b3
 [OK  ] A file 后端 | 实例启动并就绪  ->  端口 18131
 [OK  ] A file 后端 | /readyz 如实报告审计状态  ->  {"backend": "file", "degraded": false, "degraded_reason": null, "durable": true}
 [OK  ] A file 后端 | 注册 owner 账号  ->  实际=201
@@ -14,7 +14,7 @@
 [OK  ] A file 后端 | 每次启动都留下一条 boot（重启可追溯）  ->  累计=2
 [OK  ] A file 后端 | 两条 boot 是不同事件（id 不重复）  ->  唯一 id=2
 [OK  ] B 拒绝启动 | 不可用路径下进程拒绝启动  ->  退出码=1
-[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-fs5244b3\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
+[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 %USERPROFILE%\\AppData\\Local\\Temp\\sa-audit-probe-fs5244b3\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
 [OK  ] C memory 后端 | 实例就绪
 [OK  ] C memory 后端 | 如实报告不落盘（durable=false / degraded=false）  ->  {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}
 [OK  ] C memory 后端 | 内存后端不产生 audit.jsonl

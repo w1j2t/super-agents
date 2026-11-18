@@ -420,7 +420,8 @@ def main():
         print(f"报告已写入 {args.report}")
 
     if not args.keep:
-        shutil.rmtree(work, ignore_errors=True)
+        pathguard.safe_rmtree(work, base=pathlib.Path(__file__).resolve().parent.parent / "target",
+                              allow_prefix="swapcheck-", what="互换检查目录", warn_only=True)
 
     return 0 if not failed else 1
 

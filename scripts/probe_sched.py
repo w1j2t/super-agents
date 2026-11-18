@@ -41,8 +41,12 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 同目录导入：门禁脚本可能从任意 cwd 启动，不能指望 scripts/ 在 sys.path 里
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pathguard  # noqa: E402  （删除前的路径守卫）
 WORKERS = os.path.join(ROOT, "workers")
 TARGET = os.path.join(WORKERS, "_sched.py")
 PY = sys.executable or "python"
@@ -427,7 +431,8 @@ def run_drill() -> int:
                          bool(hit), "红项：%s" % (", ".join(reds) or "无（说明这条门禁是恒绿的）"))
             all_ok = all_ok and good
         finally:
-            shutil.rmtree(tmp, ignore_errors=True)
+            pathguard.safe_rmtree(tmp, base=Path(tempfile.gettempdir()),
+                                  allow_prefix="drill_", what="调度演练目录", warn_only=True)
     RESULTS.clear()
     print("DRILL-OK" if all_ok else "DRILL-FAIL")
     return 0 if all_ok else 1
@@ -451,7 +456,8 @@ def main() -> int:
                g7_bad_rows_isolated(mod, tmp),
                g8_explain(mod, tmp)]
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        pathguard.safe_rmtree(tmp, base=Path(tempfile.gettempdir()),
+                              allow_prefix="probe_sched_", what="调度探针目录", warn_only=True)
 
     n_fail = sum(1 for _, ok, _ in RESULTS if not ok)
     print("\n合计 %d 项断言 | 通过 %d | 失败 %d | 分组 %d/8"

@@ -326,16 +326,32 @@ def group_d(rep, exe, workdir):
             rc == 2 and text_level(out, "error", "模型端点"),
             "rc=%s 命中=%s" % (rc, text_level(out, "error", "模型端点")))
 
-    # D4 选了 process 执行器却没给目录：doctor 的主要用途就是这个。
+    # D4 选了 process 执行器却把目录指到不存在的地方：doctor 的主要用途就是这个。
+    # 注意（H2 之后）：不设 SA_RUNNER_DIR 不再等于报错——默认 process 会沿
+    # cwd/workers → exe 同目录 workers 自动发现随产物分发的脚本目录。
     d4 = workdir / "d4-runner"
     d4.mkdir(parents=True, exist_ok=True)
+    missing = d4 / "no-such-workers"
     rc, out, _ = run_cli(exe, ["doctor"],
                          env_extra={"SA_DATA_DIR": str(d4), "SA_JWT_SECRET": "x" * 40,
                                     "SA_BIND": "127.0.0.1:%d" % find_free_port(),
-                                    "SA_RUNNER": "process"}, timeout=120)
-    rep.add("D", "D4 process 缺 SA_RUNNER_DIR rc=2",
+                                    "SA_RUNNER": "process",
+                                    "SA_RUNNER_DIR": str(missing)}, timeout=120)
+    rep.add("D", "D4 process 目录不存在 rc=2",
             rc == 2 and text_level(out, "error", "执行槽位"),
             "rc=%s 命中=%s" % (rc, text_level(out, "error", "执行槽位")))
+
+    # D4b 默认诚实：没有任何 SA_RUNNER 配置时，doctor 必须说"真实执行"，
+    # 且脚本目录能自动发现（否则默认 process 就是默认起不来）。
+    d4b = workdir / "d4b-default"
+    d4b.mkdir(parents=True, exist_ok=True)
+    rc_b, out_b, _ = run_cli(exe, ["doctor"],
+                             env_extra={"SA_DATA_DIR": str(d4b), "SA_JWT_SECRET": "x" * 40,
+                                        "SA_BIND": "127.0.0.1:%d" % find_free_port(),
+                                        "SA_RUNNER": ""}, timeout=120)
+    rep.add("D", "D4b 缺省即真实执行且目录可发现",
+            rc_b == 0 and ("runner=process" in out_b),
+            "rc=%s process命中=%s" % (rc_b, "runner=process" in out_b))
 
     # D5/D6 "端口被占"要分得清是自己还是别人。分不清的话，
     # 用户得不到"服务已经在跑了，别重启"这句关键信息，只会反复重启。

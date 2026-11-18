@@ -31,6 +31,26 @@ impl Default for MemoryBackend {
     }
 }
 
+/// 锁中毒恢复口径（三方审查 M2）。
+///
+/// 持锁线程 panic 会让锁永久中毒；继续 `unwrap`/`expect` 会把"一次 panic"
+/// 放大成"此后每个请求都 panic"的雪崩。审计流水、计数器、限流桶在 panic 时
+/// 并不处于不一致状态（要么未改，要么改完才放锁），所以恢复内部值继续服务；
+/// 告警只打一次，避免刷屏把首因埋掉。
+fn recover_poison<T>(res: std::sync::LockResult<T>, tag: &'static str) -> T {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static WARNED: AtomicBool = AtomicBool::new(false);
+    match res {
+        Ok(v) => v,
+        Err(e) => {
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                tracing::error!(tag, "锁中毒，已恢复内部数据；请排查持锁线程的 panic");
+            }
+            e.into_inner()
+        }
+    }
+}
+
 impl Backend for MemoryBackend {
     fn kind(&self) -> StorageKind {
         StorageKind::Memory
@@ -41,12 +61,12 @@ impl Backend for MemoryBackend {
     }
 
     fn with_read(&self, f: &mut dyn FnMut(&Db)) {
-        let guard: RwLockReadGuard<Db> = self.inner.read().expect("存储读锁未被毒化");
+        let guard: RwLockReadGuard<Db> = recover_poison(self.inner.read(), "store.memory.read");
         f(&guard);
     }
 
     fn with_write(&self, f: &mut dyn FnMut(&mut Db)) {
-        let mut guard: RwLockWriteGuard<Db> = self.inner.write().expect("存储写锁未被毒化");
+        let mut guard: RwLockWriteGuard<Db> = recover_poison(self.inner.write(), "store.memory.write");
         f(&mut guard);
         self.dirty.store(true, Ordering::Relaxed);
     }

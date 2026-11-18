@@ -134,7 +134,7 @@
 python scripts\regress_all.py
 
 :: 长跑（100 轮，8 账号轮转，约 30~40 分钟）
-python scripts\probe_llm_soak.py --exe "C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe" ^
+python scripts\probe_llm_soak.py --exe "C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe" ^
   --python "<python.exe>" --model-rounds 20 --fast-rounds 60 --guard-rounds 20 ^
   --users 8 --data target/soak-v2 --tag soak-v2
 ```

@@ -177,7 +177,7 @@ def http_json(base, method, path, body=None, token=None, timeout=30):
 
 def start_service(exe, port, data_dir, log_path, wait=30.0):
     log = open(log_path, "wb")
-    env = clean_env({"SA_BIND": "127.0.0.1:%d" % port, "SA_DATA_DIR": str(data_dir)})
+    env = clean_env({"SA_BIND": "127.0.0.1:%d" % port, "SA_DATA_DIR": str(data_dir), "SA_RUNNER": "sim"})
     proc = subprocess.Popen([str(exe)], stdout=log, stderr=subprocess.STDOUT, env=env, cwd=str(ROOT))
     base = "http://127.0.0.1:%d" % port
     deadline = time.time() + wait

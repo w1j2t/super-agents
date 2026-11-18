@@ -33,6 +33,12 @@ import urllib.parse
 import urllib.request
 import uuid
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import pathguard  # noqa: E402  （SA-031：删除前统一过守卫）
+
+# 数据目录的归属标记：只有本次冒烟自己创建的目录里才会出现这个文件。
+SMOKE_OWNER_MARK = ".sa-smoke-owner"
+
 OK, FAIL = "PASS", "FAIL"
 results = []
 
@@ -185,18 +191,47 @@ def main():
     data_dir = None
     log_path = None
     if not args.base:
-        exe = args.exe or str(pathlib.Path(os.environ.get("LOCALAPPDATA", ".")) / "sa-build" / "target" / "debug" / "super-agents.exe")
+        # 默认二进制必须和 scripts/build-exe.py 的产出目录一致（target-gnu）。
+        # 这里曾写死 target/debug，而 build-exe 编到 target-gnu，于是单跑冒烟
+        # 测的是另一份更旧的 exe：门禁红、单跑绿，两边结论对不上（真踩过）。
+        _root = pathlib.Path(os.environ.get("LOCALAPPDATA", ".")) / "sa-build"
+        _cands = [
+            _root / "target-gnu" / "debug" / "super-agents.exe",
+            _root / "target" / "debug" / "super-agents.exe",
+        ]
+        exe = args.exe or next((str(p) for p in _cands if p.exists()), str(_cands[0]))
         if not pathlib.Path(exe).exists():
             print(f"找不到可执行文件: {exe}\n先按 docs/50-build-and-verify.md §4 编译，或用 --exe 指定路径。")
             return 2
+        # 陈旧检测：exe 比 src 下任一 .rs 旧，说明测的是上一版代码，绿灯没有意义。
+        _exe_m = pathlib.Path(exe).stat().st_mtime
+        _src_root = pathlib.Path(__file__).resolve().parent.parent / "src"
+        _newest = max((p.stat().st_mtime for p in _src_root.rglob("*.rs")), default=0)
+        age_note = ""
+        if _newest > _exe_m:
+            age_note = "（[WARN] exe 比源码旧，先跑 scripts/build-exe.py 再判结论）"
+        print(f"[exe] {exe}{age_note}")
         data_dir = pathlib.Path(args.data_dir or (pathlib.Path(os.environ.get("TEMP", ".")) / f"sa-smoke-{int(time.time())}"))
         data_dir.mkdir(parents=True, exist_ok=True)
+        # SA-031：只删"本次自己建的"目录。--data-dir 指到已有目录（甚至项目根、家目录）
+        # 时，末尾那句 rmtree 会连别人的数据一起删。标记文件是唯一的归属证据。
+        try:
+            (data_dir / SMOKE_OWNER_MARK).write_text(str(os.getpid()), encoding="utf-8")
+        except OSError as exc:
+            print(f"[WARN] 无法写入归属标记（{exc}），本次将不自动清理数据目录：{data_dir}")
         log_path = data_dir.with_suffix(".log")
         env = dict(os.environ)
         env["SA_DATA_DIR"] = str(data_dir)
         env["SA_BIND"] = f"127.0.0.1:{args.port}"
+        # 显式 sim：默认后端已改为 process（H2 默认诚实），本门禁测治理链路而非真实执行，
+        # 真实执行由 prove-real-exec / probe_llm_* 专门覆盖。
+        env["SA_RUNNER"] = "sim"
         # 注意：src/config.rs 强制 SA_METRICS_TOKEN 长度 >= 24，否则进程启动即退出
         env["SA_METRICS_TOKEN"] = "smoke-metrics-token-0123456789abcdef"
+        # 注册默认已关闭（FIX-002：原来默认开放 = 谁先连上谁就是 owner）。
+        # 冒烟要造 owner + 第二个 member 两个账号，属于测试夹具而不是"开放注册"，
+        # 所以这里显式打开——门禁若依赖"默认开着"就是在给漏洞当保险丝。
+        env["SA_ALLOW_REGISTRATION"] = "1"
         env.update(extra_env)
         logf = open(log_path, "w", encoding="utf-8", errors="replace")
         proc = subprocess.Popen([exe], env=env, stdout=logf, stderr=subprocess.STDOUT)
@@ -572,6 +607,33 @@ def main():
         s, _, _ = c("POST", "/api/v1/auth/refresh", {"refresh_token": new_rtok})
         expect("S86 登出后该 refresh_token 失效（401）", s, [401])
 
+        # S86b~e：登出撤掉的不只是 refresh，access 也必须当场失效。
+        # 用一条独立会话验证——直接撤主令牌会把后面几十条用例全打成 401，
+        # 那样红的是门禁，不是被测代码。
+        s, _, b = c("POST", "/api/v1/auth/login", {"account": owner_name, "password": owner_pw})
+        side_tok = ((b or {}).get("tokens") or {}).get("access_token")
+        side_rtok = ((b or {}).get("tokens") or {}).get("refresh_token")
+        s, _, _ = c("GET", "/api/v1/auth/me", token=side_tok)
+        expect("S86b 旁路会话登录后 access 可用（对照组）", s, [200])
+        s, _, _ = c("POST", "/api/v1/auth/logout", {"refresh_token": side_rtok}, token=side_tok)
+        expect("S86c 登出旁路会话 200", s, [200])
+        s, _, b = c("GET", "/api/v1/auth/me", token=side_tok)
+        rec("S86d 登出后旧 access 立即失效（401，而非硬撑到过期）", s == 401,
+            f"实际={s} {json.dumps(b, ensure_ascii=False)[:90]}")
+        # S86e：S84 登出的正是主会话本身，按"登出即撤整条会话"的语义，
+        # 主 access 必须当场 401。旧断言"主令牌仍可用"是"登出只撤 refresh"的旧行为，
+        # 那等于让 access 变成撤不掉的令牌，不能留。后续用例重新登录后再跑。
+        s, _, _ = c("GET", "/api/v1/auth/me", token=tok)
+        rec("S86e 被登出的那条会话 access 也失效（401；撤销粒度是整条会话）", s == 401, f"实际={s}")
+        s, _, b = c("POST", "/api/v1/auth/login", {"account": owner_name, "password": owner_pw})
+        fresh = (b or {}).get("tokens") or {}
+        if fresh.get("access_token"):
+            tok = fresh["access_token"]
+        if fresh.get("refresh_token"):
+            new_rtok = fresh["refresh_token"]
+        s, _, _ = c("GET", "/api/v1/auth/me", token=tok)
+        rec("S86f 重新登录立即生效（撤会话不影响后继登录）", s == 200, f"实际={s}")
+
         # ---------- I2. 参数与错误口径（越界必拒、中文可展示、不泄漏内部细节） ----------
         s, _, b = c("GET", "/api/v1/memories?limit=0", token=tok)
         blob = json.dumps(b, ensure_ascii=False)
@@ -794,7 +856,15 @@ def main():
             print("\n服务日志尾部：")
             print("\n".join(tail))
         if data_dir and not args.keep:
-            shutil.rmtree(data_dir, ignore_errors=True)
+            # SA-031：两道关——① 目录归属（本次自己建的才删）；② 路径守卫（不在仓库 /
+            # 系统目录 / 家目录）。任一不过就不删，并把位置打印出来让人自己看。
+            if not (data_dir / SMOKE_OWNER_MARK).exists():
+                print(f"\n[SKIP] 数据目录不是本次创建的，保留不删：{data_dir}")
+            else:
+                try:
+                    pathguard.safe_rmtree(data_dir, base=data_dir.parent, what="冒烟数据目录")
+                except pathguard.GuardError as exc:
+                    print(f"\n[SKIP] {exc}（数据目录已保留：{data_dir}）")
         print("=" * 64)
     return 0 if not failed else 1
 

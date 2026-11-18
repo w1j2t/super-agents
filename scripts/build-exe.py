@@ -92,18 +92,51 @@ def source_fingerprint(build_dir: pathlib.Path) -> str:
     return h.hexdigest()
 
 
+def exe_fingerprint(exe: pathlib.Path) -> str:
+    """exe 内容哈希（分块读，别把一个 100MB 的二进制整个塞进内存）。"""
+    h = hashlib.sha256()
+    with open(exe, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def stamp(build_dir: pathlib.Path, exe: pathlib.Path) -> str:
+    """落盘口径：源码内容 + exe 内容，缺一不可。
+
+    SA-030 修法第 3 条。只记源码的那一版等于"只验配方的菜谱、不验端上来的菜"：
+    把另一个目录的旧 exe 拷过来，旁边再抄一份当次源码指纹，自检就绿了。
+    """
+    return "%s|%s" % (source_fingerprint(build_dir), exe_fingerprint(exe))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--build-dir", default=str(DEFAULT_BUILD))
-    ap.add_argument("--exe", default=str(pathlib.Path(DEFAULT_BUILD) / "target-gnu" / "debug" / "super-agents.exe"))
+    ap.add_argument("--exe", default="",
+                    help="仅允许镜像自带的那个 exe（--build-dir 派生）；传别的路径一律拒绝")
     ap.add_argument("--skip-build", action="store_true", help="只校验新鲜度，不编译")
+    ap.add_argument("--no-sync", action="store_true",
+                    help="不同步工作区（配合上层 --skip-sync 用）")
     args = ap.parse_args()
 
-    build_dir = pathlib.Path(args.build_dir)
-    exe = pathlib.Path(args.exe)
+    build_dir = pathlib.Path(args.build_dir).resolve()
     if not build_dir.exists():
         print("镜像目录不存在：%s（先跑 scripts/sync_build.py）" % build_dir)
         return 2
+
+    # SA-030：exe 必须是 build_dir 派生出来的那一个。
+    # 原实现里 --exe 默认指向 DEFAULT_BUILD，只传 --build-dir 时门禁 0 编的是 X，
+    # 后面所有门禁跑的却是默认镜像的旧 exe —— 全绿，测的是上一版程序。
+    derived = build_dir / "target-gnu" / "debug" / "super-agents.exe"
+    exe = pathlib.Path(args.exe).resolve() if args.exe else derived
+    if exe != derived:
+        print("[FAIL] exe 不属于当前 build_dir")
+        print("       --build-dir = %s" % build_dir)
+        print("       期望 exe    = %s" % derived)
+        print("       实际 exe    = %s" % exe)
+        print("       要么去掉 --exe，要么把 --build-dir 指到该 exe 所在的镜像。")
+        return 1
 
     if not args.skip_build:
         # 先同步，再编译。
@@ -117,7 +150,8 @@ def main() -> int:
             sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
             import sync_build  # noqa: E402  (同目录脚本，延迟导入避免影响 --skip-build)
 
-            sync_build.sync()
+            if not args.no_sync:
+                sync_build.sync(build_dir)   # SA-030：显式传目标，别让 import 时的缺省值说了算
         except Exception as e:  # noqa: BLE001
             print("同步源码到镜像失败：%s" % e)
             return 1
@@ -139,6 +173,7 @@ def main() -> int:
         return 1
 
     fp_now = source_fingerprint(build_dir)
+    exe_now = exe_fingerprint(exe)
     fp_file = exe.parent / FINGERPRINT_NAME
     fp_prev = fp_file.read_text(encoding="utf-8").strip() if fp_file.is_file() else ""
     src_m, src_where = newest_source_mtime(build_dir)
@@ -153,14 +188,23 @@ def main() -> int:
         # 刚编完：exe 就是当前源码的产物，直接落指纹并放行。
         # 指纹在编译**之后**重算：cargo 可能顺手改 Cargo.lock（依赖解析），
         # 用编译前的旧值会把下一次自检判成"落后"。
-        fp_file.write_text(source_fingerprint(build_dir), encoding="utf-8")
+        fp_file.write_text(stamp(build_dir, exe), encoding="utf-8")
         print("二进制与源码同版本：exe=%s 指纹 %s…%s" % (exe_s, fp_now[:12], drift))
         return 0
 
     # --skip-build：只校验不编译，靠指纹比对。
-    if fp_prev and fp_prev == fp_now:
-        print("二进制与源码内容一致：exe=%s 指纹 %s…%s" % (exe_s, fp_prev[:12], drift))
+    # SA-030：指纹里同时记 exe 的内容哈希。原实现只记"源码长什么样"，
+    # 于是把一个别处的旧 exe 放过来、旁边抄一份当次指纹，就能骗过自检。
+    prev_src, _, prev_exe = fp_prev.partition("|")
+    if fp_prev and prev_src == fp_now and (not prev_exe or prev_exe == exe_now):
+        print("二进制与源码内容一致：exe=%s 指纹 %s…%s" % (exe_s, fp_now[:12], drift))
         return 0
+
+    if fp_prev and prev_src == fp_now and prev_exe and prev_exe != exe_now:
+        # 源码没动、exe 变了：多半是有人把别处的二进制放过来顶班。
+        print("exe 与指纹记录不符：exe=%s 当前 %s… ≠ 记录 %s…" % (exe_s, exe_now[:12], prev_exe[:12]))
+        print("源码没变，是二进制被换过——继续跑就是测一个来历不明的程序。已中止。")
+        return 1
 
     if not fp_prev:
         # 指纹文件缺（首次升级 / 被清理）：退回 mtime 判定，别让升级中出现一次莫名变红。

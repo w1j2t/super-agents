@@ -564,7 +564,7 @@ export interface NoopExporter {
 }
 
 // ===== 源: src/security/jwt.rs =====
-export type JwtError = 'malformed' | 'bad_signature' | 'expired' | 'wrong_type' | 'bad_algorithm';
+export type JwtError = 'malformed' | 'bad_signature' | 'expired' | 'wrong_type' | 'wrong_issuer' | 'wrong_audience' | 'bad_algorithm' | 'encode';
 
 // ===== 源: src/security/ratelimit.rs =====
 export type LimiterKind = 'memory' | 'noop';

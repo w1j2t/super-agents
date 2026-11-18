@@ -29,6 +29,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKERS = os.path.join(ROOT, "workers")
@@ -98,7 +99,7 @@ url = "http://127.0.0.1:%%d/p.html" %% srv.server_address[1]
 out = {"steps": {}}
 try:
     # 1) 抓
-    pg = Browser(respect_robots=False).fetch(url)
+    pg = Browser(respect_robots=False, allow_private=True).fetch(url)
     out["steps"]["fetch"] = {"ok": pg.ok, "chars": len(pg.text), "title": pg.title}
 
     # 2) 入 RAG（懒加载：add 之后仍不该建索引）
@@ -240,7 +241,7 @@ class H(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 srv = http.server.HTTPServer(("127.0.0.1",0),H)
 threading.Thread(target=srv.serve_forever,daemon=True).start()
-p = Browser(respect_robots=False, max_bytes=500).fetch("http://127.0.0.1:%%d/big.txt" %% srv.server_address[1])
+p = Browser(respect_robots=False, max_bytes=500, allow_private=True).fetch("http://127.0.0.1:%%d/big.txt" %% srv.server_address[1])
 srv.shutdown()
 print(json.dumps({"truncated": p.truncated, "bytes": p.bytes}))
 ''' % WORKERS
@@ -285,7 +286,9 @@ def drill() -> int:
     for name, spec in DRILLS.items():
         work = os.path.join(ROOT, "temp", "drill_lazy_%s" % name)
         if os.path.isdir(work):
-            shutil.rmtree(work, ignore_errors=True)
+            pathguard.safe_rmtree(work, base=pathlib.Path(ROOT) / "temp",
+                                  allow_prefix="drill_lazy_", what="懒加载演练目录",
+                                  warn_only=True)
         os.makedirs(work, exist_ok=True)
         for f in ("_compact.py", "_rag.py", "_web.py"):
             shutil.copy(os.path.join(WORKERS, f), os.path.join(work, f))
@@ -325,7 +328,7 @@ class H(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 srv = http.server.HTTPServer(("127.0.0.1",0),H)
 threading.Thread(target=srv.serve_forever,daemon=True).start()
-p = Browser(respect_robots=False, max_bytes=500).fetch("http://127.0.0.1:%%d/big.txt" %% srv.server_address[1])
+p = Browser(respect_robots=False, max_bytes=500, allow_private=True).fetch("http://127.0.0.1:%%d/big.txt" %% srv.server_address[1])
 srv.shutdown()
 print(json.dumps({"truncated": p.truncated}))
 ''' % work)
@@ -354,7 +357,9 @@ print(json.dumps({"truncated": p.truncated}))
             print("[DRILL-OK] %-16s 改坏后按预期变红：%s" % (name, spec["why"]))
         else:
             print("[DRILL-FAIL] %-16s 改坏了却没变红 → 探针在这一项上没有判定力" % name)
-        shutil.rmtree(work, ignore_errors=True)
+        pathguard.safe_rmtree(work, base=pathlib.Path(ROOT) / "temp",
+                              allow_prefix="drill_lazy_", what="懒加载演练目录",
+                              warn_only=True)
 
     total = len(DRILLS)
     print("=== 演练小结：%d 项按预期变红 %d、未按预期 %d ===" % (total, ok_count, total - ok_count))

@@ -1,49 +1,7 @@
 # 19 可观测告警行为
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 9.3s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=3221225794，耗时 0.0s
 （原始输出如下，未做删改）
 ======================================================================
-       二进制 C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe（2026-11-15 16:21:16）
-       [A-default] 端口 1963 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\A-default | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\A-default-server.log
-[OK  ] A0 服务就绪（/readyz ready=true）
-[OK  ] A0b 注册管理员与普通成员  ->  status=201/201
-[OK  ] A1 无流量时无告警  ->  status=200 count=0
-[OK  ] A2 策略回显（5 条规则 / dedup 300s / storm 5）  ->  rules=5 dedup=300 storm=5
-[OK  ] A2b 严重级别口径（3 条 critical / 2 条 warning）  ->  {"http_5xx_ratio": "critical", "task_failure_ratio": "warning", "rate_limited_spike": "warning", "authz_denied_spike": "critical", "circuit_open": "critical"}
-[OK  ] A3 预算超支任务收敛为 aborted_budget  ->  ['aborted_budget', 'aborted_budget', 'aborted_budget']
-[OK  ] A4 配额用光后提交被限流（429×2）  ->  [429, 429]
-[OK  ] A5 越权访问管理面被拒（403×2）  ->  [403, 403]
-[OK  ] A6 sa_authz_denied_total 有真实落点（≥2）  ->  值=2
-[OK  ] A7 首抓命中三条规则（fired=3）  ->  status=200 fired=3 active=['authz_denied_spike', 'rate_limited_spike', 'task_failure_ratio']
-[OK  ] A7b 限流告警数值正确（observed=2 / threshold=1 / hits=1）  ->  observed=2.0 threshold=1.0 hits=1
-[OK  ] A7c 失败率告警数值正确（observed=1.0=100% / threshold=0.01）  ->  observed=1.0 threshold=0.01
-[OK  ] A7d 告警带可读归因文字  ->  提交限流累计 2 次，达到阈值 1
-[OK  ] A8 去重窗口内不重复发（fired=0,0）  ->  [0, 0]
-[OK  ] A8b 被压制条目逐个记录（deduped=3,3）  ->  [3, 3]
-[OK  ] A8c 命中次数继续累加（hits 1→2→3）  ->  [1, 2, 3]
-[OK  ] A8d 抑制总数与活跃数口径一致（suppressed=9 / active=3，共 3 次窗口内抓取）  ->  suppressed=9 active=3 fired=3
-[OK  ] A9 sa_alerts_total 按 severity 落点（warning=8 / critical=4 = 4 轮 × 2+1）  ->  warning=8 critical=4
-[OK  ] A9b sa_alerts_deduped_total 落点（=9，与 stats.suppressed_total 一致）  ->  指标=9 stats=9
-[OK  ] A9c 命中＝发出＋压制 守恒（12 = 3 + 9）  ->  12 vs 3 + 9
-[OK  ] A10 auto_action 反映真实兜底机制（budget_downgrade）  ->  {"kind": "budget_downgrade", "detail": "预算超支已触发降档（sa_budget_downgrades_total 可核对）"}
-       [B-refire] 端口 1981 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\B-refire | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\B-refire-server.log
-[OK  ] B0 服务就绪
-[OK  ] B0b 造出一次限流（第二次提交 429）  ->  [202, 429, 429]
-[OK  ] B1 首抓发出（fired=1）  ->  fired=1
-[OK  ] B2 窗口内再抓被压制（fired=0）  ->  fired=0
-[OK  ] B3 窗口过期后复发（fired=1）  ->  fired=1
-[OK  ] B4 复发不篡改首次发生时间（first_fired_at 保持一致）  ->  first=2026-11-16T13:49:23.321757700+00:00
-[OK  ] B4b 最后出现时间随复发推进（last_seen_at 递增）  ->  2026-11-16T13:49:23.321757700+00:00 -> 2026-11-16T13:49:24.746626800+00:00
-[OK  ] B4c 命中累计到 3 次（hits=3）  ->  hits=3
-       [C-storm] 端口 19603 | 数据 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\C-storm | 日志 C:\Users\94355\Desktop\新建文件夹(7)\temp\_probe_alerting\20261116-214918\C-storm-server.log
-[OK  ] C0 服务就绪
-[OK  ] C0b 同时造出非严重（429）与严重（403）触发源  ->  [202, 429, 429] / [403, 403]
-[OK  ] C1 风暴时只发严重告警（active 只剩 authz_denied_spike）  ->  active=['authz_denied_spike']
-[OK  ] C1b 非严重告警被折叠计数（aggregated≥1 / fired=1）  ->  aggregated=1 fired=1
-[OK  ] C1c 聚合总数体现在 stats（aggregated_total≥1）  ->  值=1
-[OK  ] C2 sa_alerts_aggregated_total 落点（≥1）  ->  值=1
-[OK  ] C2b 风暴下再抓不重复发（fired=0，只有严重项持续在线）  ->  fired=0 active=['authz_denied_spike']
-
-合计 36 项断言：通过 36，失败 0
 
 

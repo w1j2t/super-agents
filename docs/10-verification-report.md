@@ -91,17 +91,19 @@ test result: ok. 52 passed; 0 failed; 0 ignored
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `SA_BIND` | `127.0.0.1:8088` | 监听地址 |
+| `SA_BIND` | `127.0.0.1:8088` | 监听地址。**绑非回环地址时，注册保持开放会导致启动直接报错**（局域网可达 + 注册开放 + 首用户即 owner 三者叠加等于谁先扫到端口谁拿最高权限），需显式承认后重启 |
 | `SA_DATA_DIR` | `data` | 数据目录（JSON 快照落盘位置） |
 | `SA_JWT_SECRET` | 自动生成到 `data/secret.key` | ≥32 字符；未设置则生成并告警 |
 | `SA_ACCESS_TTL_SECS` | `1800` | access token 有效期（30 min） |
 | `SA_REFRESH_TTL_SECS` | `604800` | refresh token 有效期（7 d） |
-| `SA_PBKDF2_ITERATIONS` | `120000` | 密码哈希迭代次数（测试用 1000 加速） |
+| `SA_PBKDF2_ITERATIONS` | `600000` | 密码哈希迭代次数（测试用 1000 加速） |
 | `SA_SNAPSHOT_INTERVAL_SECS` | `15` | 全量快照兜底间隔（**真正的落盘靠 `SA_FLUSH_INTERVAL_MS` 写穿，快照只兜底**） |
 | `SA_FLUSH_INTERVAL_MS` | `500` | 脏数据写穿窗口（50~60000 ms）。**进程被硬杀时最多丢这个窗口内的写入** |
 | `SA_MAX_BODY_BYTES` | `262144` | 请求体上限（256 KB） |
-| `SA_CORS_ORIGINS` | 空（`*`） | 逗号分隔白名单；生产需收紧 |
-| `SA_ALLOW_REGISTRATION` | `true` | 是否开放注册 |
+| `SA_CORS_ORIGINS` | 空（不开跨源） | 逗号分隔白名单；留空只发同源响应，写 `*` 才放开任意源 |
+| `SA_ALLOW_REGISTRATION` | `false` | 是否开放注册。**默认关闭**：开着的实例谁先连上谁就是 owner。唯一例外是空库首装自举（库里无任何用户且无 `registration.lock` 恢复标记）时放行一次，快照损坏也会写该标记钉住，不会因为"库读坏了"重新变成开放注册 |
+| `SA_ALLOW_REGISTRATION_REMOTE` | `false` | 允许在非回环监听下保持注册开放。不开时若 `SA_BIND` 指向非回环地址，启动报错并要求显式二选一 |
+| `SA_TRUST_PROXY` | `false` | 是否采信 `X-Forwarded-For` / `X-Real-IP`。默认只认内核给出的对端地址；上游没有可信反代时开着它等于把限流分桶的键交给调用方自选 |
 | `SA_TASK_RETRY_LIMIT` | `2` | 单步重试上限 |
 | `SA_TASK_BUDGET_TOKENS` | `60000` | 单任务预算基准（硬上限为其 4 倍） |
 | `SA_METRICS_TOKEN` | 空（不启用） | Prometheus 抓取静态令牌（≥24 字符） |
@@ -128,7 +130,7 @@ test result: ok. 52 passed; 0 failed; 0 ignored
 ```powershell
 # 1) 同步源码到 ASCII 构建目录并编译
 $src  = "C:\...\新建文件夹(7)"
-$bld  = "C:\Users\94355\AppData\Roaming\Tencent\Marvis\User\oAN1i2ZQWL4Jhqy6CFXV3VsjUFjY\build_sa1"
+$bld  = "C:\Users\<user>\AppData\Roaming\Tencent\Marvis\User\oAN1i2ZQWL4Jhqy6CFXV3VsjUFjY\build_sa1"
 robocopy $src\src $bld\src /MIR
 $env:CARGO_TARGET_DIR = "$bld\target"
 cargo +stable-x86_64-pc-windows-gnu build --bins
@@ -394,7 +396,7 @@ test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
 **③ 交接文档路径漂移。**
 现象：文档写 `%LOCALAPPDATA%\sa-build\target\debug\super-agents.exe`，
-实际生效的是 `C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe`；
+实际生效的是 `C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe`；
 旧镜像其实还在磁盘上，exe 停在 17:34。
 后果：接手人照文档抄命令，会**测到 17:34 的程序却全绿**——和第 ① 条是同一种病。
 处理：交接文档全文改为实际路径并标注旧镜像已弃用；

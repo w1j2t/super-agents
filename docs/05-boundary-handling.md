@@ -113,6 +113,8 @@
 | 请求体 | 256 KB | `SA_MAX_BODY_BYTES` |
 | 异步并发 | 8 个在跑 | `SA_ASYNC_MAX_RUNNING` |
 | 单步执行超时 | 20 s | `SA_RUNNER_TIMEOUT_SECS` |
+| 脚本进程内存上限 | 2048 MB | `SA_RUNNER_MEM_MB` |
+| 脚本并发子进程 | 8 个 | `SA_RUNNER_MAX_PROCS` |
 | 审计缓冲 | 2,000 条 | `SA_AUDIT_CAPACITY` |
 
 限流是令牌桶：按 key 独立计桶，超限回 `429` + `Retry-After`，且**不计入审计拒绝**
@@ -123,10 +125,14 @@
 每个 agent 在花名册里带一个沙箱画像（只读 / 仓库可写 / 文档可写 / 网络只读 / 禁执行等组合），
 实际取值由 agent 定义决定，明细见 `docs/03`。
 
-必须说清的限制：**当前是进程级约束，不是 OS 级隔离**。`process` runner 能限制工作目录、
-超时、参数画像，但不能阻止被调脚本吃满 CPU/内存。个人单机场景可接受；
-要真正的资源隔离，需要接 cgroup（Linux）或 Job Object（Windows）——
-那时候只需要换掉 `StepRunner` 实现，业务层与治理层一行不改。这是刻意留的换件口。
+必须说清的限制：**资源有上限，身份与网络仍然没有隔离**。`process` runner 能限制工作目录、
+超时、参数画像；Windows 下每个脚本进程 spawn 后立即挂进 Job Object（`runners/sandbox.rs`），
+内存与并发进程数由内核兜底——超限时是脚本自己失败，不会拖着整机换页；后端退出时句柄关闭
+连带收掉整棵进程树，不留孤儿。挂不上会打 warn 并如实标注"本步无沙箱"，不冒充受控。
+
+仍做不到的三件事，不粉饰：**没有降权账户**（脚本仍以当前用户身份跑）、**没有网络隔离**、
+**没有文件系统隔离**。补这两项要换 `CreateProcessAsUser` / AppContainer + WFP 规则
+（Linux 侧对应 cgroup v2），属换件范畴——业务层与治理层一行不改。
 
 ## 9. 输入边界的兜底
 

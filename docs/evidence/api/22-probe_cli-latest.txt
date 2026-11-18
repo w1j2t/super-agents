@@ -4,8 +4,8 @@
 （原始输出如下，未做删改）
 ======================================================================
 门禁 22 · CLI 外壳行为探针
-被测：C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-7
+被测：C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+现场：C:\Users\<user>\Desktop\新建文件夹(7)\target\cli-probe\run-7
 --------------------------------------------------------------------
 [PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
 [PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True

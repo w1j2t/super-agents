@@ -19,6 +19,26 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
 use std::time::Instant;
 
+/// 锁中毒恢复口径（三方审查 M2）。
+///
+/// 持锁线程 panic 会让锁永久中毒；继续 `unwrap`/`expect` 会把"一次 panic"
+/// 放大成"此后每个请求都 panic"的雪崩。审计流水、计数器、限流桶在 panic 时
+/// 并不处于不一致状态（要么未改，要么改完才放锁），所以恢复内部值继续服务；
+/// 告警只打一次，避免刷屏把首因埋掉。
+fn recover_poison<T>(res: std::sync::LockResult<T>, tag: &'static str) -> T {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static WARNED: AtomicBool = AtomicBool::new(false);
+    match res {
+        Ok(v) => v,
+        Err(e) => {
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                tracing::error!(tag, "锁中毒，已恢复内部数据；请排查持锁线程的 panic");
+            }
+            e.into_inner()
+        }
+    }
+}
+
 #[derive(Default, Clone)]
 struct Hist {
     count: u64,
@@ -96,22 +116,22 @@ impl MetricsExporter for Metrics {
     }
 
     fn inc_by(&self, name: &str, labels: &str, by: u64) {
-        let mut map = self.counters.lock().expect("metrics 锁未被毒化");
+        let mut map = recover_poison(self.counters.lock(), "metrics.counters");
         *map.entry((name.to_string(), labels.to_string())).or_insert(0) += by;
     }
 
     fn gauge_set(&self, name: &str, labels: &str, value: f64) {
-        let mut map = self.gauges.lock().expect("metrics 锁未被毒化");
+        let mut map = recover_poison(self.gauges.lock(), "metrics.gauges");
         map.insert((name.to_string(), labels.to_string()), value);
     }
 
     fn counter_set(&self, name: &str, labels: &str, value: u64) {
-        let mut map = self.counters.lock().expect("metrics 锁未被毒化");
+        let mut map = recover_poison(self.counters.lock(), "metrics.counters");
         map.insert((name.to_string(), labels.to_string()), value);
     }
 
     fn observe(&self, name: &str, labels: &str, value: f64) {
-        let mut map = self.hist.lock().expect("metrics 锁未被毒化");
+        let mut map = recover_poison(self.hist.lock(), "metrics.hist");
         let h = map
             .entry((name.to_string(), labels.to_string()))
             .or_insert(Hist {

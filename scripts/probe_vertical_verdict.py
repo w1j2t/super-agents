@@ -228,7 +228,9 @@ def drill():
     global WORKERS
     tmp = ROOT / "target" / "drill" / "workers-flat"
     if tmp.exists():
-        shutil.rmtree(tmp)
+        pathguard.safe_rmtree(tmp, base=ROOT / "target" / "drill",
+                              allow_names=("workers-flat",), what="垂直演练目录",
+                              warn_only=True)
     tmp.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(WORKERS, tmp)
 

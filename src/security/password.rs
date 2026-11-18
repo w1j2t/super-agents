@@ -11,19 +11,21 @@ const SALT_LEN: usize = 16;
 const KEY_LEN: usize = 32;
 
 /// 输出格式：`pbkdf2_sha256$<iterations>$<salt_b64>$<dk_b64>`（自描述，便于后续升级参数）
-pub fn hash_password(password: &str, iterations: u32) -> String {
+pub fn hash_password(password: &str, iterations: u32) -> Result<String, String> {
     let mut salt = [0u8; SALT_LEN];
     if let Err(e) = getrandom::getrandom(&mut salt) {
-        // 熵源不可用时拒绝运行，绝不退化到确定性盐
-        panic!("系统熵源不可用，无法生成密码盐: {e}");
+        // 熵源不可用时拒绝生成（绝不退化到确定性盐），但**不能 panic**：
+        // 那是把整条请求线程/连接打掉，登录接口会因为一次熵源抖动全线 500 崩掉。
+        // 改成返回错误，由调用方转成 500，服务本身继续活着。
+        return Err(format!("系统熵源不可用，无法生成密码盐: {e}"));
     }
-    let dk = pbkdf2_sha256(password.as_bytes(), &salt, iterations.max(1), KEY_LEN);
-    format!(
+    let dk = pbkdf2_sha256(password.as_bytes(), &salt, iterations.max(1), KEY_LEN)?;
+    Ok(format!(
         "{ALGO}${}${}${}",
         iterations.max(1),
         STANDARD.encode(salt),
         STANDARD.encode(dk)
-    )
+    ))
 }
 
 pub fn verify_password(password: &str, encoded: &str) -> bool {
@@ -43,15 +45,31 @@ pub fn verify_password(password: &str, encoded: &str) -> bool {
         Some(v) => v,
         None => return false,
     };
-    let actual = pbkdf2_sha256(password.as_bytes(), &salt, iterations.max(1), expected.len());
-    ct_eq(&actual, &expected)
+    // 推导失败一律判验证不通过（fail-closed）：宁可让用户重试登录，
+    // 也不能在算不出哈希时误放行。
+    match pbkdf2_sha256(password.as_bytes(), &salt, iterations.max(1), expected.len()) {
+        Ok(actual) => ct_eq(&actual, &expected),
+        Err(_) => false,
+    }
 }
 
-pub fn pbkdf2_sha256(password: &[u8], salt: &[u8], iterations: u32, out_len: usize) -> Vec<u8> {
+/// PBKDF2-HMAC-SHA256。
+///
+/// 返回 `Result` 而不是直接 `expect`：`new_from_slice` 的 `Result` 来自 trait 的统一签名，
+/// Hmac 实现里任意长度密钥都成立、理论上不会返回 Err，但"理论上不会"正是生产环境
+/// `unwrap` 的来源（三方审查 M2）。真出意外时让调用方把它变成一次明确的失败，
+/// 而不是把正在处理登录的线程打掉。
+pub fn pbkdf2_sha256(
+    password: &[u8],
+    salt: &[u8],
+    iterations: u32,
+    out_len: usize,
+) -> Result<Vec<u8>, String> {
     let mut out = Vec::with_capacity(out_len + 32);
     let mut block_index: u32 = 1;
     while out.len() < out_len {
-        let mut mac = HmacSha256::new_from_slice(password).expect("hmac 接受任意长度密钥");
+        let mut mac = HmacSha256::new_from_slice(password)
+            .map_err(|_| "HMAC 密钥初始化失败".to_string())?;
         mac.update(salt);
         mac.update(&block_index.to_be_bytes());
         let first = mac.finalize().into_bytes();
@@ -61,7 +79,8 @@ pub fn pbkdf2_sha256(password: &[u8], salt: &[u8], iterations: u32, out_len: usi
         let mut t = u;
 
         for _ in 1..iterations {
-            let mut mac = HmacSha256::new_from_slice(password).expect("hmac 接受任意长度密钥");
+            let mut mac = HmacSha256::new_from_slice(password)
+                .map_err(|_| "HMAC 密钥初始化失败".to_string())?;
             mac.update(&u);
             let next = mac.finalize().into_bytes();
             u.copy_from_slice(&next);
@@ -73,7 +92,7 @@ pub fn pbkdf2_sha256(password: &[u8], salt: &[u8], iterations: u32, out_len: usi
         block_index = block_index.wrapping_add(1);
     }
     out.truncate(out_len);
-    out
+    Ok(out)
 }
 
 /// 恒定时间比较，避免时序侧信道。
@@ -125,7 +144,7 @@ mod tests {
 
     #[test]
     fn hash_and_verify_roundtrip() {
-        let encoded = hash_password("Str0ngPassw0rd!", 1_000);
+        let encoded = hash_password("Str0ngPassw0rd!", 1_000).unwrap();
         assert!(verify_password("Str0ngPassw0rd!", &encoded));
         assert!(!verify_password("Str0ngPassw0rd", &encoded));
         assert!(encoded.starts_with(ALGO));
@@ -133,8 +152,8 @@ mod tests {
 
     #[test]
     fn salts_are_unique() {
-        let a = hash_password("Str0ngPassw0rd!", 1_000);
-        let b = hash_password("Str0ngPassw0rd!", 1_000);
+        let a = hash_password("Str0ngPassw0rd!", 1_000).unwrap();
+        let b = hash_password("Str0ngPassw0rd!", 1_000).unwrap();
         assert_ne!(a, b, "每次哈希必须使用独立随机盐");
     }
 
@@ -156,7 +175,7 @@ mod tests {
     #[test]
     fn knows_rfc6070_vector() {
         // RFC 6070 测试向量（PBKDF2-HMAC-SHA1 的同族校验：这里仅验证 SHA256 实现的确定性）
-        let dk = pbkdf2_sha256(b"password", b"salt", 1, 32);
+        let dk = pbkdf2_sha256(b"password", b"salt", 1, 32).expect("HMAC 初始化不会失败");
         assert_eq!(
             hex(&dk),
             "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b"
@@ -166,4 +185,26 @@ mod tests {
     fn hex(bytes: &[u8]) -> String {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
+
+    /// 性能探针：本机实测 PBKDF2 成本，用来决定默认迭代数是否可承受。
+    /// 跑法：cargo test pbkdf2_cost_probe -- --nocapture
+    #[test]
+    fn pbkdf2_cost_probe() {
+        for iters in [120_000u32, 600_000u32] {
+            let t0 = std::time::Instant::now();
+            let _ = hash_password("probe-password", iters).unwrap();
+            println!("PROBE iters={iters} cost={:?}", t0.elapsed());
+        }
+    }
+
+
+    /// 默认迭代数从 12 万提到 60 万之后，存量用户的低迭代哈希必须仍然能验证，
+    /// 不能因为改默认值就把所有人挡在门外。
+    #[test]
+    fn legacy_low_iteration_hash_still_verifies() {
+        let old = hash_password("legacy-pass-1", 1_000).unwrap();
+        assert!(verify_password("legacy-pass-1", &old), "旧低迭代哈希必须仍可验证");
+        assert!(!verify_password("wrong-pass-1", &old));
+    }
+
 }

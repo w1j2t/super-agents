@@ -114,7 +114,15 @@ fn cors_layer(cfg: &Config) -> CorsLayer {
         .filter_map(|o| o.parse::<HeaderValue>().ok())
         .collect();
     if origins.is_empty() {
-        // 默认放开：前端尚未接入，联调阶段需要；生产可配置白名单收紧
+        // 空配置 = **不开跨源**，只发同源响应（不挂 `Access-Control-Allow-Origin`）。
+        //
+        // 旧实现在这里是 `allow_origin(Any)`：任何站点都能在用户浏览器里对本服务发请求
+        // 并读到响应体。个人服务的两种真实用法都不需要它——前端同源托管，或 dev 期走
+        // Vite 的 `server.proxy`——所以"默认全放开"换来的只有风险，没有便利。
+        // 真要跨源联调，就在 `SA_CORS_ORIGINS` 里显式写白名单；
+        // 写 `*` 表示"我清楚后果，就这么开"，此时才退回 Any。
+        base
+    } else if origins.iter().any(|o| o == "*") {
         base.allow_origin(Any)
     } else {
         base.allow_origin(origins)

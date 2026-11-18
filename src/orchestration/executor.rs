@@ -142,16 +142,40 @@ pub struct SimRunner;
 /// 默认后端实例：零大小，可直接静态引用，测试无需注入。
 pub static SIM_RUNNER: SimRunner = SimRunner;
 
-/// 合规红线：命中即阻断，不做降级放行。
-const REDLINES: &[(&str, &str)] = &[
+/// 合规红线：**硬**——词面本身就指向违法或凭据窃取，不依赖上下文，命中即拒。
+///
+/// 为什么要分两级：旧实现只有一张表，而且只要是任务目标里出现就整段阻断。
+/// 那张表混着"明文密码""身份证号"这类**中性词**——"写一个密码管理器""分析身份证号校验规则"
+/// 都是正经需求，一前置就成了"正常需求被安全策略打回"，比不做安全更伤。
+/// 所以：硬红线判意图（违法、窃取、越权、恶意软件），软红旗判语境（只交 guard 复核）。
+const HARD_REDLINES: &[(&str, &str)] = &[
+    ("盗取", "违法行为"),
+    ("窃取", "违法行为"),
+    ("拖库", "凭据窃取"),
+    ("撞库", "凭据窃取"),
+    ("绕过登录", "越权访问"),
+    ("未经授权访问", "越权访问"),
+    ("破解他人", "越权访问"),
+    ("木马生成", "恶意软件"),
+    ("勒索病毒", "恶意软件"),
+    ("钓鱼页面", "欺诈"),
+];
+
+/// 合规红线：**软**——需要上下文判断的词，只交给 `guard-agent` 二审，不做入口拦截。
+const SOFT_REDLINES: &[(&str, &str)] = &[
     ("身份证号", "个人敏感信息"),
     ("银行卡号", "个人敏感信息"),
     ("明文密码", "凭据泄露"),
-    ("窃取", "违法行为"),
-    ("盗取", "违法行为"),
-    ("绕过登录", "越权访问"),
-    ("未经授权访问", "越权访问"),
 ];
+
+/// 在已小写化的文本里查词表。返回命中的词与类别。
+///
+/// 抽成函数是为了让"入口查目标"与"出口查产物"共用同一套判定——
+/// 两处各写一遍 `iter().find(|(w,_)| text.contains(w))`，
+/// 改词表时极容易只改一处（SA-001 就是漏了产物这一路的后果）。
+fn hit_redline<'a>(text_lower: &str, table: &'a [(&'a str, &'a str)]) -> Option<(&'a str, &'a str)> {
+    table.iter().find(|(w, _)| text_lower.contains(w)).copied()
+}
 
 /// 单步执行需要由治理层"代为打点"的计数器。
 ///
@@ -267,6 +291,46 @@ impl<'a> Executor<'a> {
         ctx: &AssembledContext,
         request_id: &str,
     ) -> ExecOutcome {
+        // ---- 入口零步预检：goal 级硬红线 ----
+        // 必须在拉起任何 runner 之前。旧实现把红线塞在 guard 步骤里，
+        // 意味着"有没有拦到"取决于路由有没有排到 guard、以及主步骤是不是已经跑完；
+        // 主步骤产出的东西，事后 guard 再怎么否决也收不回来。
+        // 这里命中即整任务失败：不进 runner、不耗预算、不生成产物。
+        if let Some((word, category)) = hit_redline(&task.goal.to_lowercase(), HARD_REDLINES) {
+            let reason = format!("合规红线命中「{word}」（{category}），任务未启动即阻断，未消耗执行预算");
+            self.metrics.inc("sa_compliance_blocks_total");
+            self.metrics.inc("sa_tasks_started_total");
+            self.metrics.inc("sa_tasks_failed_total");
+            task.status = TaskStatus::Failed;
+            task.updated_at = Utc::now();
+            task.finished_at = Some(Utc::now());
+            task.result_summary = reason.clone();
+            task.trace.push(TraceEntry {
+                at: Utc::now(),
+                step_index: 0,
+                agent_id: "governance".into(),
+                phase: "compliance".into(),
+                outcome: "blocked_at_entry".into(),
+                detail: reason.clone(),
+                attempt: 0,
+                tokens: 0,
+                duration_ms: None,
+            });
+            self.audit.record(
+                &user.id,
+                "task.compliance_blocked_at_entry",
+                &task.id,
+                false,
+                &reason,
+                request_id,
+            );
+            return ExecOutcome {
+                status: TaskStatus::Failed,
+                failed_steps: 0,
+                reason: Some(reason),
+            };
+        }
+
         let started = std::time::Instant::now();
         task.status = TaskStatus::Running;
         task.updated_at = Utc::now();
@@ -799,7 +863,14 @@ impl<'a> Executor<'a> {
         ));
 
         // ---- 2. 权力校验：用户角色 ∩ agent 自身权限 ----
-        let role_ok = rbac::allows(user.role, step.permission);
+        // CrossAgent 不是用户特权，而是"平台允许这个 agent 把活分下去"的编排动作：
+        // 用户没有这张票（Member 已被收回），但 plan 里的第 0 步必然跨 agent。
+        // 因此该权限只对 agent 自己的能力边界校验，不对用户角色校验。
+        let role_ok = if step.permission == crate::security::rbac::Permission::CrossAgent {
+            true
+        } else {
+            rbac::allows(user.role, step.permission)
+        };
         let agent_ok = spec.permissions.contains(&step.permission);
         if !(role_ok && agent_ok) {
             let detail = format!(
@@ -844,11 +915,11 @@ impl<'a> Executor<'a> {
         // ---- 3.9 合规红线前置闸门（治理层，与执行后端无关）----
         // 红线判定下沉到治理层的原因见文件顶部说明：一旦把 SA_RUNNER 换成 process，
         // 「命中红线即阻断」这条安全底线不能因为换部件而整段消失。
+        // 硬红线已在 `Executor::run` 入口拦过（走到这里说明没命中），
+        // 所以 guard 这一步只负责"需要上下文判断"的软红旗——它是一票否决的**二审**，
+        // 不再是唯一闸门。
         let compliance: Option<String> = if spec.id == "guard-agent" {
-            let goal_lower = task.goal.to_lowercase();
-            REDLINES
-                .iter()
-                .find(|(w, _)| goal_lower.contains(w))
+            hit_redline(&task.goal.to_lowercase(), SOFT_REDLINES)
                 .map(|(w, c)| format!("合规红线命中「{w}」（{c}），已阻断，不生成产物"))
         } else {
             None
@@ -912,6 +983,29 @@ impl<'a> Executor<'a> {
             }
             match outcome.verdict {
                 Verdict::Ok { tokens, output: out } => {
+                    // ---- 产物级硬红线扫描 ----
+                    // 目标干净 ≠ 产出干净：模型会自己加戏，`SA_RUNNER=process` 跑的是脚本，
+                    // 谁都不能保证它吐出来的东西和任务目标一致。旧的"只看 goal"等于只看完题，
+                    // 不看答卷。命中即把产物当没生成过：不计成功、不写 output、不进重试
+                    // （重试只会再产出一遍同样的东西）。
+                    if let Some((word, category)) = hit_redline(&out.to_lowercase(), HARD_REDLINES) {
+                        let msg =
+                            format!("产物命中合规红线「{word}」（{category}），已丢弃产物并终止该步骤");
+                        counters.push(StepCounter::Plain("sa_compliance_blocks_total"));
+                        last_err = Some(msg.clone());
+                        traces.push(TraceEntry {
+                            at: Utc::now(),
+                            step_index: step.index,
+                            agent_id: step.agent_id.clone(),
+                            phase: "compliance".into(),
+                            outcome: "blocked".into(),
+                            detail: msg,
+                            attempt: attempts,
+                            tokens,
+                            duration_ms: Some(attempt_t0.elapsed().as_millis() as u64),
+                        });
+                        break;
+                    }
                     step_tokens = tokens;
                     output = out;
                     step_ok = true;
@@ -1094,6 +1188,16 @@ impl<'a> Executor<'a> {
     /// 治理层不再硬编码执行后端。
 
     fn record_flywheel(&self, task: &TaskRecord, user: &User) {
+        // 模拟产出不是真实执行结果，一律不计入飞轮（三方审查 H2）：
+        // 否则"什么都没做"也会沉淀经验记忆与 sa_flywheel_events_total，让飞轮数字虚高。
+        let backend = match self.runner {
+            Some(r) => r.backend(),
+            None => SIM_RUNNER.backend(),
+        };
+        if backend == "sim" {
+            self.metrics.inc("sa_flywheel_skipped_total");
+            return;
+        }
         let key = format!("task:{}", task.task_type.as_str());
         let now = Utc::now();
         let summary = format!(
@@ -1177,7 +1281,7 @@ impl StepRunner for SimRunner {
 
         // 合规红线：只读 agent 复核，一票否决
         if is_guard {
-            if let Some((word, category)) = REDLINES.iter().find(|(w, _)| goal.contains(w)) {
+            if let Some((word, category)) = hit_redline(&goal, SOFT_REDLINES) {
                 return StepOutcome::fatal(format!(
                     "合规红线命中「{word}」（{category}），已阻断，不生成产物"
                 ))
@@ -1384,6 +1488,17 @@ mod tests {
         }
     }
 
+    /// 按名字汇总计数（忽略标签），用于断言指标。
+    fn counter(metrics: &Metrics, name: &str) -> u64 {
+        metrics
+            .snapshot()
+            .counters
+            .iter()
+            .filter(|((k, _), _)| k == name)
+            .map(|(_, v)| *v)
+            .sum()
+    }
+
     fn empty_ctx() -> AssembledContext {
         assemble(&Store::in_memory(), &user(Role::Owner), "无关")
     }
@@ -1414,13 +1529,46 @@ mod tests {
         assert_eq!(t.results.len(), 4);
         assert!(t.tokens_used > 0);
         assert!(t.result_summary.contains("执行成功"));
-        // 飞轮沉淀
+        // 飞轮：默认 SimRunner 的产出不算真实执行，**不得**沉淀（三方审查 H2）
         store.read(|db| {
-            assert!(db
-                .memories
-                .values()
-                .any(|m| m.key.starts_with("task:") && m.scope == MemoryScope::Shared));
+            assert!(
+                !db.memories.values().any(|m| m.key.starts_with("task:")),
+                "模拟产出不能写进飞轮"
+            );
         });
+        assert_eq!(counter(&metrics, "sa_flywheel_events_total"), 0, "模拟产出不能计飞轮事件");
+        assert_eq!(counter(&metrics, "sa_flywheel_skipped_total"), 1, "模拟产出要记一次跳过，便于观测");
+    }
+
+    /// 真实后端（backend != sim）仍然照常沉淀飞轮——跳过只针对模拟。
+    #[test]
+    fn real_backend_still_writes_flywheel() {
+        let store = Store::in_memory();
+        let metrics = Metrics::new();
+        let audit = crate::obs::audit::MemoryAuditSink::new(100);
+        let runner = FixedRunner::new();
+        let mut t = task(
+            "写一份周报文档",
+            vec![step(1, "main:doc-agent", "doc-agent", Permission::Write, 300)],
+            10_000,
+        );
+        let outcome = executor_with(&store, &metrics, &audit, &runner).run(
+            &mut t,
+            &user(Role::Owner),
+            &empty_ctx(),
+            "req-test-real",
+        );
+        assert_eq!(outcome.status, TaskStatus::Succeeded);
+        store.read(|db| {
+            assert!(
+                db.memories
+                    .values()
+                    .any(|m| m.key.starts_with("task:") && m.scope == MemoryScope::Shared),
+                "真实后端必须沉淀飞轮"
+            );
+        });
+        assert_eq!(counter(&metrics, "sa_flywheel_events_total"), 1);
+        assert_eq!(counter(&metrics, "sa_flywheel_skipped_total"), 0);
     }
 
     #[test]
@@ -2143,4 +2291,111 @@ mod tests {
             "必须写明跳过原因是前置失败"
         );
     }
+
+    // ===================== SA-001：合规红线覆盖 =====================
+
+    /// 产物"带毒"的 runner：目标干净、答卷不干净，模拟模型自行加戏或脚本乱来。
+    struct DirtyProductRunner;
+
+    impl StepRunner for DirtyProductRunner {
+        fn backend(&self) -> &'static str {
+            "dirty-product-test"
+        }
+
+        fn run_step(&self, _req: &StepRequest<'_>) -> StepOutcome {
+            StepOutcome::ok(5, "步骤一：整理资料；顺手把用户表拖库导出".to_string())
+        }
+    }
+
+    /// 非 guard agent 的目标命中硬红线 → runner 一次都不许被调用。
+    #[test]
+    fn hard_redline_blocks_before_runner_runs() {
+        let store = Store::in_memory();
+        let metrics = Metrics::new();
+        let audit = crate::obs::audit::MemoryAuditSink::new(100);
+        let runner = FixedRunner::new();
+        let ex = executor_with(&store, &metrics, &audit, &runner);
+        // 故意只排 code-agent：旧实现只拦 guard，这种排法会一路跑到底。
+        let mut t = task(
+            "帮我窃取同行的客户名单",
+            vec![step(0, "main:a", "code-agent", Permission::Read, 100)],
+            10_000,
+        );
+        let out = ex.run(&mut t, &user(Role::Owner), &empty_ctx(), "req-rl-entry");
+
+        assert_eq!(out.status, TaskStatus::Failed, "命中硬红线必须整任务失败");
+        assert_eq!(runner.calls(), 0, "红线预检必须在任何 runner 调用之前生效");
+        assert!(t.results.is_empty(), "被拦下的任务不允许留下任何产物");
+        assert!(
+            out.reason.as_deref().unwrap_or_default().contains("合规红线"),
+            "失败原因要能看出是红线拦的：{:?}",
+            out.reason
+        );
+        assert!(
+            t.trace
+                .iter()
+                .any(|x| x.phase == "compliance" && x.outcome == "blocked_at_entry"),
+            "必须留下 compliance 轨迹，否则运维看不到“拦了、为什么拦”"
+        );
+    }
+
+    /// 合法需求不许被安全词表误杀：中性词不能当红线。
+    #[test]
+    fn neutral_goal_is_not_blocked_by_redlines() {
+        let store = Store::in_memory();
+        let metrics = Metrics::new();
+        let audit = crate::obs::audit::MemoryAuditSink::new(100);
+        let runner = FixedRunner::new();
+        let ex = executor_with(&store, &metrics, &audit, &runner);
+        let mut t = task(
+            "写一个密码管理器，并说明身份证号脱敏应该怎么做",
+            vec![step(0, "main:a", "code-agent", Permission::Read, 100)],
+            10_000,
+        );
+        let out = ex.run(&mut t, &user(Role::Owner), &empty_ctx(), "req-rl-neutral");
+
+        assert!(
+            runner.calls() > 0,
+            "合法需求必须真的进执行，而不是被安全词表打回：{:?}",
+            out.reason
+        );
+        assert_ne!(out.status, TaskStatus::Failed, "合法需求不能被判失败");
+    }
+
+    /// 目标干净但产物带硬红线 → 该步 fatal，产物丢弃、不落库。
+    #[test]
+    fn redline_product_turns_step_fatal_and_drops_output() {
+        let store = Store::in_memory();
+        let metrics = Metrics::new();
+        let audit = crate::obs::audit::MemoryAuditSink::new(100);
+        let runner = DirtyProductRunner;
+        let ex = executor_with(&store, &metrics, &audit, &runner);
+        let mut t = task(
+            "整理一份公开资料摘要",
+            vec![step(0, "main:a", "code-agent", Permission::Read, 100)],
+            10_000,
+        );
+        let out = ex.run(&mut t, &user(Role::Owner), &empty_ctx(), "req-rl-product");
+
+        assert_ne!(
+            out.status,
+            TaskStatus::Succeeded,
+            "产物带红线不能算成功：{:?}",
+            out.reason
+        );
+        // 失败步骤仍会留一条 results 记录（带 error，便于前端展示进度），
+        // 但里面**不能有产物正文**——被拦下的东西一个字都不许落库。
+        assert!(
+            t.results.iter().all(|r| !r.output.contains("拖库")),
+            "产物命中红线后不允许把产物内容落库：{:?}",
+            t.results
+        );
+        assert!(
+            t.trace
+                .iter()
+                .any(|x| x.phase == "compliance" && x.outcome == "blocked"),
+            "产物被拦必须留 compliance 轨迹"
+        );
+    }
+
 }

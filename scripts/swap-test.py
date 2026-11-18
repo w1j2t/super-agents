@@ -38,6 +38,8 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pathguard  # noqa: E402  （删除前的路径守卫）
 # health 的合法取值：ok 表示完全正常，其余都表示"能用但有前提"
 HEALTH_OK = {
     "ok",
@@ -145,7 +147,9 @@ class Server:
                 self.fh.close()
             except Exception:
                 pass
-            shutil.rmtree(self.dir, ignore_errors=True)
+            pathguard.safe_rmtree(self.dir, base=Path(tempfile.gettempdir()),
+                                  allow_prefix="sa-swap-", what="交换测试目录",
+                                  warn_only=True)
         return False
 
     def tail(self, n=6) -> str:

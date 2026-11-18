@@ -83,8 +83,8 @@ E. 门禁 17 · A7 断点续传系列：负向演练（客户端等效手法）
 
 判定力验证：期望 A7/A7b/A7c 转红，A7d/A7e/A7f 保持绿（它们不依赖锚点）。
 
-       数据目录 C:\Users\94355\AppData\Local\Temp\sa-async-probe-pf6how3u
-       服务日志 C:\Users\94355\AppData\Local\Temp\sa-async-probe-pf6how3u-server.log
+       数据目录 C:\Users\<user>\AppData\Local\Temp\sa-async-probe-pf6how3u
+       服务日志 C:\Users\<user>\AppData\Local\Temp\sa-async-probe-pf6how3u-server.log
        服务地址 http://127.0.0.1:1244
        slow-step 每步 800ms
 [OK  ] A0 服务就绪（/readyz ready=true）
@@ -114,8 +114,8 @@ E. 门禁 17 · A7 断点续传系列：负向演练（客户端等效手法）
 [OK  ] A7d 非法 Last-Event-ID 退回首次连接（给 seq=0 快照，且不计入 sa_sse_replay_gap_total）  ->  首帧 seq=[0] gap None→None
 [OK  ] A7e 任务已终态后重连：立刻拿到终态快照（不用回查 detail），且不空等挂连接  ->  首帧 seq=[0] status=['succeeded'] 耗时=0.00s
 [OK  ] A7f 锚点超前且无帧可补时不挂连接（快速 EOF），不白占一个订阅位  ->  帧数=0 EOF 耗时=0.01s
-       数据目录已保留（未自动清理）：C:\Users\94355\AppData\Local\Temp\sa-async-probe-pf6how3u
-       服务日志：C:\Users\94355\AppData\Local\Temp\sa-async-probe-pf6how3u-server.log
+       数据目录已保留（未自动清理）：C:\Users\<user>\AppData\Local\Temp\sa-async-probe-pf6how3u
+       服务日志：C:\Users\<user>\AppData\Local\Temp\sa-async-probe-pf6how3u-server.log
 ==============================================================================
 合计 24 项 | 通过 21 | 失败 3
 失败项：

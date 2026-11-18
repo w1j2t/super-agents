@@ -93,7 +93,7 @@ curl http://127.0.0.1:11434/v1/models
 
 :: 3. 复跑探针（二进制不在项目内时用 --exe 指定）
 python scripts\probe_llm_live.py --model minicpm5-2b:f16 ^
-    --exe "C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe"
+    --exe "C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe"
 ```
 
 脚本会自己：起后端（注入上表变量）→ 注册临时账号 → 提交任务 → 拉详情 → **打印时间轴** → 跑 P1/P2/P3 三条断言 → 落 `evidence.json`。

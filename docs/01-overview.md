@@ -65,9 +65,9 @@
 | 槽位 | 端口（trait） | 现有实现 | 切换方式 | 说明 |
 | --- | --- | --- | --- | --- |
 | 存储 | `Store` | `json`（快照）/ `memory` | `SA_STORAGE` | 每 15s 原子快照（`SA_SNAPSHOT_INTERVAL_SECS`） |
-| 执行 | `StepRunner` | `sim` / `process` | `SA_RUNNER` | `sim` 为默认；`process` 真起外部脚本，超时 `SA_RUNNER_TIMEOUT_SECS`（默认 20s） |
+| 执行 | `StepRunner` | `sim` / `process` | `SA_RUNNER` | `process` 为默认（真起外部脚本，超时 `SA_RUNNER_TIMEOUT_SECS` 默认 20s；脚本进程挂 Windows Job Object，内存 `SA_RUNNER_MEM_MB` 默认 2048MB、并发子进程 `SA_RUNNER_MAX_PROCS` 默认 8）；`sim` 必须显式 opt-in，只用于验收复现与演练，避免"全绿但什么都没跑" |
 | 审计 | `AuditSink` | `memory` / `file`（内存 + JSONL） | `SA_AUDIT` | 容量 `SA_AUDIT_CAPACITY`（默认 2000），细则见 `docs/70` |
-| 限流 | `RateLimiter` | `memory` | `SA_LIMITER` | 每用户每小时提交配额 `SA_TASK_SUBMIT_QUOTA_PER_HOUR`（默认 60） |
+| 限流 | `RateLimiter` | `memory` | `SA_LIMITER` | 每用户每小时提交配额 `SA_TASK_SUBMIT_QUOTA_PER_HOUR`（默认 60）。**集群模式下按活跃节点数等分配额**：进程内令牌桶各节点互不可见，不切分等于把配额放大 N 倍（登录限流是暴力破解的唯一防线）。节点数在启动时由 `ClusterRegistry::peers()` 决定，扩容后需重启才重算 |
 | 指标 | `MetricsExporter` | `prometheus` | `SA_METRICS_EXPORT` | `/metrics` 可用 `SA_METRICS_TOKEN` 免登录抓取 |
 
 另有两条不占槽位但同样隔离的通道：**事件总线**（`orchestration/events.rs`，SSE 数据源，可整体换 WebSocket/消息队列）与**审计**（写盘与业务解耦，失败不拖住任务）。

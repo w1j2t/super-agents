@@ -37,6 +37,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 import time
 import urllib.error
 import urllib.request
@@ -251,6 +252,20 @@ def main() -> int:
     logf = None
     data_dir = None
     if not args.base:
+        # 踩坑实录：本脚本被超时/中断杀掉时 finally 不执行，子进程会赖在 --port 上；
+        # 下一次运行 Popen 起不来（端口被占），脚本却"照常"连到那个旧实例——旧库里
+        # 首个用户已是 owner，本次注册只能拿到 member，于是 R21/R22/R23/R31 四个
+        # /observability 断言集体 403，看上去像后端权限缺陷，其实是门禁环境残留。
+        # 自起实例前必须确认端口空着：占用即红，绝不静默连别人的实例。
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _probe:
+            if _probe.connect_ex(("127.0.0.1", args.port)) == 0:
+                print(
+                    f"[FAIL] 端口 {args.port} 已被占用（多半是上次中断残留的 super-agents 进程）。"
+                    "请先结束它再跑；本门禁拒绝连接不是自己启动的实例，"
+                    "否则注册用户降级为 member，/observability 会假红或假绿。",
+                    flush=True,
+                )
+                return 2
         exe = args.exe
         if not exe:
             # 以前这里写死 %LOCALAPPDATA%\sa-build\target\debug —— 那是**已弃用**的旧镜像
@@ -609,7 +624,9 @@ def main() -> int:
         if logf is not None:
             logf.close()
         if data_dir is not None and not args.keep:
-            shutil.rmtree(data_dir, ignore_errors=True)
+            pathguard.safe_rmtree(data_dir, base=pathlib.Path(tempfile.gettempdir()),
+                                  allow_prefix="sa-shape-", what="形状探针临时目录",
+                                  warn_only=True)
             log_path.unlink(missing_ok=True)
 
     passed = sum(1 for _, s, _ in results if s == OK)

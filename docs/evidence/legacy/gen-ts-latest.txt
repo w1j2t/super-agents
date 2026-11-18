@@ -1,5 +1,5 @@
 $ python scripts/gen-ts-types.py
 rc=0
 
-已生成 C:\Users\94355\Desktop\新建文件夹(7)\generated\types.generated.ts
+已生成 C:\Users\<user>\Desktop\新建文件夹(7)\generated\types.generated.ts
 interface 41 个 | 联合类型 9 个 | 行数 412

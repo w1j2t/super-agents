@@ -59,6 +59,18 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
         .shared();
     tracing::info!(runner = %runner_kind.as_str(), "执行后端就绪");
 
+    // 启动收敛：上一次进程被关窗 / 崩溃 / 断电时，快照里可能留下 queued / running 的任务，
+    // 而它们的执行体早已不存在。不收敛的话这些任务永远不进入终态——前端一直转圈、
+    // SSE 等不到 EOF，且没有任何线程会再推进它们。
+    //
+    // 位置刻意放在 bind 之前：任何 HTTP 请求进来之前状态就已经一致，
+    // 不存在"刚启动那几秒 GET /tasks/{id} 还能看见 running"的窗口。
+    let recovered = state.reconcile_interrupted();
+    if recovered > 0 {
+        state.persist_now();
+        tracing::warn!(recovered, "启动时收敛了无执行体的未完成任务");
+    }
+
     // 部件降级必须在启动时就出声。
     // 审计不落盘、限流不生效、指标不采集，都属于"静默变弱"：程序照常跑，
     // 但出事的时候既没证据、也拦不住、还查不出原因。用户不知道就会误以为有保障。
@@ -84,7 +96,20 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
             limiter = "noop",
             "限流未生效：提交风控形同虚设；需要限流请设 SA_LIMITER=memory"
         ),
-        other => tracing::info!(limiter = %other, "限流后端就绪"),
+        other => {
+            tracing::info!(limiter = %other, "限流后端就绪");
+            // FIX-007：现有后端都是进程内计数。多实例/多进程部署时每个进程各记一份，
+            // 实际限额 = 配置值 × 实例数；重启还会把桶清零。不在这里假装是集群限流，
+            // 只要本实例对网络可见就把这句写进日志，让"多开几个就绕过限流"变成显式事实。
+            if !personal_super_agents::config::bind_is_loopback(&state.config.bind_addr) {
+                tracing::warn!(
+                    limiter = %other,
+                    bind = %state.config.bind_addr,
+                    "限流按进程内计数：本实例对网络可见且不是唯一实例时，实际限额=配置值×实例数，重启清零；\
+                     多实例部署请用反向代理/网关做全局限流"
+                );
+            }
+        }
     }
     match state.metrics.kind() {
         "noop" => tracing::warn!(
@@ -172,9 +197,15 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
         "personal super agents backend ready"
     );
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    // `into_make_service_with_connect_info` 是限流/审计能拿到"真实对端 IP"的唯一来源：
+    // 没有它，`ConnectInfo<SocketAddr>` 在 handler 里一律取不到，按 IP 分桶与审计留痕
+    // 就只剩客户端自报的头可用（可伪造）。这一行的存在与否是行为差异，不是写法偏好。
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
 
     flusher.abort();
     write_through.abort();

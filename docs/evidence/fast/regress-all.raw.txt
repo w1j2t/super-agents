@@ -33,7 +33,7 @@ warning: struct `FakeRunner` is never constructed
 
 
 ===== 2 冒烟 json 后端 (rc=0) =====
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "%USERPROFILE%
 [OK  ] S01b 存储后端可识别  ->  storage=json durable=True
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -196,13 +196,13 @@ warning: struct `FakeRunner` is never constructed
 合计 156 项 | 通过 156 | 失败 0
 
 服务日志尾部：
-[2m2026-11-12T14:18:37.649262Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493117\db.json
+[2m2026-11-12T14:18:37.649262Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493117\db.json
 [2m2026-11-12T14:18:37.649420Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:37.649441Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
 [2m2026-11-12T14:18:37.649877Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
 [2m2026-11-12T14:18:37.649899Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
 [2m2026-11-12T14:18:37.649911Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-12T14:18:37.650015Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493117\cluster [3mnode_id[0m[2m=[0mWLM-20116 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-12T14:18:37.650015Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493117\cluster [3mnode_id[0m[2m=[0mWLM-20116 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
 [2m2026-11-12T14:18:37.654054Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:42.273410Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mdc954619-cc95-4c4c-af1e-19e467cd536a [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0mdc954619-cc95-4c4c-af1e-19e467cd536a [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
 [2m2026-11-12T14:18:43.769731Z[0m [31mERROR[0m 写穿落盘失败 [3merror[0m[2m=[0m存储读取失败: 系统找不到指定的文件。 (os error 2)
@@ -213,7 +213,7 @@ warning: struct `FakeRunner` is never constructed
 
 
 ===== 3 冒烟 memory 后端 (rc=0) =====
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "%USERPROFILE%
 [OK  ] S01b 存储后端可识别  ->  storage=memory durable=False
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -376,14 +376,14 @@ warning: struct `FakeRunner` is never constructed
 合计 156 项 | 通过 156 | 失败 0
 
 服务日志尾部：
-[2m2026-11-12T14:18:48.151659Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493128\secret.key
+[2m2026-11-12T14:18:48.151659Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493128\secret.key
 [2m2026-11-12T14:18:48.152411Z[0m [33m WARN[0m 当前为纯内存后端：进程退出即清空数据，仅用于压测/演示 [3mstorage[0m[2m=[0mmemory
 [2m2026-11-12T14:18:48.152605Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:48.152626Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
 [2m2026-11-12T14:18:48.153146Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
 [2m2026-11-12T14:18:48.153173Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
 [2m2026-11-12T14:18:48.153188Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-12T14:18:48.153257Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493128\cluster [3mnode_id[0m[2m=[0mWLM-22916 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-12T14:18:48.153257Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493128\cluster [3mnode_id[0m[2m=[0mWLM-22916 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
 [2m2026-11-12T14:18:48.156324Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18097 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mmemory [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:52.744333Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m7e4dc0d3-2431-482e-b8ba-097e42b486ab [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m7e4dc0d3-2431-482e-b8ba-097e42b486ab [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
 [2m2026-11-12T14:18:54.381844Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m7e4dc0d3-2431-482e-b8ba-097e42b486ab [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m75d5b373-bb4c-4175-bc07-2267cfd6e55c [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0me3197636-5850-4fd5-bf55-89467132246c
@@ -421,7 +421,7 @@ CHECK: 一致 | paths=28 operations=32 schemas=43
 
 
 ===== 8 执行端口实测 (rc=0) =====
-[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-c93byvsk\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
+[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': '%USERPROFILE%\\AppData\\Local\\Temp\\sa-runner-verify-c93byvsk\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
 [OK  ] R1b 账号初始化
 [OK  ] R2a 提交任务 201  -> 实际=201 {'id': '4e9d71e7-f7cd-451f-9cba-ddf6552202df', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
 [OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-D6DE805E68 命中=True
@@ -438,7 +438,7 @@ CHECK: 一致 | paths=28 operations=32 schemas=43
 [OK  ] R5b 非法 SA_RUNNER 值被拒（不是忽略）  -> 退出码=1
 --------------------------------------------------------------
 合计 15 项 | 通过 15 | 失败 0
-临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-c93byvsk
+临时目录: C:\Users\<user>\AppData\Local\Temp\sa-runner-verify-c93byvsk
 
 Exception in thread Exception in thread Thread-1 (_readerthread)Thread-2 (_readerthread):
 :
@@ -560,7 +560,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] F 指标换空实现 | 记忆读回  ->  实际=200 命中=True
 [OK  ] F 指标换空实现 | 指标端点可用  ->  实际=200
 
-===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-matrix-1794493142\\runner-scripts'} =====
+===== G 执行换真实脚本 | {'SA_RUNNER': 'process', 'SA_RUNNER_DIR': '%USERPROFILE%\\AppData\\Local\\Temp\\sa-matrix-1794493142\\runner-scripts'} =====
 [OK  ] G 执行换真实脚本 | 实例就绪
 [OK  ] G 执行换真实脚本 | 注册（首个用户 = owner）  ->  实际=201
 [OK  ] G 执行换真实脚本 | 登录  ->  实际=200
@@ -633,7 +633,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 11 审计启动自检 (rc=0) =====
-工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-rg7o2m9y
+工作目录：C:\Users\<user>\AppData\Local\Temp\sa-audit-probe-rg7o2m9y
 [OK  ] A file 后端 | 实例启动并就绪  ->  端口 18131
 [OK  ] A file 后端 | /readyz 如实报告审计状态  ->  {"backend": "file", "degraded": false, "degraded_reason": null, "durable": true}
 [OK  ] A file 后端 | 注册 owner 账号  ->  实际=201
@@ -645,7 +645,7 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 [OK  ] A file 后端 | 每次启动都留下一条 boot（重启可追溯）  ->  累计=2
 [OK  ] A file 后端 | 两条 boot 是不同事件（id 不重复）  ->  唯一 id=2
 [OK  ] B 拒绝启动 | 不可用路径下进程拒绝启动  ->  退出码=1
-[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-rg7o2m9y\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
+[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 %USERPROFILE%\\AppData\\Local\\Temp\\sa-audit-probe-rg7o2m9y\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
 [OK  ] C memory 后端 | 实例就绪
 [OK  ] C memory 后端 | 如实报告不落盘（durable=false / degraded=false）  ->  {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}
 [OK  ] C memory 后端 | 内存后端不产生 audit.jsonl
@@ -739,9 +739,9 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 
 ===== 15 多节点集群双进程(fast) (rc=0) =====
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy
-共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy\shared-cluster
-被测二进制: C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+演练目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy
+共享心跳目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy\shared-cluster
+被测二进制: C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe
 心跳 TTL=5s  周期=1s  清理线=30s
 
 --- C1 单节点起步 ---
@@ -804,5 +804,5 @@ UnicodeDecodeError: 'gbk' codec can't decode byte 0xaa in position 53: illegal m
 
 ====================================================================
 合计 41 项 | 通过 41 | 失败 0
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy（可用 --keep 保留以便复查）
+演练目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy（可用 --keep 保留以便复查）
 

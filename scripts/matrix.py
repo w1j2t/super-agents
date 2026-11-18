@@ -26,6 +26,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 import time
 import urllib.error
 import urllib.request
@@ -67,7 +68,10 @@ class Client:
 
 
 def make_runner_scripts(dirpath):
-    """给 process 后端造 14 个白名单脚本（命名 = agent_id，扩展名 .cmd）。
+    """给 process 后端造 14 个白名单脚本（命名 = agent_id，扩展名 .py）。
+
+    扩展名必须是 .py：process 后端默认只跑 python 脚本，ps1/bat/cmd 需显式
+    设 SA_RUNNER_ALLOW_SHELL=1 才认（安全基线，见三方审查 H1）。
 
     名单必须与 `src/domain/agent.rs` 的 AGENTS 逐项一致：少一个 id，落到该 agent
     的步骤会因为找不到脚本而失败，报错写的是"脚本不存在"，根因却是名单漂移。
@@ -78,8 +82,8 @@ def make_runner_scripts(dirpath):
               "finance-agent", "legal-agent", "data-agent",
               "narrative-agent", "market-agent", "qa-agent", "guard-agent"]
     for a in agents:
-        (dirpath / f"{a}.cmd").write_text(
-            f"@echo off\r\necho {a} 真实脚本执行完毕\r\n", encoding="utf-8")
+        (dirpath / f"{a}.py").write_text(
+            f'print("{a} 真实脚本执行完毕")\n', encoding="utf-8")
     return dirpath
 
 
@@ -88,6 +92,9 @@ def start(exe, port, data_dir, extra_env):
     env["SA_DATA_DIR"] = str(data_dir)
     env["SA_BIND"] = f"127.0.0.1:{port}"
     env["SA_METRICS_TOKEN"] = "matrix-metrics-token-0123456789abcdef"
+    # 默认 sim：本矩阵测的是"部件可插拔后治理口径是否一致"，不是真实执行；
+    # 真实执行由用例 G 显式 SA_RUNNER=process 覆盖（默认后端改动后必须钉住口径）。
+    env["SA_RUNNER"] = "sim"
     env.update(extra_env)
     log = open(data_dir.with_suffix(f".{port}.log"), "w", encoding="utf-8", errors="replace")
     proc = subprocess.Popen([exe], env=env, stdout=log, stderr=subprocess.STDOUT)
@@ -270,7 +277,8 @@ def main():
     for case, name, _, detail in failed:
         print(f"  - [{case}] {name}   {detail}")
     print("=" * 70)
-    shutil.rmtree(work, ignore_errors=True)
+    pathguard.safe_rmtree(work, base=pathlib.Path(os.environ.get("TEMP", ".")),
+                          allow_prefix="sa-matrix-", what="矩阵临时工作区", warn_only=True)
     return 0 if not failed else 1
 
 

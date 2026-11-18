@@ -57,6 +57,7 @@ except Exception:
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _paths import default_exe as _default_exe  # noqa: E402
+import pathguard  # noqa: E402  （删除前的路径守卫）
 
 DEFAULT_EXE = _default_exe()
 METRICS_TOKEN = "cluster-drill-metrics-token-0123456789"
@@ -148,6 +149,7 @@ class Node:
         env.update({
             "SA_DATA_DIR": str(self.dir),
             "SA_BIND": "127.0.0.1:%d" % self.port,
+            "SA_RUNNER": "sim",
             "SA_METRICS_TOKEN": METRICS_TOKEN,
             "SA_NODE_ID": self.name,
             "SA_CLUSTER": "on" if self.cluster_on else "off",
@@ -487,7 +489,9 @@ def main():
     print("演练目录: %s%s" % (root, "" if args.keep else "（可用 --keep 保留以便复查）"))
 
     if not args.keep:
-        shutil.rmtree(root, ignore_errors=True)
+        pathguard.safe_rmtree(root, base=pathlib.Path(tempfile.gettempdir()),
+                              allow_prefix="sa-cluster-drill-", what="集群演练目录",
+                              warn_only=True)
     return 0 if not bad else 1
 
 

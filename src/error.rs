@@ -14,6 +14,10 @@ pub enum ApiError {
     BadRequest(String),
     #[error("{0}")]
     Unauthorized(String),
+    /// 退避期内的 401：状态码、code、文案与普通失败完全一致（不制造账号存在性信号），
+    /// 仅额外带标准 Retry-After 头，让客户端按真实剩余时间退避而不是靠猜。
+    #[error("{message}")]
+    UnauthorizedWithRetry { message: String, retry_after: u64 },
     #[error("{0}")]
     Forbidden(String),
     #[error("{0}")]
@@ -47,7 +51,7 @@ impl ApiError {
     pub fn code(&self) -> &'static str {
         match self {
             ApiError::BadRequest(_) => "bad_request",
-            ApiError::Unauthorized(_) => "unauthorized",
+            ApiError::Unauthorized(_) | ApiError::UnauthorizedWithRetry { .. } => "unauthorized",
             ApiError::Forbidden(_) => "forbidden",
             ApiError::NotFound(_) => "not_found",
             ApiError::Conflict(_) => "conflict",
@@ -63,7 +67,9 @@ impl ApiError {
     pub fn status(&self) -> StatusCode {
         match self {
             ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,
-            ApiError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            ApiError::Unauthorized(_) | ApiError::UnauthorizedWithRetry { .. } => {
+                StatusCode::UNAUTHORIZED
+            }
             ApiError::Forbidden(_) => StatusCode::FORBIDDEN,
             ApiError::NotFound(_) => StatusCode::NOT_FOUND,
             ApiError::Conflict(_) => StatusCode::CONFLICT,
@@ -103,8 +109,15 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = self.status();
         let mut resp = (status, Json(self.to_problem())).into_response();
-        if let ApiError::TooManyRequests { retry_after, .. } = &self {
-            if let Ok(v) = axum::http::HeaderValue::from_str(&retry_after.to_string()) {
+        // RFC 9110 §10.2.3：429 必须给 Retry-After；退避期内的 401 也带上，
+        // 客户端才能按真实剩余秒数退避（状态码仍为 401，不制造账号存在性差异）。
+        let wait_secs = match &self {
+            ApiError::TooManyRequests { retry_after, .. } => Some(*retry_after),
+            ApiError::UnauthorizedWithRetry { retry_after, .. } => Some(*retry_after),
+            _ => None,
+        };
+        if let Some(secs) = wait_secs {
+            if let Ok(v) = axum::http::HeaderValue::from_str(&secs.to_string()) {
                 resp.headers_mut().insert(header::RETRY_AFTER, v);
             }
         }
@@ -160,6 +173,30 @@ mod tests {
             validation_error(vec![("username", "必填".into())]).status(),
             StatusCode::UNPROCESSABLE_ENTITY
         );
+    }
+
+    #[test]
+    fn backoff_401_keeps_status_and_adds_retry_after() {
+        let err = ApiError::UnauthorizedWithRetry {
+            message: "账号或密码不正确，请稍后再试".into(),
+            retry_after: 42,
+        };
+        // 状态码与 code 必须与普通 401 完全一致，否则就是账号存在性信号
+        assert_eq!(err.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(err.code(), "unauthorized");
+        assert_eq!(err.to_problem().message, "账号或密码不正确，请稍后再试");
+        let resp = err.into_response();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            resp.headers().get(header::RETRY_AFTER).map(|v| v.to_str().unwrap()),
+            Some("42")
+        );
+    }
+
+    #[test]
+    fn plain_401_has_no_retry_after() {
+        let resp = ApiError::Unauthorized("账号或密码不正确".into()).into_response();
+        assert!(resp.headers().get(header::RETRY_AFTER).is_none());
     }
 
     #[test]

@@ -1,74 +1,7 @@
 # 23 CLI 客户端行为
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 16.3s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=3221225794，耗时 0.0s
 （原始输出如下，未做删改）
 ======================================================================
-门禁 23 · CLI 客户端子命令探针
-被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-http-probe\run-45
-------------------------------------------------------------------------------
-[BOOT] 服务：就绪（就绪）
-[BOOT] 注册：token=288 位
-[PASS] A  A1 --help 列出 serve                     rc=0 命中=True
-[PASS] A  A1 --help 列出 doctor                    rc=0 命中=True
-[PASS] A  A1 --help 列出 login                     rc=0 命中=True
-[PASS] A  A1 --help 列出 logout                    rc=0 命中=True
-[PASS] A  A1 --help 列出 submit                    rc=0 命中=True
-[PASS] A  A1 --help 列出 ls                        rc=0 命中=True
-[PASS] A  A1 --help 列出 show                      rc=0 命中=True
-[PASS] A  A2 help 说明哪些需要服务在跑                     命中=True
-[PASS] A  A3 login 参数齐（缺 无）                      rc=0 缺=[]
-[PASS] A  A3 submit 参数齐（缺 无）                     rc=0 缺=[]
-[PASS] A  A3 ls 参数齐（缺 无）                         rc=0 缺=[]
-[PASS] A  A3 show 参数齐（缺 无）                       rc=0 缺=[]
-[PASS] B  B1 login rc=0                          rc=0
-[PASS] B  B2 login 中文未乱码                         登录成功：CLI HTTP 探针（owner）
-[PASS] B  B3 令牌文件恰两行 access/refresh              行数=2 acc=288 ref=289
-[PASS] B  B4 access 长度像真 JWT                     len=288
-[PASS] B  B5 重复 login 覆盖不追加                      行数=2
-[PASS] B  B6 login 无账号不挂死                        rc=1 提示=用户名或邮箱：没有账号。用 --account，或先设 SA_ACCOUNT
-[PASS] C  C0 起始令牌齐                               acc=288 ref=289
-[PASS] C  C1 access 坏 → 自动刷新后成功                  rc=0
-[PASS] C  C2 刷新后 access 已更换                      len 288→288
-[PASS] C  C3 刷新后 refresh 也更换并落盘                  changed=True
-[PASS] C  C4 文件里不再留旧 refresh                     ok=True
-[PASS] C  C5 access+refresh 双坏 → rc=3            rc=3
-[PASS] C  C6 双坏提示去登录                             命中=True
-[PASS] C  C7 --token 绕过坏文件                       rc=0
-[PASS] C  C8 SA_TOKEN 环境变量直传                     rc=0
-[PASS] C  C9 重新登录恢复                              rc=0
-[PASS] C  C10 8 进程并发刷新全成功                        第1轮[0, 0, 0, 0, 0, 0, 0, 0] | 第2轮[0, 0, 0, 0, 0, 0, 0, 0] | 第3轮[0, 0, 0, 0, 0, 0, 0, 0]
-[PASS] C  C11 并发后单跑仍正常                           rc=0
-[PASS] D  D1 submit(sync) rc=0                   rc=0
-[PASS] D  D2 submit 回显含 HTTP 状态                  已提交 HTTP 201
-[PASS] D  D3 submit 中文 goal 不改字                  命中=True
-[PASS] D  D4 submit --json 纯净可解析                 rc=0 id=e0e64e6f
-[PASS] D  D5 ls rc=0                             rc=0
-[PASS] D  D6 ls 表头存在                             id                                   状态 
-[PASS] D  D7 表头与数据行按显示宽度逐列对齐                     
-[PASS] D  D8 全行 id 都是完整 UUID                     完整数=2
-[PASS] D  D9 输出无替换符与问号                           问号=False 替换符=False
-[PASS] D  D10 页脚标了 UTC 口径                        共 2 条，本页 2 条（limit=5 offset=0；时间为 UTC）
-[PASS] D  D11 ls --json 可解析且字段齐                  rc=0 解析=True
-[PASS] D  D12 --status 过滤生效                      rc=0 状态集=['succeeded']
-[PASS] D  D13 --q 中文关键词能过滤                       rc=0 命中水果=True 命中hello=False
-[PASS] D  D14 show rc=0                          rc=0
-[PASS] D  D15 show 时间标 (UTC)                     命中=True
-[PASS] D  D16 show 不存在 rc=2                      rc=2
-[PASS] D  D17 show 不存在说人话                        没有这个任务：00000000-0000-4000-8000-000000000000
-[PASS] E  E1 连不上服务 ls rc=1                       rc=1
-[PASS] E  E1 连不上服务 show rc=1                     rc=1
-[PASS] E  E1 连不上服务 submit rc=1                   rc=1
-[PASS] E  E2 连不上给了可读提示                           连不上 127.0.0.1:19100：由于目标计算机积极拒绝，无法连接。 (os error 10061)
-[PASS] E  E3 doctor 不碰令牌文件                       变=False
-[PASS] E  E4 ls 不改服务端数据                          total 2→2
-[PASS] F  F1 真的收到多帧（首帧 seq=0）                    帧数=3 序列=[0, 7, 8]
-[PASS] F  F2 成功任务：终态 succeeded 且 rc=0            终态=succeeded rc=0
-[PASS] F  F3 帧序号严格递增（无回放）                        序列=[0, 7, 8]
-[PASS] F  F4 非成功终态时 rc 非 0                       终态=aborted_budget rc=2
-[PASS] F  F5 同步+follow 如实说无进度可跟                  提示=True 帧数=0 rc=0 原文=已提交 HTTP 201 id 18813929-bdf8-40a5-96cb-1cf48781352e 状态 succeeded 类型 writing 模型 standard tokens 5110/7015 一致度 0.79 创建(UTC) 2026-11-16 13:49:49 更新(UTC)
-[PASS] F  F6 --json 每行独立可解析且末行是终态                行数=4 坏行=无 末状态=succeeded
-------------------------------------------------------------------------------
-合计 59 项 | 通过 59 | 失败 0
 
 

@@ -48,8 +48,13 @@ impl StorageKind {
 
 /// 后端端口：仓储访问的**唯一**入口。
 ///
-/// 用 `&mut dyn FnMut` 而非泛型，是为了让 `Store` 能以 `Box<dyn Backend>`
+/// 用 `&mut dyn FnMut` 而非泛型闭包入参，是为了让 `Store` 能以 `Box<dyn Backend>`
 /// 做运行期替换（trait object），同时把"一次读/写必须原子完成"的语义压在端口上。
+///
+/// 说明（三方审查 M2 的取舍）：曾尝试把闭包返回值改成泛型 `T` 由后端交回，
+/// 但泛型方法会让 trait 失去 dyn 兼容性（`Box<dyn Backend>` 是本项目的可插拔前提），
+/// 因此保持 `()`；"后端必须调闭包"这条契约改由 `Store` 侧显式断言 + 单测锁定，
+/// 违约时先打日志再崩，而不是让 panic 无声发生在 `expect` 里。
 pub trait Backend: Send + Sync {
     fn kind(&self) -> StorageKind;
 

@@ -16,7 +16,11 @@ agent 读网页的真实需求是 **拿到正文 + 拿到链接 + 知道这是�
 S1 只允许 http/https，`file://` / `javascript:` / `data:` 一律拒。
 S2 单响应字节上限（默认 2MB），超限截断并置 `truncated=True`。
 S3 重定向最多 3 跳，且每跳都重新过 S1。
-S4 内网地址默认**放行但标注** `private_net=True`——本项目自己的探针就要访问
+S4 内网地址默认**拒绝**（SSRF 收口，三方审查 M1）：`allow_private=False`，命中 127/8、
+    RFC1918、169.254 等私网/链路本地地址直接 `private_net_blocked`。只有本项目自己的
+    探针（`_selftest`）显式传 `allow_private=True`——判断权在调用方而不是默认值。
+    **重定向每一跳都重新做 scheme + 私网 + robots 全量校验**：只校验首跳等于给
+    "公网 → 302 内网"留一扇后门。
    127.0.0.1 上的服务端；放行是把判断权交给上层，而不是假装看不见。
 S5 默认尊重 robots.txt（可关）。取不到 robots 视为放行（RFC 9309 的宽容解释）。
 
@@ -175,7 +179,7 @@ def _is_private(host: str) -> bool:
             ip = ipaddress.ip_address(addr)
         except ValueError:
             continue
-        if ip.is_private or ip.is_loopback or ip.is_link_local:
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
             return True
     return False
 
@@ -185,7 +189,7 @@ class Browser:
 
     def __init__(self, user_agent: str = DEFAULT_UA, timeout: float = 10.0,
                  max_bytes: int = MAX_BYTES, respect_robots: bool = True,
-                 allow_private: bool = True) -> None:
+                 allow_private: bool = False) -> None:
         self.ua = user_agent
         self.timeout = timeout
         self.max_bytes = max_bytes
@@ -200,7 +204,14 @@ class Browser:
         if self._opener is None:
             self.lazy_loads += 1
             import urllib.request
-            self._opener = urllib.request.build_opener()
+            # 关键：不装 HTTPRedirectHandler。urllib 默认会自动跟随 302，
+            # 而自动跟随的每一跳既不做私网判定也不做 robots 判定——等于把 SSRF 校验
+            # 只留在第一跳上。这里显式剔掉它，重定向改由 fetch() 逐跳处理并逐跳校验。
+            self._opener = urllib.request.build_opener(
+                urllib.request.ProxyHandler(),
+                urllib.request.HTTPHandler(),
+                urllib.request.HTTPSHandler(),
+            )
 
     def _robots_ok(self, url: str) -> bool:
         if not self.respect_robots:
@@ -266,6 +277,20 @@ class Browser:
                     nxt = urlparse(cur)
                     if nxt.scheme not in ("http", "https"):
                         page.blocked_reason = "redirect_scheme_not_allowed"
+                        page.elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+                        return page
+                    # 每一跳都当成新的 URL 重新判：公网 302 到 169.254.169.254 是
+                    # 最经典的 SSRF 绕过手法，只校验首跳的 host 等于没校验。
+                    hop_host = nxt.hostname or ""
+                    if _is_private(hop_host):
+                        page.private_net = True
+                        if not self.allow_private:
+                            page.blocked_reason = "redirect_private_net_blocked"
+                            page.elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+                            return page
+                    if not self._robots_ok(cur):
+                        page.blocked_reason = "redirect_robots_disallow"
+                        page.elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
                         return page
                     page.redirects.append(cur)
                     req = urllib.request.Request(cur, headers={"User-Agent": self.ua})
@@ -356,7 +381,8 @@ def _selftest() -> int:
 
     try:
         # 1) 懒加载契约
-        b = Browser(respect_robots=False)
+        # 自检全程访问 127.0.0.1，必须显式开内网：默认值已改成拒绝（M1）
+        b = Browser(respect_robots=False, allow_private=True)
         if b.stats()["opener_ready"] or b.lazy_loads:
             print("[FAIL] 懒加载违约：构造即建 opener")
             rc = 1
@@ -405,6 +431,23 @@ def _selftest() -> int:
             print("[FAIL] 内网地址未标注")
             rc = 1
 
+        # 4b) SSRF 收口（M1）：缺省配置下内网地址必须被拒，不是"标注后放行"
+        strict = Browser(respect_robots=False, timeout=2.0)
+        blocked = strict.fetch("http://127.0.0.1:%d/index.html" % port)
+        if blocked.blocked_reason == "private_net_blocked" and not blocked.ok:
+            print("[OK ] S4b 默认拒绝内网：%s" % blocked.blocked_reason)
+        else:
+            print("[FAIL] 默认仍放行内网：%s" % blocked.brief())
+            rc = 1
+        # 云元数据端点（169.254.169.254）与 RFC1918 必须一并识别为私网
+        meta = [h for h in ("169.254.169.254", "10.1.2.3", "192.168.1.1", "172.16.0.9", "127.0.0.1")
+                if not _is_private(h)]
+        if not meta and not _is_private("example.com"):
+            print("[OK ] S4c 私网判定：元数据/RFC1918/回环全覆盖，公网域名不误判")
+        else:
+            print("[FAIL] 私网判定漏判：%s" % meta)
+            rc = 1
+
         # 5) 协议白名单（S1）
         bad = b.fetch("file:///C:/Windows/win.ini")
         if bad.blocked_reason.startswith("scheme_not_allowed") and not bad.ok:
@@ -422,7 +465,7 @@ def _selftest() -> int:
             rc = 1
 
         # 7) 失败路径不抛异常，只给 blocked_reason
-        dead = Browser(respect_robots=False, timeout=2.0).fetch("http://127.0.0.1:9/none")
+        dead = Browser(respect_robots=False, timeout=2.0, allow_private=True).fetch("http://127.0.0.1:9/none")
         if dead.blocked_reason and not dead.ok:
             print("[OK ] 失败路径可诊断：%s" % dead.blocked_reason)
         else:
@@ -430,7 +473,7 @@ def _selftest() -> int:
             rc = 1
 
         # 8) robots 生效（S5）：本服务无 robots.txt → 放行
-        rb = Browser(respect_robots=True)
+        rb = Browser(respect_robots=True, allow_private=True)
         if rb.fetch(base + "/index.html").ok:
             print("[OK ] S5 robots 缺省放行（无 robots.txt 时正常抓取）")
         else:

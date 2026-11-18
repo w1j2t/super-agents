@@ -259,6 +259,12 @@ def model_outline(goal: str, topic: str) -> tuple[list[dict] | None, dict]:
         meta["completion_tokens"] = res.get("completion_tokens", 0)
         if not res["ok"]:
             last_reason = f"模型调用失败：{res.get('error')}"
+            _detail = (res.get("detail") or "").strip()
+            if _detail:
+                # 只报类别（unreachable/timeout）在排障时等于没说：到底是拒连、DNS、
+                # 证书还是代理，全靠这句 detail。丢掉它，证据只能证明"坏了"。
+                last_reason = f"模型调用失败：{res.get('error')}（{_detail[:120]}）"
+                meta["detail"] = _detail[:200]
             if res.get("finish") == "length":
                 # 预算被思考吃光的典型形态：content 空、finish=length。
                 # 报"预算不足"而不是"模型坏了"，否则排查方向会跑偏。

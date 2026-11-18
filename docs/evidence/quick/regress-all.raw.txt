@@ -1,16 +1,16 @@
 ===== 0 编译与二进制新鲜度 (rc=0) =====
-编译完成 1.0s
-二进制与源码同版本：exe=16:21:16 指纹 595651975000…
+编译完成 0.3s
+二进制与源码同版本：exe=09:25:28 指纹 39e1938d7579…
 
 
 
 ===== 1 单元测试 cargo test (rc=0) =====
 
-running 180 tests
-....................................................................................... 87/180
-....................................................................................... 174/180
-......
-test result: ok. 180 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.16s
+running 206 tests
+....................................................................................... 87/206
+....................................................................................... 174/206
+................................
+test result: ok. 206 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.36s
 
 
 running 0 tests
@@ -22,6 +22,16 @@ running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
+
+warning: variable does not need to be mutable
+   --> src\orchestration\runners\sandbox.rs:316:13
+    |
+316 |         let mut child = Command::new("powershell")
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
 warning: struct `FakeRunner` is never constructed
    --> src\ports.rs:205:12
@@ -54,7 +64,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 
 
 ===== 7 TS 契约文档一致 (rc=0) =====
-源码结构体: 91 个 | 文档 interface: 25 个
+源码结构体: 92 个 | 文档 interface: 25 个
 
 
 结果: 一致 25 | 有差异 0 | 查无同名 0
@@ -89,14 +99,14 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R05 POST /tasks（显式 mode=sync）201 + TaskDetail 形状  ->  POST /api/v1/tasks status=201 形状一致
 [OK  ] R05b POST /tasks（缺省，即 async 分支）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R05c 缺省受理返回的状态是 queued（不是假装已经跑完）  ->  status=queued
-[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/a69a355e-8375-4040-bf7f-80f9f57397ec status=200 形状一致
+[OK  ] R06 GET /tasks/{id} 200 + TaskDetail 形状  ->  GET /api/v1/tasks/79e8c8d9-9c44-4983-8147-ce41d5c7f053 status=200 形状一致
 [OK  ] R06a 真实响应是平铺的（顶层不含嵌套 task 键）  ->  平铺确认
 [OK  ] R06b 平铺证据：顶层直接含 goal / trace / memory_refs  ->  缺=[]
-[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/a69a355e-8375-4040-bf7f-80f9f57397ec/trace status=200 形状一致
+[OK  ] R07 GET /tasks/{id}/trace 200 + TraceEntry[] 形状  ->  GET /api/v1/tasks/79e8c8d9-9c44-4983-8147-ce41d5c7f053/trace status=200 形状一致
 [OK  ] R08 GET /tasks?limit=5 200 + TaskList 形状  ->  GET /api/v1/tasks?limit=5 status=200 形状一致
 [OK  ] R09 POST /tasks（mode=async）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
 [OK  ] R08b POST /tasks（mode=async + slow-step）202 + TaskDetail 形状  ->  POST /api/v1/tasks status=202 形状一致
-[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/7ba52730-a742-4b8b-837f-61c094751a20/cancel status=202 形状一致
+[OK  ] R10 POST /tasks/{id}/cancel 202|200 + TaskDetail 形状  ->  POST /api/v1/tasks/3f2b7209-9e67-43e8-abd6-505289a8c063/cancel status=202 形状一致
 [OK  ] R10b 已结束任务的取消语义  ->  409 + Problem 形状一致
 [OK  ] R11 GET /tasks/{id}/events 首帧形状 vs TaskEvent  ->  形状一致
 [OK  ] R12 GET /agents 200 + AgentView[] 形状  ->  GET /api/v1/agents status=200 形状一致
@@ -105,7 +115,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R15 GET /capabilities/{id} 200 + CapabilityView 形状  ->  GET /api/v1/capabilities/automation status=200 形状一致
 [OK  ] R16 POST /memories（首次写）201 + UpsertResult 形状  ->  POST /api/v1/memories status=201 形状一致
 [OK  ] R17 GET /memories 200 + MemoryList 形状  ->  GET /api/v1/memories status=200 形状一致
-[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/72995dfd-9019-462e-996e-802cd54b8aee status=200 形状一致
+[OK  ] R18 PUT /memories/{id} 200 + MemoryEntry 形状  ->  PUT /api/v1/memories/c2ba690e-10db-4dc7-8f5c-d74275609d76 status=200 形状一致
 [OK  ] R19 DELETE /memories/{id} 204（无响应体）  ->  status=204
 [OK  ] R20 GET /onboarding 200 + OnboardingView 形状  ->  GET /api/v1/onboarding status=200 形状一致
 [OK  ] R21 GET /observability/overview 200 + Overview 形状  ->  GET /api/v1/observability/overview status=200 形状一致
@@ -115,7 +125,7 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] R24 POST /onboarding/steps/{key}/complete 200 + StepChangeView 形状  ->  POST /api/v1/onboarding/steps/welcome/complete status=200 形状一致
 [OK  ] R25 POST /onboarding/skip 200 + OnboardingView 形状  ->  POST /api/v1/onboarding/skip status=200 形状一致
 [OK  ] R26 无令牌 GET /tasks → 401 + Problem  ->  GET /api/v1/tasks status=401 形状一致
-[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/4a682166-d5ed-4bc6-8b76-4a3f33a6bd04 status=404 形状一致
+[OK  ] R27 GET /tasks/{不存在} → 404 + Problem  ->  GET /api/v1/tasks/5f812832-0dae-41e0-bfcf-ba6854465951 status=404 形状一致
 [OK  ] R28 POST /tasks 缺 goal → 422 + Problem  ->  POST /api/v1/tasks status=422 形状一致
 [OK  ] R29 POST /tasks 非法 JSON → 400 + Problem  ->  status=400 形状一致
 [OK  ] R30 POST /auth/logout 200 + RevokedView 形状  ->  POST /api/v1/auth/logout status=200 形状一致
@@ -179,8 +189,8 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 
 ===== 22 CLI 外壳行为 (rc=0) =====
 门禁 22 · CLI 外壳行为探针
-被测：C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
-现场：C:\Users\94355\Desktop\新建文件夹(7)\target\cli-probe\run-45
+被测：C:\Users\<user>\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+现场：C:\Users\<user>\Desktop\新建文件夹(7)\target\cli-probe\run-62
 --------------------------------------------------------------------
 [PASS] A  A1 --help 列出 serve/doctor      rc=0 serve=True doctor=True
 [PASS] A  A2 doctor 参数齐 --json/--strict  rc=0 json=True strict=True
@@ -199,13 +209,14 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [PASS] D  D1 干净环境 rc=0                   rc=0
 [PASS] D  D2 --strict 仅在有 WARN 时 rc=1    WARN=1 rc=1
 [PASS] D  D3 模型端点半配 rc=2 且报 ERR          rc=2 命中=True
-[PASS] D  D4 process 缺 SA_RUNNER_DIR rc=2 rc=2 命中=True
+[PASS] D  D4 process 目录不存在 rc=2          rc=2 命中=True
+[PASS] D  D4b 缺省即真实执行且目录可发现              rc=0 process命中=True
 [PASS] D  D5 端口被他人占用 rc=2                rc=2 命中=True
 [PASS] D  D6 端口被本服务占 → SKIP 且 rc=0       rc=0 命中=True
 [PASS] D  D7 诊断后端口空闲、不落业务文件              端口空闲=True 多出文件=无
 [PASS] D  D8 密钥过短 rc=2 且不 panic          rc=2 ERR命中=True panic=False
 --------------------------------------------------------------------
-合计 22 项 | 通过 22 | 失败 0
+合计 23 项 | 通过 23 | 失败 0
 
 
 
@@ -213,9 +224,9 @@ CHECK: 一致 | paths=29 operations=33 schemas=51
 [OK  ] G1 _sched --selftest                         rc=0，13 项断言，失败 0
 [OK  ] G2a 源码无执行类调用                                 干净
 [OK  ] G2b 运行时未触发执行                                 执行被调用 0 次，哨兵文件不存在
-[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > C:\\Users\\94355\\AppData\\Local\\Temp\\probe_sched_3miy3i_m\\sentinel.txt'
+[OK  ] G2c prompt 已交给上层                             派发 1 条，prompt='echo hi > %USERPROFILE%\\AppData\\Local\\Temp\\probe_sched_f1izjarc\\sentinel.txt'
 [OK  ] G3 重启后同分钟不重复派发                               首派 1 条，重启后同分钟再派 0 条
-[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_a919c1cc", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
+[OK  ] G4a 补跑发生且标注补的是哪一次                            派发 1 条：[{"id": "s_d3803af9", "title": "已补跑", "prompt": "", "kind": "cron", "fired_at": "2026-11-21T09:00", "late_for": "2026-11-21T03:00"}]
 [OK  ] G4b 补跑过的不再报漏跑，且不连环补                          missed=[]，同分钟再派 0 条
 [OK  ] G4c 从未跑的必须报出来                                missed=['从未跑']
 [OK  ] G5 月末 31 日命中                                 0 0 31 * * @ 2026-12-31 00:00 → True（期望 True）
@@ -304,9 +315,9 @@ PASS 文档数字与代码/契约一致
 
 
 ===== 28 子进程解码纪律 (rc=0) =====
-[subproc-encoding] 根目录 C:\Users\94355\Desktop\新建文件夹(7)
+[subproc-encoding] 根目录 C:\Users\<user>\Desktop\新建文件夹(7)
 [subproc-encoding] 本机首选编码 cp936 / PYTHONUTF8=None / PYTHONIOENCODING='utf-8'
-OK    静态：subprocess 文本调用必须显式编码  -> 共扫 74 文件、44 处调用，不合规 0 处
+OK    静态：subprocess 文本调用必须显式编码  -> 共扫 77 文件、49 处调用，不合规 0 处
 OK    行为：encoding+errors 能吞掉非法字节  -> stdout='�� hello'
 OK    行为：裸 text=True 在本机确实会崩（复现 camp-g 真因）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
 OK    行为：只设 encoding 不设 errors 输出照样被吞（errors 不可省）  -> 读取线程被吞（camp-g 形态）：rc=0、stdout=''
@@ -337,3 +348,21 @@ Traceback (most recent call last):
                   ^^^^^^^^^
   File "<frozen codecs>", line 322, in decode
 UnicodeDecodeError: 'utf-8' codec can't decode byte 0xab in position 0: invalid start byte
+
+
+===== 29 删除路径守卫 (rc=0) =====
+=== 门禁 29：删除路径守卫（SA-031） ===
+[OK  ] A 守卫自检
+       === 小结：断言 19 项 | 通过 19 | 失败 0 ===
+[OK  ] B1 拒绝镜像指到仓库本身（dst=仓库/src）
+[OK  ] B2 拒绝清仓库根
+[OK  ] B3 拒绝清仓库祖先
+[OK  ] B4 拒绝清用户主目录
+[OK  ] B5 拒绝清系统目录
+[OK  ] B6 放行镜像子目录（正常路径）
+[OK  ] C 静态守护 scripts/sync_build.py
+[OK  ] C 静态守护 scripts/verify.py
+[OK  ] C 静态守护 scripts/smoke.py
+
+=== 小结：断言 10 项 | 通过 10 | 失败 0 ===
+

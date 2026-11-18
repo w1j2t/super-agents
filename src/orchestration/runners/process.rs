@@ -13,7 +13,9 @@
 
 use crate::orchestration::executor::{StepOutcome, StepRequest, StepRunner};
 use std::io::Read;
+use std::sync::mpsc;
 use std::path::{Path, PathBuf};
+use super::sandbox::{Job, JobLimits};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
@@ -32,7 +34,20 @@ fn simplify(path: PathBuf) -> PathBuf {
 }
 
 /// 允许执行的脚本扩展名（顺序即优先级）。
-const ALLOWED_EXT: [&str; 4] = ["cmd", "bat", "ps1", "py"];
+/// 默认只认 `.py`：ps1/bat/cmd 等于把 shell 解释器交给脚本，一旦有人能写脚本
+/// 就等于能在宿主机执行任意命令（三方审查 H1）。要跑 shell 脚本必须显式
+/// 设 `SA_RUNNER_ALLOW_SHELL=1`，让"放开"成为一个有意识的动作。
+const ALLOWED_EXT: [&str; 1] = ["py"];
+const SHELL_EXT: [&str; 3] = ["cmd", "bat", "ps1"];
+
+/// 当前允许的扩展名集合：默认 py-only，显式开启后兼容 shell 脚本。
+fn allowed_exts() -> Vec<&'static str> {
+    let mut v: Vec<&'static str> = ALLOWED_EXT.to_vec();
+    if std::env::var("SA_RUNNER_ALLOW_SHELL").map(|s| s.trim() == "1").unwrap_or(false) {
+        v.extend(SHELL_EXT);
+    }
+    v
+}
 
 /// 输出保留的最大字符数（按字符而非字节截断，避免切断 UTF-8）。
 const OUTPUT_LIMIT: usize = 4_000;
@@ -97,6 +112,61 @@ where
     out
 }
 
+/// 环境块安全预算（字节）。
+///
+/// Windows 给整个环境块的上限是 32KB（`CreateProcess` 的硬限制），超了不是报错，
+/// 而是**静默截断**——任务照常"成功"，但目标文本只剩半截，用户拿到基于残缺目标的
+/// 结果而系统不自知（三方审查 M3）。这里取 8KB 做安全线：留足余量给系统自带变量，
+/// 又远小于 32KB，越线时改走文件通道而不是赌一把。
+pub const ENV_BUDGET_BYTES: usize = 8 * 1024;
+
+/// 超预算时改为文件传递的键：值可能极长、且下游 worker 支持 `*_FILE` 回退。
+const SPILL_KEYS: [&str; 2] = ["SA_GOAL", "SA_CONTEXT_SUMMARY"];
+
+/// 一组环境变量的估算字节数（`K=V\0` 是 Windows 的真实排布）。
+fn env_bytes(envs: &[(String, String)]) -> usize {
+    envs.iter().map(|(k, v)| k.len() + v.len() + 2).sum()
+}
+
+/// 超预算时把大字段落盘，返回（新环境变量表，落盘目录）。
+///
+/// 落盘目录由调用方在脚本跑完后删除：临时文件里是任务目标原文，不能在磁盘上久留。
+fn spill_oversized_envs(
+    envs: Vec<(String, String)>,
+) -> (Vec<(String, String)>, Option<std::path::PathBuf>) {
+    if env_bytes(&envs) <= ENV_BUDGET_BYTES {
+        return (envs, None);
+    }
+    let dir = std::env::temp_dir().join(format!("sa_env_{}", uuid::Uuid::new_v4()));
+    if std::fs::create_dir_all(&dir).is_err() {
+        // 落盘失败不能假装没事：保持原样交给 CreateProcess，让截断风险显式暴露在
+        // 审计日志里，而不是悄悄改道。
+        tracing::warn!("环境块超过预算且临时目录创建失败，降级为环境变量直传");
+        return (envs, None);
+    }
+    let mut out = Vec::with_capacity(envs.len() + SPILL_KEYS.len());
+    let mut spilled = 0usize;
+    for (k, v) in envs {
+        if SPILL_KEYS.contains(&k.as_str()) && !v.is_empty() {
+            let path = dir.join(format!("{k}.txt"));
+            if std::fs::write(&path, v.as_bytes()).is_ok() {
+                out.push((format!("{k}_FILE"), path.display().to_string()));
+                // 原键留一条"已改道"的说明：脚本若只认 SA_GOAL 也能看出发生了什么
+                out.push((k, format!("(已改道文件传递：{})", path.display())));
+                spilled += 1;
+                continue;
+            }
+        }
+        out.push((k, v));
+    }
+    if spilled == 0 {
+        let _ = std::fs::remove_dir_all(&dir);
+        return (out, None);
+    }
+    tracing::info!(spilled, bytes = env_bytes(&out), "环境块超预算，大字段改走文件传递");
+    (out, Some(dir))
+}
+
 /// 解析「按 agent 覆盖超时」的原始值，失败一律回落。
 ///
 /// 抽成纯函数是为了能直接测边界：读环境变量写单测会和其他用例抢进程级状态，
@@ -144,12 +214,25 @@ pub enum RunError {
     BadAgentId(String),
     #[error("脚本目录不可用: {0}")]
     BadDir(String),
-    #[error("未找到该 agent 的脚本（支持 cmd/bat/ps1/py）: {0}")]
+    #[error("未找到该 agent 的脚本（默认只跑 .py；要跑 cmd/bat/ps1 需设 SA_RUNNER_ALLOW_SHELL=1）: {0}")]
     NotFound(String),
     #[error("脚本路径越界（必须位于配置目录内）: {0}")]
     Escape(String),
     #[error("启动脚本失败: {0}")]
     Spawn(String),
+    #[error(
+        "进程沙箱未能生效，已拒绝执行脚本（加固失效不做静默降级）。确需无沙箱运行请显式设 SA_RUNNER_SANDBOX=off"
+    )]
+    SandboxMissing,
+}
+
+/// 是否"必须"有进程沙箱。
+///
+/// FIX-005：Windows 下除非显式 `SA_RUNNER_SANDBOX=off`，否则不允许"挂不上作业照样跑"。
+/// 非 Windows 平台本仓没有作业对象实现（`Job::attach` 恒 None），保持原有放行 + 告警口径，
+/// 否则换个平台整个 runner 都不可用——那不是加固，是自断。
+fn sandbox_required() -> bool {
+    cfg!(windows) && !JobLimits::disabled()
 }
 
 impl ProcessRunner {
@@ -183,7 +266,7 @@ impl ProcessRunner {
         {
             return Err(RunError::BadAgentId(agent_id.to_string()));
         }
-        for ext in ALLOWED_EXT {
+        for ext in allowed_exts() {
             let candidate = self.dir.join(format!("{agent_id}.{ext}"));
             if !candidate.is_file() {
                 continue;
@@ -293,22 +376,50 @@ impl ProcessRunner {
         let started = Instant::now();
         let mut child = cmd.spawn().map_err(|e| RunError::Spawn(e.to_string()))?;
 
-        let mut out_pipe = child.stdout.take();
-        let mut err_pipe = child.stderr.take();
-        let out_handle = std::thread::spawn(move || {
-            let mut buf = String::new();
-            if let Some(p) = out_pipe.as_mut() {
-                let _ = p.read_to_string(&mut buf);
+        // 作业对象必须紧贴 spawn：中间多插一行，脚本就已经能在那一瞬间吃掉内存。
+        // 挂不上不当作失败（沙箱是加固，不是执行前提），但必须留痕——
+        // "以为受控、其实没受控"比"明确知道没受控"危险得多。
+        let job = Job::attach(JobLimits::from_env());
+        let sandboxed = match job.as_ref() {
+            Some(j) => j.assign(&child),
+            None => false,
+        };
+        match (sandboxed, job.as_ref()) {
+            (true, Some(j)) => {
+                let l = j.limits();
+                tracing::debug!(
+                    agent = agent_id,
+                    mem_mb = l.mem_mb,
+                    max_procs = l.max_procs,
+                    cpu_secs = l.cpu_secs,
+                    "脚本已挂入作业对象（内存 / 进程数上限生效）"
+                );
             }
-            buf
-        });
-        let err_handle = std::thread::spawn(move || {
-            let mut buf = String::new();
-            if let Some(p) = err_pipe.as_mut() {
-                let _ = p.read_to_string(&mut buf);
+            _ => {
+                // FIX-005：挂不上作业不再"带病跑"。
+                // 原实现只打一条 warn 继续执行，等于"脚本已经在跑、限制没有"；
+                // 而 spawn 到 assign 之间本来就是逃逸窗口（脚本能在这一瞬拉满内存、起进程树）。
+                // 现在分三种：显式关掉 / 非 Windows 平台 → 放行但留痕；Windows 且未显式关闭 → 当场杀掉。
+                if sandbox_required() {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    tracing::error!(
+                        agent = agent_id,
+                        "进程沙箱未能生效：已终止本次脚本执行（加固失效不做静默降级）"
+                    );
+                    return Err(RunError::SandboxMissing);
+                }
+                tracing::warn!(
+                    agent = agent_id,
+                    "未启用进程沙箱：本步脚本不受内存 / 进程数上限约束（检查 SA_RUNNER_SANDBOX 与作业对象创建是否成功）"
+                );
             }
-            buf
-        });
+        }
+
+        // 抽干线程带"有界保留 + 继续排空"：超过上限的部分不留在内存里，
+        // 但仍然读走——只截断不排空会把管道写满，子进程写日志时反过来卡死（假死的老坑）。
+        let out_rx = spawn_reader(child.stdout.take());
+        let err_rx = spawn_reader(child.stderr.take());
 
         let mut timed_out = false;
         let status = loop {
@@ -327,8 +438,12 @@ impl ProcessRunner {
             }
         };
 
-        let stdout = out_handle.join().unwrap_or_default();
-        let stderr = err_handle.join().unwrap_or_default();
+        // 进程已退出：先关作业句柄，连带收掉它可能残留的孙进程。
+        // 顺序很要紧——孙进程会继承管道写端，只要它还活着，下面等 EOF 就一直等。
+        drop(job);
+
+        let stdout = finish_reader(out_rx);
+        let stderr = finish_reader(err_rx);
 
         Ok(RunOutput {
             exit_code: status.and_then(|s| s.code()).unwrap_or(-1),
@@ -337,6 +452,50 @@ impl ProcessRunner {
             elapsed_ms: started.elapsed().as_millis(),
             timed_out,
         })
+    }
+}
+
+/// 单个流保留上限（字节）：1 MiB 足够定位问题，再多也不该塞进任务结果里。
+const READ_LIMIT: usize = 1024 * 1024;
+
+/// 收尾宽限：作业句柄已关、写端进程通常应已消失，EOF 会立刻到来。
+/// 超过这个时间说明写端被外部进程（不是本步子孙）持有着，
+/// 宁可少留日志，也不让 `run_script` 永久挂住。
+const DRAIN_GRACE: Duration = Duration::from_secs(5);
+
+/// 起一个抽干线程：读满 `READ_LIMIT` 后继续把剩余数据排空丢弃。
+///
+/// 为什么不再用 `read_to_string`：
+/// 1. **无界**——脚本 `for i in range(10**8): print(i)` 能把后端内存吃光；
+/// 2. **遇非 UTF-8 直接失败**——worker 吐了 GBK 中文，日志就整段丢失，
+///    排查时只看到空 stdout，极易被误判成"脚本没输出"。
+/// 所以这里读 `Vec<u8>`，最后统一做 lossy 转换。
+fn spawn_reader<R: Read + Send + 'static>(pipe: Option<R>) -> mpsc::Receiver<Vec<u8>> {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let Some(mut p) = pipe else {
+            let _ = tx.send(Vec::new());
+            return;
+        };
+        let mut buf: Vec<u8> = Vec::new();
+        let mut limited = (&mut p).take(READ_LIMIT as u64);
+        let _ = limited.read_to_end(&mut buf);
+        let mut rest = limited.into_inner();
+        let _ = std::io::copy(&mut rest, &mut std::io::sink());
+        let _ = tx.send(buf);
+    });
+    rx
+}
+
+/// 取回抽干结果，**不会无限等待**。超时按空输出处理而不是阻塞——
+/// `run_script` 的契约是"要么给结果，要么给超时"，不包括"卡在这里不回来"。
+fn finish_reader(rx: mpsc::Receiver<Vec<u8>>) -> String {
+    match rx.recv_timeout(DRAIN_GRACE) {
+        Ok(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
+        Err(_) => {
+            tracing::warn!("脚本输出管道未在宽限期内关闭，本次按空输出处理（写端可能被外部进程持有）");
+            String::new()
+        }
     }
 }
 
@@ -383,8 +542,15 @@ impl StepRunner for ProcessRunner {
         // 部署期配置（模型地址/模型名/凭据）按前缀显式透传：不配则 worker 走规则实现，
         // 配了则走模型；两条路径都能跑通，所以冒烟不依赖本机装没装模型服务。
         envs.extend(passthrough_envs(std::env::vars()));
+        // 越线不在"截断"里解决，而是换通道：goal/context 落盘、环境变量只传路径。
+        let (envs, spill_dir) = spill_oversized_envs(envs);
 
-        match self.run_script(&req.step.agent_id, &envs) {
+        let result = self.run_script(&req.step.agent_id, &envs);
+        // 临时文件里是任务目标原文，脚本一结束就删，不留在磁盘上过夜
+        if let Some(dir) = spill_dir {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+        match result {
             Ok(out) if out.timed_out => StepOutcome::retryable(format!(
                 "脚本执行超时（>{}s）已强制终止：agent={}",
                 self.timeout_for(&req.step.agent_id).as_secs(),
@@ -421,6 +587,50 @@ impl StepRunner for ProcessRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn oversized_env_spills_to_files_instead_of_silent_truncation() {
+        // M3：环境块超预算时不能靠截断，必须换通道，且原值一个字都不能少
+        let big = "目标".repeat(ENV_BUDGET_BYTES); // 约 3 倍预算
+        let envs = vec![
+            ("SA_TASK_ID".to_string(), "t1".to_string()),
+            ("SA_GOAL".to_string(), big.clone()),
+            ("SA_CONTEXT_SUMMARY".to_string(), "上下文".repeat(1000)),
+        ];
+        let before = env_bytes(&envs);
+        assert!(before > ENV_BUDGET_BYTES, "构造的用例必须真的超预算");
+
+        let (out, dir) = spill_oversized_envs(envs);
+        let dir = dir.expect("超预算必须落盘");
+        assert!(env_bytes(&out) < before, "改道后环境块应显著变小");
+
+        // 换成了 *_FILE，且文件里是完整原文（不是 512 字符的截断版）
+        let goal_file = out
+            .iter()
+            .find(|(k, _)| k == "SA_GOAL_FILE")
+            .map(|(_, v)| v.clone())
+            .expect("SA_GOAL_FILE 必须在");
+        let text = std::fs::read_to_string(&goal_file).unwrap();
+        assert_eq!(text, big, "落盘内容必须与原文逐字一致");
+        assert!(
+            out.iter().any(|(k, v)| k == "SA_GOAL" && v.contains("已改道")),
+            "原键要留一句说明，别让只看 SA_GOAL 的脚本莫名其妙"
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn small_env_is_left_untouched() {
+        // 没超预算就一点都不许动：改道本身也是成本
+        let envs = vec![
+            ("SA_GOAL".to_string(), "写一个周报".to_string()),
+            ("SA_TASK_ID".to_string(), "t1".to_string()),
+        ];
+        let snapshot = envs.clone();
+        let (out, dir) = spill_oversized_envs(envs);
+        assert!(dir.is_none(), "未超预算不该落盘");
+        assert_eq!(out, snapshot);
+    }
 
     fn temp_dir(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("sa_runner_{tag}_{}", uuid::Uuid::new_v4()));
@@ -466,12 +676,19 @@ mod tests {
     #[test]
     fn runs_real_script_and_captures_output() {
         let dir = temp_dir("run");
+        let runner = ProcessRunner::new(dir.clone(), 20).unwrap();
+        // H1：默认配置下 shell 脚本必须被拒——能写 cmd 等于能在宿主机执行任意命令
+        std::fs::write(dir.join("coder.cmd"), "@echo off\r\nexit /b 0\r\n").unwrap();
+        assert!(
+            matches!(runner.resolve("coder"), Err(RunError::NotFound(_))),
+            "默认只跑 .py，.cmd 必须解析失败"
+        );
+        // 换成 .py 后同一 agent 立刻可跑
         std::fs::write(
-            dir.join("coder.cmd"),
-            "@echo off\r\necho REPORT task=%SA_TASK_ID% step=%SA_STEP_INDEX%\r\nexit /b 0\r\n",
+            dir.join("coder.py"),
+            "import os\nprint(\"REPORT task=%s step=%s\" % (os.environ.get(\"SA_TASK_ID\"), os.environ.get(\"SA_STEP_INDEX\")))\n",
         )
         .unwrap();
-        let runner = ProcessRunner::new(dir.clone(), 20).unwrap();
         let out = runner
             .run_script(
                 "coder",
@@ -495,8 +712,12 @@ mod tests {
     #[test]
     fn nonzero_exit_is_retryable_and_timeout_kills() {
         let dir = temp_dir("fail");
-        std::fs::write(dir.join("writer.cmd"), "@echo off\r\necho boom 1>&2\r\nexit /b 3\r\n").unwrap();
-        std::fs::write(dir.join("slow.cmd"), "@echo off\r\nping -n 6 127.0.0.1 >nul\r\n").unwrap();
+        std::fs::write(
+            dir.join("writer.py"),
+            "import sys\nprint(\"boom\", file=sys.stderr)\nsys.exit(3)\n",
+        )
+        .unwrap();
+        std::fs::write(dir.join("slow.py"), "import time\ntime.sleep(6)\n").unwrap();
         let runner = ProcessRunner::new(dir.clone(), 1).unwrap();
 
         let bad = runner.run_script("writer", &[]).unwrap();
@@ -605,5 +826,59 @@ mod tests {
         let s = "中文输出很长".repeat(10);
         let t = tail(&s, 5);
         assert_eq!(t.chars().count(), 5);
+    }
+
+    #[test]
+    fn reader_keeps_non_utf8_output_instead_of_dropping_it() {
+        // 老写法 `read_to_string` 遇到非 UTF-8 会整体失败，日志变空——
+        // 排查时看到"脚本没输出"，实际是脚本吐了 GBK 中文。这里守 lossy 转换。
+        let raw = vec![0xff, 0xfe, b'h', b'i'];
+        let s = finish_reader(spawn_reader(Some(std::io::Cursor::new(raw))));
+        assert!(s.contains("hi"), "ASCII 部分不能丢：{s:?}");
+        assert!(
+            s.contains('\u{FFFD}'),
+            "非法字节应被替换而不是整段丢弃：{s:?}"
+        );
+    }
+
+    #[test]
+    fn reader_caps_what_it_keeps() {
+        // 大输出必须"只保留上限那么多、其余排空丢弃"，否则脚本疯狂 print 就能吃光后端内存。
+        let raw = vec![b'a'; READ_LIMIT * 2];
+        let s = finish_reader(spawn_reader(Some(std::io::Cursor::new(raw))));
+        assert_eq!(
+            s.len(),
+            READ_LIMIT,
+            "保留量必须有上限，否则大输出会吃光后端内存"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn grandchild_holding_the_pipe_does_not_hang_the_runner() {
+        use std::process::{Command, Stdio};
+        // 造一个"父进程退出、孙进程仍握着 stdout 写端"的局面：
+        // `start /b` 起的 ping 继承管道，cmd 自己立刻退出。
+        // 老实现会 join 到 ping 结束（30 秒）；新实现先关作业句柄收掉整棵进程树，
+        // 管道随即 EOF，收尾在宽限期内返回。
+        let mut child = Command::new("cmd")
+            .args(["/C", "start /b ping -n 30 127.0.0.1 & exit"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("spawn cmd");
+        let job = Job::attach(JobLimits::default()).expect("建作业");
+        assert!(job.assign(&child), "沙箱没挂上，这条断言就没有意义");
+        let rx = spawn_reader(child.stdout.take());
+        let _ = child.wait();
+        drop(job);
+        let started = Instant::now();
+        let _ = finish_reader(rx);
+        assert!(
+            started.elapsed() < DRAIN_GRACE,
+            "收尾等了 {:?}：孙进程没被作业收掉，管道一直没 EOF",
+            started.elapsed()
+        );
     }
 }

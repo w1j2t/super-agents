@@ -23,7 +23,7 @@ exe=super-agents.exe  port=18170  data_dir=sa-probe-k75ulpag
        GET /memories -> 200  body={"total": 0, "count": 0, "limit": 50, "offset": 0, "has_more": false, "items": []}
 
 [C] 契约一致性：时间 / id / envelope 是否全站统一
-       GET /auth/me -> 200  body={"id": "9d82fab7-f323-4b89-aa9a-5c647f2f069b", "username": "probe_e54c72", "email": "probe_e54c72@ex.com", "display_name": "probe_e54c72", "role": "owner", "status": "active", "locale": "zh-CN", "timezone": "Asia/Shanghai", "created_at": "2026-11-09T14:44:03.6
+       GET /auth/me -> 200  body={"id": "9d82fab7-f323-4b89-aa9a-5c647f2f069b", "username": "probe_e54c72", "email": "<mail>@ex.com", "display_name": "probe_e54c72", "role": "owner", "status": "active", "locale": "zh-CN", "timezone": "Asia/Shanghai", "created_at": "2026-11-09T14:44:03.6
   [OK  ] created_at 是 RFC3339 带时区  ->  实际=2026-11-09T14:44:03.611620900Z
   [OK  ] me 的 envelope 明确
 

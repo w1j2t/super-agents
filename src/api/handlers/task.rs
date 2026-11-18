@@ -546,32 +546,39 @@ pub async fn create(
             // 队列已满：不接受就是拒绝，必须把刚落库的那条 queued 收敛掉，
             // 否则前端会看到一条永远不会动的任务。
             let max_running = state.config.async_max_running;
-            if state.cancellations.active() >= max_running {
-                task.status = TaskStatus::Cancelled;
-                task.finished_at = Some(Utc::now());
-                task.updated_at = Utc::now();
-                task.result_summary =
-                    "任务未被受理：后台执行队列已满，本次提交已作废（未消耗预算）".into();
-                task.trace.push(TraceEntry {
-                    at: Utc::now(),
-                    step_index: 0,
-                    agent_id: "-".into(),
-                    phase: "dispatch".into(),
-                    outcome: "rejected".into(),
-                    detail: format!("并发上限 {max_running}，当前已满"),
-                    attempt: 0,
-                    tokens: 0,
-                    duration_ms: None,
-                });
-                persist(&state, &task);
-                state.metrics.inc("sa_task_async_rejected_total");
-                return Err(ApiError::TooManyRequests {
-                    message: format!(
-                        "后台执行队列已满（上限 {max_running} 个并发任务），请稍后重试；已提交内容未消耗任何预算"
-                    ),
-                    retry_after: 30,
-                });
-            }
+            // 准入必须是"先拿到许可再干活"。旧写法是数一下 active() 再决定，
+            // 属于 check-then-act：两个请求可以同时看到"还差一个名额"而一起放行，
+            // 并发瞬间顶到上限+1；压力越高越容易破防，而这条上限正是为高压准备的。
+            // 许可（permit）会跟着任务一起移动进 spawn_blocking，任务跑完才释放。
+            let slot = match Arc::clone(&state.async_slots).try_acquire_owned() {
+                Ok(slot) => slot,
+                Err(_) => {
+                    task.status = TaskStatus::Cancelled;
+                    task.finished_at = Some(Utc::now());
+                    task.updated_at = Utc::now();
+                    task.result_summary =
+                        "任务未被受理：后台执行队列已满，本次提交已作废（未消耗预算）".into();
+                    task.trace.push(TraceEntry {
+                        at: Utc::now(),
+                        step_index: 0,
+                        agent_id: "-".into(),
+                        phase: "dispatch".into(),
+                        outcome: "rejected".into(),
+                        detail: format!("并发上限 {max_running}，当前已满"),
+                        attempt: 0,
+                        tokens: 0,
+                        duration_ms: None,
+                    });
+                    persist(&state, &task);
+                    state.metrics.inc("sa_task_async_rejected_total");
+                    return Err(ApiError::TooManyRequests {
+                        message: format!(
+                            "后台执行队列已满（上限 {max_running} 个并发任务），请稍后重试；已提交内容未消耗任何预算"
+                        ),
+                        retry_after: 30,
+                    });
+                }
+            };
 
             let flag = state.cancellations.register(&task.id);
             let guard = CancelGuard {
@@ -601,6 +608,9 @@ pub async fn create(
             // 放进 async 线程池会拖住整个 reactor。
             tokio::task::spawn_blocking(move || {
                 let _guard = guard;
+                // 并发许可保活到任务结束：提前 drop 等于把名额还回去，
+                // 于是"正在跑的任务数"会大于信号量认为的占用数，上限再次失效。
+                let _slot = slot;
                 // 先把"正在执行"落库并广播：执行器内部虽然会置 Running，但那是内存态，
                 // 不落库就不会有事件，前端只能看到 queued 直接跳到终态——
                 // 直播流也就退化成"两个端点"，等于白做。

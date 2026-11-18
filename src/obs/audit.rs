@@ -23,6 +23,26 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+/// 锁中毒恢复口径（三方审查 M2）。
+///
+/// 持锁线程 panic 会让锁永久中毒；继续 `unwrap`/`expect` 会把"一次 panic"
+/// 放大成"此后每个请求都 panic"的雪崩。审计流水、计数器、限流桶在 panic 时
+/// 并不处于不一致状态（要么未改，要么改完才放锁），所以恢复内部值继续服务；
+/// 告警只打一次，避免刷屏把首因埋掉。
+fn recover_poison<T>(res: std::sync::LockResult<T>, tag: &'static str) -> T {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static WARNED: AtomicBool = AtomicBool::new(false);
+    match res {
+        Ok(v) => v,
+        Err(e) => {
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                tracing::error!(tag, "锁中毒，已恢复内部数据；请排查持锁线程的 panic");
+            }
+            e.into_inner()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub id: String,
@@ -198,7 +218,7 @@ impl MemoryAuditSink {
     /// 每挤掉一条就 `dropped + 1`：这是"审计覆盖了历史"的唯一证据来源。
     /// 用原子变量而不是加锁累加——它在持锁路径里，多一次 Mutex 会白白拉长临界区。
     pub(crate) fn push_bounded(&self, event: AuditEvent) {
-        let mut guard = self.events.lock().expect("审计锁未被毒化");
+        let mut guard = recover_poison(self.events.lock(), "audit.events");
         guard.push_back(event);
         while guard.len() > self.capacity {
             guard.pop_front();

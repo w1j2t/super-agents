@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """脚本共用的「被测对象在哪」解析。
 
-存在的理由：早期三个脚本把 exe 路径写死成 `C:\\Users\\<user>\\Desktop\\build_sa1\\...`。
+存在的理由：早期三个脚本把 exe 路径写死成 `%USERPROFILE%\\Desktop\\build_sa1\\...`。
 那个镜像后来废弃了，`resolve_build()` 迁到 `%LOCALAPPDATA%\\sa-build`，但写死的地方
 没人改。后果不是编译失败，而是**更难查的一类**：
 

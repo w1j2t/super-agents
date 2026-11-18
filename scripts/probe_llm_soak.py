@@ -56,6 +56,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
+# 同目录导入：门禁脚本可能从任意 cwd 启动，不能指望 scripts/ 在 sys.path 里
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pathguard  # noqa: E402  （删除前的路径守卫）
 
 
 # ---------------------------------------------------------------- HTTP
@@ -263,7 +266,9 @@ def probe_model_ready(llm_base: str, model: str, timeout: float = 5.0):
 
 def prepare_data(data_dir: Path, keep: bool, workers_src=None) -> Path:
     if data_dir.exists() and not keep:
-        shutil.rmtree(data_dir, ignore_errors=True)
+        pathguard.safe_rmtree(data_dir, base=ROOT / "target",
+                              allow_names=("soak", "live-probe"),
+                              what="探针数据目录", warn_only=True)
     runner = data_dir / "runner"
     runner.mkdir(parents=True, exist_ok=True)
     # workers_src 是给**负向演练**用的白名单入口（仿门禁 16 的 SA_COMMON_PY 手法）：
@@ -303,6 +308,9 @@ def launch(exe: Path, port: int, data_dir: Path, runner_dir: Path, env_extra):
         "SA_METRICS_TOKEN": "t" * 32,
         "SA_RUNNER": "process",
         "SA_RUNNER_DIR": str(runner_dir),
+        # 注册默认已关闭（FIX-002）。soak 要自建 soak_u2 这类测试账号，
+        # 属于夹具需要，显式打开；不依赖"默认开放"这条已被堵上的路。
+        "SA_ALLOW_REGISTRATION": "1",
     })
     env.update(env_extra)
     log = open(data_dir / "server.log", "w", encoding="utf-8", errors="replace")
@@ -866,9 +874,31 @@ def main() -> int:
                       f"doc_tok={doc.get('tokens', 0):>4} attempts={doc.get('attempts')} "
                       f"{r['task_status']:<10} {mark}{why}")
 
+        # ---- 环境类失败归因 ----
+        # 3 轮全 unreachable/timeout 与"连上了但产出没被采用"是两码事：
+        # 前者是模型端点（Ollama 没起、被挤掉、显存换页）不可用，后者才是代码缺陷。
+        # 归因不靠猜：此刻复检端点，端点已死就说明是环境，代码路径根本没被走到。
+        env_fail = False
+        g3_ok = dict((c, o) for c, o, _ in checks).get("G3", True)
+        if not g3_ok and model_rows_all:
+            reasons = []
+            for r in model_rows_all:
+                doc = next((st for st in r["steps"] if st["agent"] == "doc-agent"), {})
+                reasons.append(str(((doc.get("sa") or {}).get("model") or {}).get("reason") or ""))
+            if reasons and all(("unreachable" in x or "timeout" in x) for x in reasons):
+                ok_now, why_now = probe_model_ready(args.base, args.model)
+                print(f"\n[归因] 模型轮全部没连上模型；端点复检：{'可达' if ok_now else '不可达'}"
+                      + ("" if ok_now else f"（{why_now}）"))
+                env_fail = not ok_now
+                if env_fail:
+                    print("[SKIP] 环境类失败：模型端点在压测期间不可用。")
+                    print("       本门禁记 SKIP —— 既不是 PASS（一次模型产出都没采用），")
+                    print("       也不是 FAIL（代码路径未被执行，判红会让排查跑偏到不存在的缺陷）。")
+
         all_ok = all(ok for cid, ok, _ in checks
                      if not (cid == "G8" and args.no_rate_limit_probe))
-        print("\n结论：", "全绿" if all_ok else "有 FAIL，按上面逐条排查")
+        verdict = "全绿" if all_ok else ("SKIP（环境类失败）" if env_fail and args.allow_skip else "有 FAIL，按上面逐条排查")
+        print("\n结论：", verdict)
         stats["run_wall_s"] = round(time.time() - rows[0].get("_t0", time.time()), 0) if rows else 0
 
         # ---- 取证 ----
@@ -879,12 +909,16 @@ def main() -> int:
             "exe_mtime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(exe.stat().st_mtime)),
             "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "checks": [{"id": c, "ok": o, "detail": d} for c, o, d in checks],
+            "env_fail": env_fail,
             "stats": stats, "rounds": rows,
         }
         out_json = ev_dir / f"{args.tag}-latest.json"
         out_json.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
         print("   证据：", out_json)
-        return 0 if all_ok else 1
+        if all_ok:
+            return 0
+        # 退出码 3 = SKIP：regress_all 据此记 SKIP 而不是 FAIL（docs/06 的约定）
+        return 3 if (env_fail and args.allow_skip) else 1
     finally:
         stop(proc)
 

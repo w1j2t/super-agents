@@ -3,7 +3,7 @@
 命令由 regress_all.py 编排执行，rc=0，耗时 3.1s
 （原始输出如下，未做删改）
 ======================================================================
-工作目录：C:\Users\94355\AppData\Local\Temp\sa-audit-probe-1yunfa2r
+工作目录：C:\Users\<user>\AppData\Local\Temp\sa-audit-probe-1yunfa2r
 [OK  ] A file 后端 | 实例启动并就绪  ->  端口 18131
 [OK  ] A file 后端 | /readyz 如实报告审计状态  ->  {"backend": "file", "degraded": false, "degraded_reason": null, "durable": true}
 [OK  ] A file 后端 | 注册 owner 账号  ->  实际=201
@@ -15,7 +15,7 @@
 [OK  ] A file 后端 | 每次启动都留下一条 boot（重启可追溯）  ->  累计=2
 [OK  ] A file 后端 | 两条 boot 是不同事件（id 不重复）  ->  唯一 id=2
 [OK  ] B 拒绝启动 | 不可用路径下进程拒绝启动  ->  退出码=1
-[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 C:\\Users\\94355\\AppData\\Local\\Temp\\sa-audit-probe-1yunfa2r\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
+[OK  ] B 拒绝启动 | 日志给出可定位的原因  ->  Error: "审计文件不可用 %USERPROFILE%\\AppData\\Local\\Temp\\sa-audit-probe-1yunfa2r\\bad-audit.jsonl: 拒绝访问。 (os error 5)"
 [OK  ] C memory 后端 | 实例就绪
 [OK  ] C memory 后端 | 如实报告不落盘（durable=false / degraded=false）  ->  {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}
 [OK  ] C memory 后端 | 内存后端不产生 audit.jsonl

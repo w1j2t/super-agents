@@ -1,56 +1,7 @@
 # 26 判据防伪
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 0.9s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=3221225794，耗时 0.0s
 （原始输出如下，未做删改）
 ======================================================================
-==============================================================================
-一、真代码不许被误杀（判据太严 = 另一种骗）
-==============================================================================
-PASS 真代码判通过：py 多函数实现                                compiles=True ok
-PASS 真代码判实质：py 多函数实现                                ok
-PASS 真代码判通过：py 单行真实现                                compiles=True ok
-PASS 真代码判实质：py 单行真实现                                ok
-PASS 真代码判通过：rust 函数实现                               compiles=True ok
-PASS 真代码判实质：rust 函数实现                               ok
-PASS 真代码判通过：rust 结构体+impl                           compiles=True ok
-PASS 真代码判实质：rust 结构体+impl                           ok
-
-==============================================================================
-二、假代码不许被记成'编译通过'（判据太松 = 数字虚高）
-==============================================================================
-PASS 假交付被拦下：py-pass 空函数                             compiles=None src=hollow
-PASS   归因正确：py-pass 空函数                             reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：py-ellipsis 空函数                         compiles=None src=hollow
-PASS   归因正确：py-ellipsis 空函数                         reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：py-NotImplementedError                  compiles=None src=hollow
-PASS   归因正确：py-NotImplementedError                  reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：rust-todo 空函数                           compiles=None src=hollow
-PASS   归因正确：rust-todo 空函数                           reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：rust-unimplemented                      compiles=None src=hollow
-PASS   归因正确：rust-unimplemented                      reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：hello-world 玩具                          compiles=None src=hollow
-PASS   归因正确：hello-world 玩具                          reason=hollow-pass 期望=hollow-pass
-PASS 假交付被拦下：纯注释                                     compiles=None src=placeholder
-PASS   归因正确：纯注释                                     reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
-PASS 假交付被拦下：尖括号占位                                   compiles=None src=placeholder
-PASS   归因正确：尖括号占位                                   reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
-PASS 假交付被拦下：三点省略                                    compiles=None src=placeholder
-PASS   归因正确：三点省略                                    reason=placeholder-instead-of-code 期望=placeholder-instead-of-code
-
-==============================================================================
-三、真语法错必须判失败（不能把'错'也放过）
-==============================================================================
-PASS py 语法错判失败                                      SyntaxError:invalid syntax:1
-PASS rust 语法错判失败                                    error: this file contains an unclosed delimiter
-
-==============================================================================
-四、端到端：可用交付口径（假交付不能算可用）
-==============================================================================
-PASS 空函数不算可用交付                                      usable=False reason=hollow-pass
-PASS 真实现算可用交付                                       usable=True compiles=True
-PASS 语法错不算可用交付                                      compiles=False
-
-==============================================================================
-合计 31 项 | 通过 31 | 失败 0 | 跳过 0
 
 

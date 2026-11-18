@@ -53,6 +53,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parent.parent
+# 同目录导入：门禁脚本可能从任意 cwd 启动，不能指望 scripts/ 在 sys.path 里
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pathguard  # noqa: E402  （删除前的路径守卫）
 GOAL = "写一份把 worker 接入本地小模型的试点报告，说明接入的模型、接线方式和实测数据"
 
 
@@ -99,7 +102,9 @@ def wait_ready(base: str, budget: float = 60.0) -> bool:
 def prepare_data(data_dir: Path, keep: bool) -> Path:
     """镜像 workers 到数据目录，让后端从镜像里执行脚本（不碰源码）。"""
     if data_dir.exists() and not keep:
-        shutil.rmtree(data_dir, ignore_errors=True)
+        pathguard.safe_rmtree(data_dir, base=ROOT / "target",
+                              allow_names=("soak", "live-probe"),
+                              what="探针数据目录", warn_only=True)
     runner = data_dir / "runner"
     runner.mkdir(parents=True, exist_ok=True)
     src = ROOT / "workers"

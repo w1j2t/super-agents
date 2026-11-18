@@ -5,11 +5,12 @@ use crate::error::ApiError;
 use crate::security::jwt::{self, Claims, JwtError};
 use crate::security::rbac::{self, Permission, Role};
 use crate::state::SharedState;
-use axum::extract::FromRequestParts;
+use axum::extract::{ConnectInfo, FromRequestParts};
 use axum::http::header::{AUTHORIZATION, USER_AGENT};
 use axum::http::request::Parts;
 use tower_http::request_id::RequestId;
 use chrono::Utc;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 /// 已鉴权用户。任何需要登录的接口在参数里写 `user: AuthUser` 即完成鉴权。
@@ -110,17 +111,37 @@ impl FromRequestParts<SharedState> for AuthUser {
         })?;
 
         // 令牌有效不等于账号仍有效：禁用/删除后立即失效
-        let user = state
+        // 令牌有效不等于这次登录还有效：登出、改密、管理员踢人撤销的都是**会话**，
+        // 而 access 令牌是自包含的，不看 `sid` 的话它能一路用到过期（默认 30 分钟）。
+        // 那段时间里"已登出"只存在于前端的想象中，谁捡到令牌谁还用得上。
+        //
+        // 旧令牌没有 `sid`（空串），跳过这一步——升级不该把在线用户全部踢下线。
+        let (status, role, session_alive) = state
             .store
-            .read(|db| db.users.get(&claims.sub).map(|u| (u.status, u.role)))
+            .read(|db| {
+                let u = db.users.get(&claims.sub)?;
+                let alive = claims.sid.is_empty()
+                    || db
+                        .sessions
+                        .get(&claims.sid)
+                        // 顺着轮换链走到最新一代再判定：access 里带的是签发时那一代的 sid，
+                        // 轮换之后撤销状态记在新一代身上，只看自己被撤会漏掉登出/改密
+                        // （见 Session::successor_id 的注释）。
+                        .map(|s| s.lineage_alive(Utc::now(), |nid| db.sessions.get(nid)))
+                        .unwrap_or(false);
+                Some((u.status, u.role, alive))
+            })
             .ok_or_else(|| ApiError::Unauthorized("账号不存在或已被删除".into()))?;
-        if user.0 != UserStatus::Active {
+        if status != UserStatus::Active {
             return Err(ApiError::Forbidden("账号已被禁用".into()));
+        }
+        if !session_alive {
+            return Err(ApiError::Unauthorized("会话已失效，请重新登录".into()));
         }
 
         Ok(AuthUser {
             id: claims.sub.clone(),
-            role: user.1,
+            role,
             claims,
         })
     }
@@ -131,18 +152,36 @@ impl FromRequestParts<SharedState> for RequestMeta {
 
     async fn from_request_parts(
         parts: &mut Parts,
-        _state: &SharedState,
+        state: &SharedState,
     ) -> Result<Self, Self::Rejection> {
         let headers = &parts.headers;
-        let forwarded = headers
-            .get("x-forwarded-for")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(',').next())
-            .map(|v| v.trim().to_string());
-        let real_ip = headers
-            .get("x-real-ip")
-            .and_then(|v| v.to_str().ok())
-            .map(|v| v.trim().to_string());
+
+        // 顺序是"先要可信来源，再考虑头"：`ConnectInfo` 由内核给出的对端地址填充，
+        // 客户端改不了；`X-Forwarded-For` / `X-Real-IP` 只是一段客户端自己写的字符串。
+        //
+        // 旧实现反过来，无条件取 XFF 首值：等于把限流分桶的键交给调用方自选（换个头换个桶，
+        // 配额形同虚设），还能伪造别人的 IP 把锁定记到受害者头上。现在默认只认对端地址，
+        // 只有显式 `SA_TRUST_PROXY=1`（本进程确实挂在可信反代后面）才采信代理头。
+        let peer_ip = parts
+            .extensions
+            .get::<ConnectInfo<SocketAddr>>()
+            .map(|ci| ci.0.ip().to_string());
+
+        let forwarded = if state.config.trust_proxy {
+            headers
+                .get("x-forwarded-for")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.split(',').next())
+                .map(|v| v.trim().to_string())
+                .or_else(|| {
+                    headers
+                        .get("x-real-ip")
+                        .and_then(|v| v.to_str().ok())
+                        .map(|v| v.trim().to_string())
+                })
+        } else {
+            None
+        };
 
         // 请求号由 SetRequestIdLayer 注入到 extensions，与响应头 x-request-id 完全一致；
         // 直接读 header 只能拿到"客户端自己传的"，客户端没传就会是空串，审计便无法对账。
@@ -161,7 +200,7 @@ impl FromRequestParts<SharedState> for RequestMeta {
 
         Ok(RequestMeta {
             ip: forwarded
-                .or(real_ip)
+                .or(peer_ip)
                 .filter(|v| !v.is_empty())
                 .unwrap_or_else(|| "unknown".into()),
             user_agent: headers

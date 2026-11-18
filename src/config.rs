@@ -10,6 +10,13 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 pub struct Config {
     pub bind_addr: String,
+    /// 是否采信反向代理传来的 `X-Forwarded-For` / `X-Real-IP`（`SA_TRUST_PROXY`，默认**否**）。
+    ///
+    /// 默认不信任的原因：这两个头由客户端自由填写。直接采信首值，等于把"限流按 IP 分桶"
+    /// 变成"按客户端自报的字符串分桶"——换个头就换一个桶，配额形同虚设；还能反过来伪造
+    /// 别人的 IP，把锁定/限流记到受害者头上。只有当本进程确实挂在可信反代后面
+    /// （且反代已经用 `X-Forwarded-For` 覆盖而非追加）时才该打开。
+    pub trust_proxy: bool,
     pub data_dir: PathBuf,
     pub jwt_secret: Vec<u8>,
     pub access_ttl_secs: i64,
@@ -24,7 +31,21 @@ pub struct Config {
     pub max_body_bytes: usize,
     pub cors_allowed_origins: Vec<String>,
     pub allow_registration: bool,
+    /// 是否允许在**非回环监听**下保持注册开放（`SA_ALLOW_REGISTRATION_REMOTE`，默认否）。
+    ///
+    /// 三件事单独看都合理，叠起来就是提权链：绑定 `0.0.0.0`（局域网可达）+ 注册默认开放 +
+    /// 首个注册用户直接拿到 `owner`。等于谁先扫到这个端口，谁就成为最高权限。
+    /// 默认值不改（个人单机自举就是靠"第一个注册的人是 owner"），但要求放开之前
+    /// 显式承认一次：不显式设置本开关又绑了非回环地址，启动直接报错，不给"静默危险默认"。
+    pub allow_remote_registration: bool,
     pub task_retry_limit: u32,
+    /// 单任务失败步骤熔断阈值（`SA_MAX_FAILED_STEPS`，默认派生自
+    /// `executor::MAX_FAILED_STEPS`，夹在 1..=32）。
+    ///
+    /// 为什么必须是配置：常量写 3、装配处写 2 的双源，会让"测试验的是失败 3 步熔断、
+    /// 线上实际 2 步就熔断"。这种差异不会让任何断言变红，却让测试结论与生产行为对不上。
+    /// 默认值只允许从常量派生，不准在两处各写一个数字。
+    pub max_failed_steps: u32,
     /// 同一拓扑层内允许并行的步骤数（`SA_STEP_CONCURRENCY`，默认 1 = 严格串行）。
     ///
     /// 上限夹在 1..=8：再高也没有意义（单任务计划本身只有 2~3 路扇出），
@@ -127,13 +148,36 @@ impl Config {
         // 调整顺序零成本，语义也更直白——派生值先算，所有权后交。
         let cluster_dir = parse_cluster_dir(&data_dir);
 
+        // 监听面与注册面的交叉校验（见 `allow_remote_registration` 字段注释）：
+        // 单独看每项配置都"合理"，只有放一起才是漏洞。放在这里而不是 handler 里，
+        // 是因为启动失败（一句明确的报错）远好于"跑起来之后被人抢注 owner"。
+        let bind_addr = std::env::var("SA_BIND").unwrap_or_else(|_| "127.0.0.1:8088".into());
+        // FIX-002：默认**关闭**注册。原实现默认开放，且首个注册用户直接是 owner，
+        // 任何能连上端口的进程抢在用户之前注册即成为最高权限（与 CORS 默认放开、
+        // 快照损坏后空库自启动叠加就是零成本接管）。自举路径见 `services::auth::register`：
+        // 库为空且无恢复标记时仍允许创建第一个账号，所以首装依然开箱可用。
+        let allow_registration = parse_bool("SA_ALLOW_REGISTRATION", false)?;
+        let allow_remote_registration = parse_bool("SA_ALLOW_REGISTRATION_REMOTE", false)?;
+        if allow_registration && !allow_remote_registration && !bind_is_loopback(&bind_addr) {
+            return Err(ConfigError::Invalid(
+                "SA_BIND",
+                format!(
+                    "{bind_addr} 不是回环地址：本实例会对本机以外的网络可见，而注册是开着的、\
+                    首个注册用户直接是 owner。二选一后再启动：\
+                     ① 只在本机用 → 关掉注册（SA_ALLOW_REGISTRATION 默认就是关的）或去掉 SA_BIND（默认 127.0.0.1:8088）；\
+                     ② 确实要在局域网/公网提供服务 → 显式设 SA_ALLOW_REGISTRATION_REMOTE=1"
+                ),
+            ));
+        }
+
         Ok(Config {
-            bind_addr: std::env::var("SA_BIND").unwrap_or_else(|_| "127.0.0.1:8088".into()),
+            bind_addr,
+            trust_proxy: parse_bool("SA_TRUST_PROXY", false)?,
             data_dir,
             jwt_secret,
             access_ttl_secs: parse_i64("SA_ACCESS_TTL_SECS", 1800)?,
             refresh_ttl_secs: parse_i64("SA_REFRESH_TTL_SECS", 604_800)?,
-            pbkdf2_iterations: parse_u32("SA_PBKDF2_ITERATIONS", 120_000)?,
+            pbkdf2_iterations: parse_u32("SA_PBKDF2_ITERATIONS", 600_000)?,
             snapshot_interval_secs: parse_u64("SA_SNAPSHOT_INTERVAL_SECS", 15)?,
             flush_interval_ms: parse_u64("SA_FLUSH_INTERVAL_MS", 500)?.clamp(50, 60_000),
             flush_on_write: parse_bool("SA_FLUSH_ON_WRITE", true)?,
@@ -147,8 +191,16 @@ impl Config {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect(),
-            allow_registration: parse_bool("SA_ALLOW_REGISTRATION", true)?,
+            // 用上面校验过的同一个值，不再二次解析：校验的和生效的必须是同一个布尔，
+            // 否则两处解析策略一变，就会出现"校验时是开的、生效时是关的"。
+            allow_registration,
+            allow_remote_registration,
             task_retry_limit: parse_u32("SA_TASK_RETRY_LIMIT", 2)?,
+            max_failed_steps: parse_u32(
+                "SA_MAX_FAILED_STEPS",
+                crate::orchestration::executor::MAX_FAILED_STEPS,
+            )?
+            .clamp(1, 32),
             step_concurrency: parse_u32("SA_STEP_CONCURRENCY", 1)?.clamp(1, 8) as usize,
             task_budget_tokens: parse_u64("SA_TASK_BUDGET_TOKENS", 60_000)?,
             metrics_token: parse_metrics_token()?,
@@ -162,7 +214,9 @@ impl Config {
             metrics_export: parse_metrics_export()?,
             limiter: parse_limiter()?,
             node_id: parse_node_id(),
-            cluster_enabled: parse_bool("SA_CLUSTER", true)?,
+            // 默认关闭：进程内限流/锁定在单机是完整的，一旦默认开局就是集群，
+        // 限流配额会被节点数线性放大（三方审查 H3）。集群要显式 SA_CLUSTER=1 加入。
+        cluster_enabled: parse_bool("SA_CLUSTER", false)?,
             cluster_dir,
             cluster_ttl_secs: parse_u64("SA_CLUSTER_TTL_SECS", 20)?.clamp(5, 3_600),
             cluster_heartbeat_secs: parse_u64("SA_CLUSTER_HEARTBEAT_SECS", 5)?.clamp(1, 600),
@@ -175,6 +229,7 @@ impl Config {
     pub fn for_test(data_dir: PathBuf) -> Self {
         Config {
             bind_addr: "127.0.0.1:0".into(),
+            trust_proxy: false,
             data_dir,
             jwt_secret: b"test-secret-key-with-enough-entropy-0123456789".to_vec(),
             access_ttl_secs: 900,
@@ -188,7 +243,9 @@ impl Config {
             max_body_bytes: 256 * 1024,
             cors_allowed_origins: vec![],
             allow_registration: true,
+            allow_remote_registration: false,
             task_retry_limit: 2,
+            max_failed_steps: crate::orchestration::executor::MAX_FAILED_STEPS,
             step_concurrency: 1,
             task_budget_tokens: 60_000,
             metrics_token: None,
@@ -225,6 +282,7 @@ fn load_or_create_secret(data_dir: &Path) -> Result<Vec<u8>, ConfigError> {
     let path = data_dir.join("secret.key");
     if let Ok(existing) = std::fs::read(&path) {
         if existing.len() >= 32 {
+            warn_if_secret_too_open(&path);
             return Ok(existing);
         }
     }
@@ -233,11 +291,93 @@ fn load_or_create_secret(data_dir: &Path) -> Result<Vec<u8>, ConfigError> {
         .map_err(|e| ConfigError::Invalid("SA_JWT_SECRET", format!("熵源不可用: {e}")))?;
     std::fs::write(&path, buf)
         .map_err(|e| ConfigError::DataDir(format!("{}: {e}", path.display())))?;
+    // FIX-008：密钥文件按默认方式写出来就是"同机任何账户可读"，读走它等于能离线
+    // 签出任意用户（含 owner）的 access token，服务端没有任何二次验证能拦。
+    // 所以落盘后立刻收紧权限；收紧失败不拒启（别把新装机卡死），但必须留告警。
+    tighten_secret_permissions(&path);
     tracing::warn!(
         path = %path.display(),
         "未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入"
     );
     Ok(buf.to_vec())
+}
+
+/// FIX-008：把 `secret.key` 收紧成"仅当前用户可读"。
+///
+/// 未注入 `SA_JWT_SECRET` 时程序会自己生成 48 字节密钥并落盘；Windows 默认继承
+/// 父目录 ACL、Unix 默认按 umask 放开。同机其他账户拿到这个文件即可伪造签名，
+/// 因此落盘后立即按平台收紧。
+fn tighten_secret_permissions(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        match std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)) {
+            Ok(()) => tracing::info!(path = %path.display(), "secret.key 权限已收紧为 0600"),
+            Err(e) => tracing::warn!(
+                path = %path.display(), error = %e,
+                "收紧 secret.key 权限失败：同机其他账户可能读到密钥并伪造令牌"
+            ),
+        }
+    }
+    #[cfg(windows)]
+    {
+        // std 没有 ACL API：用系统自带 icacls 去掉继承、只授予当前用户。
+        // 失败不致命，但告警必须留——那一段就是可利用窗口。
+        // 代价说清楚：如果服务将来改用别的账户跑（计划任务/SYSTEM/独立服务账户），
+        // 它读不到这个文件就会起不来。那种部署请显式注入 SA_JWT_SECRET，
+        // 而不是把这个文件的权限再放开一轮。
+        let user = std::env::var("USERNAME").unwrap_or_default();
+        if user.is_empty() {
+            tracing::warn!(path = %path.display(), "无法确定当前用户名，secret.key 仍继承父目录 ACL");
+            return;
+        }
+        match std::process::Command::new("icacls")
+            .arg(path)
+            .args(["/inheritance:r", "/grant:r"])
+            .arg(format!("{user}:F"))
+            .output()
+        {
+            Ok(out) if out.status.success() => {
+                tracing::info!(path = %path.display(), "secret.key 权限已收紧为仅当前用户可读")
+            }
+            Ok(out) => tracing::warn!(
+                path = %path.display(),
+                code = ?out.status.code(),
+                stderr = String::from_utf8_lossy(&out.stderr).trim(),
+                "icacls 收紧 secret.key 权限失败：同机其他账户可能读到密钥并伪造令牌"
+            ),
+            Err(e) => tracing::warn!(
+                path = %path.display(), error = %e,
+                "icacls 不可用，secret.key 仍继承父目录 ACL：同机其他账户可能读到密钥"
+            ),
+        }
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = path;
+    }
+}
+
+/// FIX-008 复查：老部署的 `secret.key` 是放开权限写出来的。改完代码不等于
+/// "这台机器已经安全"，所以每次启动读密钥时都复核一次，过宽就催人收紧。
+fn warn_if_secret_too_open(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(meta) = std::fs::metadata(path) {
+            let mode = meta.permissions().mode();
+            if mode & 0o077 != 0 {
+                tracing::warn!(
+                    path = %path.display(), mode = format!("{:o}", mode & 0o777),
+                    "secret.key 权限过宽（组/其他账户可读）：建议 chmod 600，或显式注入 SA_JWT_SECRET"
+                );
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+    }
 }
 
 fn parse_i64(key: &'static str, default: i64) -> Result<i64, ConfigError> {
@@ -320,24 +460,56 @@ fn parse_storage() -> Result<StorageKind, ConfigError> {
 
 /// 执行后端选择：留空默认 sim；非法值直接拒绝启动。
 fn parse_runner() -> Result<RunnerKind, ConfigError> {
+    // 默认诚实：缺省后端是**真实执行**（process），不是模拟。
+    // 历史上缺省 Sim，让"跑起来全绿但什么都没做"成了默认体验（三方审查 H2）。
+    // 模拟必须由用户显式 `SA_RUNNER=sim` opt-in，供验收复现与演练使用。
     match std::env::var("SA_RUNNER") {
-        Ok(v) if v.trim().is_empty() => Ok(RunnerKind::Sim),
+        Ok(v) if v.trim().is_empty() => Ok(RunnerKind::Process),
         Ok(v) => RunnerKind::parse(&v).ok_or_else(|| {
             ConfigError::Invalid(
                 "SA_RUNNER",
                 format!("可选 {}，收到 {v}", RunnerKind::ALL.join(" / ")),
             )
         }),
-        Err(_) => Ok(RunnerKind::Sim),
+        Err(_) => Ok(RunnerKind::Process),
     }
 }
 
-/// 脚本目录：仅在显式给出时返回；是否存在由执行后端初始化时校验（失败即拒启）。
+/// 脚本目录：显式 `SA_RUNNER_DIR` 优先；未给出时自动发现随产物分发的 `workers/`
+/// （见下方探测顺序）。给定的目录是否存在由执行后端初始化时校验（失败即拒启）。
 fn parse_runner_dir() -> Option<PathBuf> {
-    match std::env::var("SA_RUNNER_DIR") {
-        Ok(v) if !v.trim().is_empty() => Some(PathBuf::from(v.trim())),
-        _ => None,
+    // 显式优先；未显式给出时按"随产物分发的 workers 目录"兜底，
+    // 这样默认 process 后端开箱可用，而不是一启动就缺脚本目录。
+    if let Ok(v) = std::env::var("SA_RUNNER_DIR") {
+        if !v.trim().is_empty() {
+            return Some(PathBuf::from(v.trim()));
+        }
     }
+    // 探测顺序：cwd 及其上层 → exe 所在目录及其上层。镜像里 exe 在
+    // target-gnu/debug/、脚本目录在镜像根，只查一层等于白查。
+    let mut bases: Vec<PathBuf> = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        bases.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(p) = exe.parent() {
+            bases.push(p.to_path_buf());
+        }
+    }
+    for base in bases {
+        let mut dir = base;
+        for _ in 0..3 {
+            let cand = dir.join("workers");
+            if cand.is_dir() {
+                return Some(cand);
+            }
+            match dir.parent() {
+                Some(p) => dir = p.to_path_buf(),
+                None => break,
+            }
+        }
+    }
+    None
 }
 
 /// 审计出口。
@@ -429,10 +601,46 @@ fn parse_bool(key: &'static str, default: bool) -> Result<bool, ConfigError> {
     }
 }
 
+/// `SA_BIND` 是否只对本机可见（`127.0.0.1` / `::1` / `localhost`）。
+///
+/// 只有"确定是回环"才算安全：`0.0.0.0`、`::`、局域网 IP、以及任何解析不出来的写法
+/// 一律按"对外可见"处理。宁可让一个回环别名被误判成对外（用户加一个环境变量即可），
+/// 也不能把 0.0.0.0 误判成回环——后者的代价是整台机器开放给局域网。
+pub fn bind_is_loopback(addr: &str) -> bool {
+    if let Ok(sa) = addr.parse::<std::net::SocketAddr>() {
+        return sa.ip().is_loopback();
+    }
+    let host = addr.rsplit_once(':').map(|(h, _)| h).unwrap_or(addr);
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    host.eq_ignore_ascii_case("localhost")
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_real_loopback_counts_as_loopback() {
+        // 判错的代价不对称：把 0.0.0.0 当回环 = 整个局域网可注册并抢 owner。
+        for ok in ["127.0.0.1:8088", "127.1.2.3:9000", "[::1]:8088", "localhost:8088"] {
+            assert!(bind_is_loopback(ok), "{ok} 应判为回环");
+        }
+        for bad in ["0.0.0.0:8088", "[::]:8088", "192.168.1.9:8088", "10.0.0.2:80", "example.com:8088", "8088"] {
+            assert!(!bind_is_loopback(bad), "{bad} 不应判为回环");
+        }
+    }
+    #[test]
+    fn max_failed_steps_defaults_to_executor_constant() {
+        // 熔断阈值的默认值必须与常量同源：曾出现 state.rs 写死 2、常量写 3 的双源，
+        // 测试验 3、线上跑 2。这条断言把"两处各写一个数"钉死在门禁里。
+        let cfg = Config::for_test(std::env::temp_dir());
+        assert_eq!(
+            cfg.max_failed_steps,
+            crate::orchestration::executor::MAX_FAILED_STEPS,
+            "默认熔断阈值必须等于 executor::MAX_FAILED_STEPS"
+        );
+        assert!(cfg.max_failed_steps >= 1, "阈值不允许为 0，否则首次失败即熔断");
+    }
 
     #[test]
     fn prod_defaults_to_durable_audit() {

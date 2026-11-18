@@ -35,6 +35,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 import time
 import urllib.error
 import urllib.request
@@ -96,6 +97,8 @@ class Instance:
                 "SA_JWT_SECRET": "probe-capabilities-secret-0123456789ab",
                 "SA_ALLOW_REGISTRATION": "1",
                 "SA_RUNNER_DIR": os.path.join(ROOT, "workers"),
+        # 显式 sim：默认后端已改 process（H2），本门禁测的是执行端口契约与确定性产出
+        "SA_RUNNER": "sim",
                 "SA_CLUSTER": "off",
                 "SA_TASK_SUBMIT_QUOTA_PER_HOUR": "600",
                 "RUST_LOG": "info",
@@ -915,7 +918,9 @@ def main() -> int:
         print("\n" + "=" * 60)
         print(f"合计 {total} 项能力：PASS {ok} / FAIL {total - ok}")
         if not args.keep:
-            shutil.rmtree(workdir, ignore_errors=True)
+            pathguard.safe_rmtree(workdir, base=pathlib.Path(tempfile.gettempdir()),
+                                  allow_prefix="probe-caps-", what="能力探针临时目录",
+                                  warn_only=True)
         else:
             print(f"工作目录保留：{workdir}")
         payload = {

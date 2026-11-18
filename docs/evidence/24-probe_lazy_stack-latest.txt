@@ -1,22 +1,7 @@
 # 24 懒加载三件套
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 3.2s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=3221225794，耗时 0.0s
 （原始输出如下，未做删改）
 ======================================================================
-=== 门禁 24：懒加载三件套（压缩 / RAG / 取文器） ===
-[OK  ] G1 _compact.py 自检                          rc=0
-[OK  ] G1 _rag.py 自检                              rc=0
-[OK  ] G1 _web.py 自检                              rc=0
-[OK  ] G2.1 web→rag 抓取可入库                         chars=153 title=门禁 17 复盘
-[OK  ] G2.2 入库不触发建索引（懒）                           built=False
-[OK  ] G2.3 检索细节命中（seq=40）                        top=web:p.html#0 [0:153] score=4.15
-[OK  ] G2.4 压缩后细节零丢失                              ratio=0.523 entities=9 missed=0
-[OK  ] G2.5 压缩产物可回链原文                             
-[OK  ] G3.1 Browser 构造不开连接                        opener_ready=False lazy=0
-[OK  ] G3.2 RagIndex 构造不建索引                       built=False lazy=0
-[OK  ] G3.3 import 不拉 robots 解析器                  robotparser_imported=False
-[OK  ] G4.1 预算=1 仍保全部实体                           entities=6 missed=0 ratio=0.000
-[OK  ] G4.2 字节上限生效                                truncated=True bytes=500
-=== 小结：断言 13 项 | 通过 13 | 失败 0 ===
 
 

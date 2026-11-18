@@ -59,6 +59,8 @@ def main():
         {
             "SA_BIND": f"127.0.0.1:{args.port}",
             "SA_DATA_DIR": str(root / "data"),
+        # 显式 sim：稳健性压测不依赖真实执行
+        "SA_RUNNER": "sim",
             "SA_JWT_SECRET": "x" * 40,
             "SA_PBKDF2_ITERATIONS": "1000",
             "SA_ENV": "probe",

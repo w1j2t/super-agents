@@ -195,7 +195,9 @@ def main() -> int:
                     proc.kill()
         finally:
             fh.close()
-            shutil.rmtree(work, ignore_errors=True)
+            pathguard.safe_rmtree(work, base=Path(tempfile.gettempdir()),
+                                  allow_prefix="sa-proof-", what="验证临时目录",
+                                  warn_only=True)
 
 
 if __name__ == "__main__":

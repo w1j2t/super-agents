@@ -194,12 +194,12 @@ def run(name, cmd, cwd=ROOT, env_extra=None, timeout=1800, drill=False):
 # 这四道正是历史上抓出假绿的那几道，任何"顺手跳过"都会把假绿放回来。
 # 门禁总道数。**只在这里写一次**：三处文案都从这里取，
 # 且 _write_reports 会拿它跟实际执行数对账——加了门禁忘改这里，full 跑会直接 rc=2。
-TOTAL_GATES = 29
+TOTAL_GATES = 30
 
 TIERS = {
-    "quick": ["0", "1", "4", "5", "6", "7", "12", "14", "16", "20", "22", "25", "26", "27", "28"],
+    "quick": ["0", "1", "4", "5", "6", "7", "12", "14", "16", "20", "22", "25", "26", "27", "28", "29"],
     "api": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "11", "12", "13",
-            "14", "16", "17", "19", "20", "22", "24", "25", "26", "27", "28"],
+            "14", "16", "17", "19", "20", "22", "24", "25", "26", "27", "28", "29"],
     "full": None,
 }
 TIER_HINT = {"quick": "改一处纯逻辑后自查（≈21s）",
@@ -221,7 +221,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tier", choices=["quick", "api", "full"], default="full",
                     help="分层跑：quick≈20s / api≈80s / full≈400s（只有 full 的结论能叫全绿）")
-    ap.add_argument("--exe", default=str(DEFAULT_BUILD / "target-gnu" / "debug" / "super-agents.exe"))
+    # SA-030：--exe 不再有自己的默认值。默认值一旦独立，`--build-dir X` 就只管编译，
+    # 后面 29 道仍跑默认镜像的旧 exe，报告却全绿。现在 exe 一律由 build_dir 派生。
+    ap.add_argument("--exe", default="", help="一般不用传；传了必须等于 --build-dir 派生的那个")
     ap.add_argument("--build-dir", default=str(DEFAULT_BUILD))
     ap.add_argument("--skip-cargo", action="store_true")
     ap.add_argument("--skip-sync", action="store_true", help="不把工作区源码同步进镜像（慎用：会测到旧代码）")
@@ -241,19 +243,29 @@ def main():
     if args.tier != "full":
         print("[TIER] 非 full 结论**不是全绿**：只代表这几道里没有红，其余门禁本次未执行。")
 
-    # 先同步：保证测的是当前工作区代码，而不是镜像里的上一版
+    # 先同步：保证测的是当前工作区代码，而不是镜像里的上一版。
+    # SA-030：把 args.build_dir 显式传进去。原来 `_sync()` 用的是 import 时定死的
+    # 模块级 MIRROR，于是 `--build-dir X` 只改了后面的 cargo cwd，源码仍同步进默认镜像，
+    # 打印却写"已同步到 X"——测的是 X 里的旧代码，报的是新代码的绿。
     if not args.skip_sync:
         try:
             from sync_build import sync as _sync
-            _sync()
+            _sync(pathlib.Path(args.build_dir))
             print("[SYNC] 工作区 → 镜像完成：%s" % args.build_dir)
         except Exception as exc:  # noqa: BLE001
-            print("[WARN] 同步失败（继续用镜像现有内容）：%s" % exc)
+            # 同步失败就不再往下跑：拿镜像里的旧源码测出来的绿是最坏的一种假绿。
+            print("[FAIL] 同步失败：%s" % exc)
+            return 1
 
-    exe = pathlib.Path(args.exe)
-    if not exe.exists():
-        print("找不到可执行文件：%s" % exe)
+    derived_exe = pathlib.Path(args.build_dir).resolve() / "target-gnu" / "debug" / "super-agents.exe"
+    exe = pathlib.Path(args.exe).resolve() if args.exe else derived_exe
+    if exe != derived_exe:
+        print("[FAIL] --exe 不属于当前 --build-dir")
+        print("       期望：%s" % derived_exe)
+        print("       实际：%s" % exe)
         return 2
+    if not exe.exists():
+        print("找不到可执行文件：%s（门禁 0 会先编译它）" % exe)
 
     # 把"到底在测谁"打在开头。历史上并存过两套镜像（桌面 build_sa1 与 %LOCALAPPDATA%\sa-build），
     # 看交接文档照抄旧路径的人会测到一个停在几个月前的 exe —— 这是"假绿"的另一个入口。
@@ -270,8 +282,11 @@ def main():
 
     # 第 0 道：先保证"被测的就是刚写的"。cargo test 不产出 super-agents.exe，
     # 少了这一步，后面九道门禁可能全在测上一版程序（真踩过：exe 18:48、源码 20:33）。
+    # --skip-sync 必须一路传到门禁 0：build-exe 内部自己会 sync 一次，
+    # 不传的话"不动镜像"这个承诺是假的（SA-030 修法第 4 条）。
     build_gate = run("0 编译与二进制新鲜度",
-                     [py, "scripts/build-exe.py", "--build-dir", args.build_dir, "--exe", exe],
+                     [py, "scripts/build-exe.py", "--build-dir", args.build_dir,
+                      "--exe", str(exe)] + (["--no-sync"] if args.skip_sync else []),
                      timeout=1800)
     results.append(build_gate)
     if build_gate["rc"] != 0:
@@ -426,6 +441,16 @@ def main():
     # ② 真起一个吐非法字节的子进程，把"吞掉"这一形态当断言对象复现出来。
     # 自带 --drill（现造坏样板必须被抓到）。实测约 2.4s，进 quick / api。
     results.append(run("28 子进程解码纪律", [py, "scripts/check_subproc_encoding.py"], timeout=300))
+
+    # 29 号守的是**一个参数就能毁掉工作区**的那类缺陷（SA-031）。sync_build / verify /
+    # smoke 各有一句 rmtree，目标由 --build-dir / --data-dir 拼出来；少写一层目录名，
+    # 删的就是源码，而且 rmtree 不进回收站。前 28 道全绿也证明不了这件事——
+    # 它们每一次都是用**正确参数**跑的，等于只在顺境里验证顺境。
+    # 本道三件事：① 守卫自检 19 项（含真删演练，只在临时目录里演）；
+    # ② 拿真实路径只判不删（仓库本身/仓库内 src/仓库祖先/家目录/系统目录必须拒，
+    # 镜像子目录必须放行）；③ 静态守护——三个脚本不得再出现绕过守卫的裸 rmtree。
+    # 实测 0.4s，进 quick / api：改这三个脚本时秒级就知道有没有把守卫改回去。
+    results.append(run("29 删除路径守卫", [py, "scripts/check-pathguard.py"], timeout=180))
 
     # ── 负向演练（可选）：问的是另一个问题——"门禁会不会红"，不是"功能对不对" ──
     # 刻意不塞进 results：门禁数量是给文档和交付承诺用的固定口径，

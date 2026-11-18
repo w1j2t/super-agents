@@ -45,8 +45,28 @@ def env(name: str, default: str = "") -> str:
     return default if v is None else v.strip()
 
 
+def env_or_file(name: str, default: str = "") -> str:
+    """先读 `<name>`，为空则回退读 `<name>_FILE` 指向的文件。
+
+    Rust 侧在环境块接近 Windows 上限（32KB）时会改走文件传递（三方审查 M3）：
+    环境变量超限是被 `CreateProcess` 静默截断的，任务照常"成功"但目标残缺，
+    比显式报错更危险。两条通道都在，worker 就不必关心走的是哪一条。
+    """
+    v = env(name)
+    if v:
+        return v
+    path = env(name + "_FILE")
+    if not path:
+        return default
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            return fh.read().strip()
+    except OSError:
+        return default
+
+
 def goal() -> str:
-    return env("SA_GOAL")
+    return env_or_file("SA_GOAL")
 
 
 def task_type() -> str:

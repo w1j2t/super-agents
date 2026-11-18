@@ -3,7 +3,7 @@
 命令由 regress_all.py 编排执行，rc=0，耗时 10.4s
 （原始输出如下，未做删改）
 ======================================================================
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "%USERPROFILE%
 [OK  ] S01b 存储后端可识别  ->  storage=memory durable=False
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -167,14 +167,14 @@
 合计 157 项 | 通过 157 | 失败 0
 
 服务日志尾部：
-[2m2026-11-14T06:42:50.788531Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794638570\secret.key
+[2m2026-11-14T06:42:50.788531Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794638570\secret.key
 [2m2026-11-14T06:42:50.788936Z[0m [33m WARN[0m 当前为纯内存后端：进程退出即清空数据，仅用于压测/演示 [3mstorage[0m[2m=[0mmemory
 [2m2026-11-14T06:42:50.789071Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
 [2m2026-11-14T06:42:50.789092Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
 [2m2026-11-14T06:42:50.789494Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
 [2m2026-11-14T06:42:50.789505Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
 [2m2026-11-14T06:42:50.789513Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-14T06:42:50.789559Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794638570\cluster [3mnode_id[0m[2m=[0mWLM-8992 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-14T06:42:50.789559Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794638570\cluster [3mnode_id[0m[2m=[0mWLM-8992 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
 [2m2026-11-14T06:42:50.792306Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18097 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mmemory [3mrunner[0m[2m=[0msim
 [2m2026-11-14T06:42:55.554636Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m040d432f-13c5-4273-a543-b892061b6d34 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m040d432f-13c5-4273-a543-b892061b6d34 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
 [2m2026-11-14T06:42:57.468031Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m040d432f-13c5-4273-a543-b892061b6d34 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0mb5acf0d6-f582-47d7-be94-9fdb9c069eb9 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m0bdaacb6-9654-4d3c-a049-577b0dce4046

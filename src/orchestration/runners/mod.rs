@@ -5,6 +5,7 @@
 //! 鉴权、预算降档、重试退避、熔断、审计、指标、飞轮沉淀全部在 `Executor` 内，与后端无关。
 
 pub mod process;
+pub mod sandbox;
 
 use crate::config::Config;
 use crate::orchestration::executor::StepRunner;

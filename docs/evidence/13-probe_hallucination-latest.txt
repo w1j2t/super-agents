@@ -1,9 +1,9 @@
 # 13 防幻觉打点实测
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 2.9s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=0，耗时 12.5s
 （原始输出如下，未做删改）
 ======================================================================
-[OK  ] H0                     服务就绪  http://127.0.0.1:7593
+[OK  ] H0                     服务就绪  http://127.0.0.1:9465
 [OK  ] H0                     注册  rc=201
 [OK  ] H0                     登录  token 已取得
 [OK  ] H1                     写入长记忆 0  rc=201
@@ -12,7 +12,7 @@
 [OK  ] H1                     写入长记忆 3  rc=201
 [OK  ] H1                     写入长记忆 4  rc=201
 [OK  ] H1                     提交任务  status=succeeded agreement=0.74
-[OK  ] H2                     抓取 /metrics  3497 字节
+[OK  ] H2                     抓取 /metrics  3500 字节
 [OK  ] H2                     sa_hallucination_flags_total 存在  值=1.0
 [OK  ] H3                     打点值 >= 1  值=1.0
 [OK  ] H3                     同任务上下文确实被截断  sa_context_truncations_total=1.0（排除巧合有值）

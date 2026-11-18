@@ -28,6 +28,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 import time
 import urllib.error
 import urllib.request
@@ -124,6 +125,8 @@ def main():
     env.update({
         "SA_BIND": "127.0.0.1:%d" % port,
         "SA_DATA_DIR": str(tmp),
+        # 显式 sim：默认后端改为 process 后，本门禁仍需确定性模拟（防幻觉打点与执行无关）
+        "SA_RUNNER": "sim",
         "SA_JWT_SECRET": "probe-secret-key-0123456789abcdef-32+",
         "SA_ALLOW_REGISTRATION": "true",
         "SA_ENV": "test",
@@ -199,8 +202,9 @@ def main():
         except subprocess.TimeoutExpired:
             proc.kill()
         if not args.keep:
-            import shutil
-            shutil.rmtree(tmp, ignore_errors=True)
+            pathguard.safe_rmtree(tmp, base=pathlib.Path(tempfile.gettempdir()),
+                                  allow_prefix="sa-halu-", what="幻觉探针临时目录",
+                                  warn_only=True)
 
     print("")
     print("合计 %d 项 | 通过 %d | 失败 %d" % (PASS + FAIL, PASS, FAIL))

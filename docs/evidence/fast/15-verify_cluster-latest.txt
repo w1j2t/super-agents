@@ -3,9 +3,9 @@
 命令由 regress_all.py 编排执行，rc=0，耗时 23.1s
 （原始输出如下，未做删改）
 ======================================================================
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy
-共享心跳目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy\shared-cluster
-被测二进制: C:\Users\94355\Desktop\build_sa1\target-gnu\debug\super-agents.exe
+演练目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy
+共享心跳目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy\shared-cluster
+被测二进制: C:\Users\<user>\Desktop\build_sa1\target-gnu\debug\super-agents.exe
 心跳 TTL=5s  周期=1s  清理线=30s
 
 --- C1 单节点起步 ---
@@ -68,6 +68,6 @@
 
 ====================================================================
 合计 41 项 | 通过 41 | 失败 0
-演练目录: C:\Users\94355\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy（可用 --keep 保留以便复查）
+演练目录: C:\Users\<user>\AppData\Local\Temp\sa-cluster-drill-sjjqa0iy（可用 --keep 保留以便复查）
 
 

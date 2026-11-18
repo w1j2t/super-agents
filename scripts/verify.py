@@ -42,6 +42,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import pathguard  # noqa: E402  （SA-031：删除前统一过守卫）
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 # 工具链带空格参数，必须拆成列表交给 subprocess，否则会被当成"一个名字里有空格的可执行文件"→ WinError 2
 CARGO = ["cargo", "+stable-x86_64-pc-windows-gnu"]
@@ -74,11 +77,26 @@ def sha(path: pathlib.Path) -> str:
 
 
 class Step:
-    def __init__(self, name: str, detail: str = ""):
-        self.name, self.detail, self.ok, self.cost = name, detail, False, 0.0
+    """SA-029：三态，不是两态。
+
+    原来 `--skip-build` 把 5/8、6/8 记成 `ok=True`，于是"跳过两步"的总账长得和
+    "八步全过"一模一样，退出码还是 0。看报告的人只知道"绿了"，不知道有两步
+    根本没跑——跳过被记成通过，是比失败更难发现的一种假绿。
+    """
+
+    def __init__(self, name: str, detail: str = "", status: str = "fail"):
+        self.name, self.detail, self.status, self.cost = name, detail, status, 0.0
+
+    @property
+    def ok(self) -> bool:
+        return self.status == "pass"
+
+    @property
+    def skipped(self) -> bool:
+        return self.status == "skip"
 
     def __repr__(self):
-        flag = "通过" if self.ok else "失败"
+        flag = {"pass": "通过", "skip": "跳过", "fail": "失败"}[self.status]
         extra = f" — {self.detail}" if self.detail else ""
         return f"[{flag}] {self.name}（{self.cost:.1f}s）{extra}"
 
@@ -107,7 +125,16 @@ def main() -> int:
         src, dst = ROOT / sub, build / sub
         if src.exists():
             if dst.exists():
-                shutil.rmtree(dst)
+                # SA-031：--build-dir 指向仓库本身或系统目录时，这句 rmtree 删的
+                # 就是真源码。守卫拦下即退出，不降级为"用副本旧内容继续"（那是假绿）。
+                try:
+                    pathguard.safe_rmtree(dst, base=build,
+                                          allow_names={"src", "scripts", "docs", "generated"},
+                                          what=f"同步副本 {sub}")
+                except pathguard.GuardError as exc:
+                    eprint(f"[FAIL] {exc}")
+                    eprint("       请检查 --build-dir / SA_BUILD_DIR 是否指到了源码仓库或系统目录。")
+                    return 2
             shutil.copytree(src, dst)
     for f in ("Cargo.toml", "Cargo.lock"):
         if (ROOT / f).exists():
@@ -118,13 +145,14 @@ def main() -> int:
     steps: list[Step] = []
     outputs: dict[str, str] = {}
 
-    def record(name: str, ok: bool, detail: str = "", out: str = "", cost: float = 0.0):
-        s = Step(name, detail)
-        s.ok, s.cost = ok, cost
+    def record(name: str, ok: bool, detail: str = "", out: str = "", cost: float = 0.0,
+               skipped: bool = False):
+        s = Step(name, detail, "skip" if skipped else ("pass" if ok else "fail"))
+        s.cost = cost
         steps.append(s)
         outputs[name] = out
-        print(("  OK  " if ok else "  FAIL") + f" {name} — {detail}" if detail else
-              ("  OK  " if ok else "  FAIL") + f" {name}")
+        flag = {"pass": "  OK  ", "skip": "  SKIP", "fail": "  FAIL"}[s.status]
+        print(flag + (f" {name} — {detail}" if detail else f" {name}"))
         return ok
 
     print(f"源码目录：{ROOT}")
@@ -176,8 +204,16 @@ def main() -> int:
         record("6/8 可执行文件构建成功", rc == 0 and exe.exists(),
                str(exe) if exe.exists() else "未产出二进制", out, time.time() - t0)
     else:
-        record("5/8 单元测试（已跳过）", True, "--skip-build")
-        record("6/8 可执行文件构建（已跳过）", True, "--skip-build")
+        # SA-029：跳过就写"跳过"。另外"省掉编译"不等于"可以不验新鲜度"——
+        # 拿一个几天前的 exe 跑冒烟一样会全绿，而测的根本不是当前源码。
+        t0 = time.time()
+        rc, out = run([sys.executable, "scripts/build-exe.py",
+                       "--build-dir", str(build), "--skip-build", "--no-sync"], build)
+        record("5/8 二进制新鲜度（--skip-build 也不许省）", rc == 0,
+               "与当前源码同版本" if rc == 0 else "二进制落后于源码：先跑一次完整 verify",
+               out, time.time() - t0)
+        record("6/8 单元测试", False, "--skip-build：本次未跑 cargo test", skipped=True)
+        record("6b/8 可执行文件构建", False, "--skip-build：本次未跑 cargo build，用的是现成 exe", skipped=True)
 
     if not exe.exists():
         record("7/8 端到端冒烟", False, f"缺少二进制 {exe}")
@@ -206,21 +242,31 @@ def main() -> int:
                 print(f"  (已回写生成物：{rel})")
 
     print("-" * 78)
-    passed = sum(1 for s in steps if s.ok)
+    passed = sum(1 for s in steps if s.status == "pass")
+    skipped = sum(1 for s in steps if s.status == "skip")
+    failed = sum(1 for s in steps if s.status == "fail")
     for s in steps:
         print(" ", repr(s))
     print("-" * 78)
-    if passed == len(steps):
-        print(f"总账：{passed}/{len(steps)} 全部通过 —— 后端在当前状态下是真的可用。")
-        return 0
 
-    print(f"总账：{passed}/{len(steps)} 通过，{len(steps) - passed} 项失败。")
     for s in steps:
-        if not s.ok:
+        if s.status == "fail":
             print(f"\n===== 失败详情：{s.name} =====")
             tail = outputs.get(s.name, "")
             print(tail if a.verbose else "\n".join(tail.splitlines()[-40:]))
-    return 1
+
+    if failed:
+        print(f"总账：{len(steps)} 步 — 通过 {passed} / 跳过 {skipped} / 失败 {failed}。")
+        return 1
+    if skipped:
+        # 退出码 3 = "没红，但也没全跑"。调用方脚本据此不能把它当全绿。
+        print(f"总账：{len(steps)} 步 — 通过 {passed} / 跳过 {skipped} / 失败 0。")
+        print("      跳过 {n} 步（--skip-build），**这不是全绿**：编译与单测本次未验证。".format(n=skipped))
+        print("      交付前请去掉 --skip-build 再跑一次。")
+        return 3
+
+    print(f"总账：{passed}/{len(steps)} 全部通过 —— 后端在当前状态下是真的可用。")
+    return 0
 
 
 if __name__ == "__main__":

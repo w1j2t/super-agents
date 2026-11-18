@@ -55,11 +55,11 @@
 
 ```powershell
 # 二进制（现成的，不用编译）
-C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+C:\Users\<user>\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 
 # 起服务（默认 127.0.0.1:8088；换端口用 $env:SA_BIND）
-$env:SA_DATA_DIR = "C:\Users\94355\Desktop\新建文件夹(7)\temp\sa-dev-data"
-C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+$env:SA_DATA_DIR = "C:\Users\<user>\Desktop\新建文件夹(7)\temp\sa-dev-data"
+C:\Users\<user>\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 ```
 
 可选环境变量（不设也能跑，只是 LLM 相关能力会走规则骨架）：
@@ -76,7 +76,7 @@ C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
 **起服务前先跑一次只读自检**（不起服务、不写业务状态，10 项一次看完）：
 
 ```powershell
-C:\Users\94355\AppData\Local\sa-build\target-gnu\debug\super-agents.exe doctor
+C:\Users\<user>\AppData\Local\sa-build\target-gnu\debug\super-agents.exe doctor
 ```
 
 它会直接告诉你：端口是否空闲、数据目录能否写、`runner=sim` 还是 `process`、模型端点配没配、集群心跳看没看到。

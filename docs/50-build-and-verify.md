@@ -62,7 +62,7 @@ Windows 安全中心 → 应用和浏览器控制 → 智能应用控制 → 设
 在 PowerShell 里执行（把 `$Src` 改成你的实际项目根目录）：
 
 ```powershell
-$Src = "C:\Users\94355\Desktop\新建文件夹(7)"
+$Src = "C:\Users\<user>\Desktop\新建文件夹(7)"
 $Dst = "$env:LOCALAPPDATA\sa-build"
 
 New-Item -ItemType Directory -Force -Path $Dst | Out-Null
@@ -116,7 +116,7 @@ cargo +stable-x86_64-pc-windows-gnu test --lib -- task_submit_quota custom_step_
 一条命令（无需手动起服务）：
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 python scripts\smoke.py
 # 若 exe 不在默认位置（%LOCALAPPDATA%\sa-build\target\debug\super-agents.exe）：
 python scripts\smoke.py --exe "<你的 exe 绝对路径>"

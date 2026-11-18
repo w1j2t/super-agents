@@ -44,10 +44,13 @@ impl Store {
     }
 
     /// 纯内存存储（不落盘）。
+    ///
+    /// 直接构造而不是走 `backends::open(...).expect(...)`：内存后端本来就不做 IO，
+    /// "不会失败"这件事由 `MemoryBackend::new()` 的返回类型保证，不必在生产路径上
+    /// 再留一个 panic 面（三方审查 M2）。
     pub fn in_memory() -> Self {
         Self {
-            backend: backends::open(StorageKind::Memory, PathBuf::new())
-                .expect("内存后端不会初始化失败"),
+            backend: Box::new(backends::memory::MemoryBackend::new()),
         }
     }
 
@@ -69,7 +72,16 @@ impl Store {
                 slot = Some(f(db));
             }
         });
-        slot.expect("存储后端必须执行读闭包（端口契约）")
+        match slot {
+            Some(v) => v,
+            // 走不到这里：`with_read` 的两个实现都必然调用闭包，`read_always_invokes_closure`
+            // 单测锁住这条契约。真违约说明是代码 bug，宁可带日志崩，也不要静默返回
+            // 一份"看起来读到空数据"的结果——后者比崩更难查（三方审查 M2）。
+            None => {
+                tracing::error!("存储后端未执行读闭包：Backend 端口违约");
+                unreachable!("Backend 端口违约：with_read 未调用闭包")
+            }
+        }
     }
 
     /// 写访问：写锁内完成读-改-写，天然原子；返回后自动标记脏页。
@@ -81,7 +93,13 @@ impl Store {
                 slot = Some(f(db));
             }
         });
-        slot.expect("存储后端必须执行写闭包（端口契约）")
+        match slot {
+            Some(v) => v,
+            None => {
+                tracing::error!("存储后端未执行写闭包：Backend 端口违约");
+                unreachable!("Backend 端口违约：with_write 未调用闭包")
+            }
+        }
     }
 
     pub fn flush(&self) -> Result<usize, StoreError> {
@@ -218,6 +236,71 @@ mod tests {
         store.write(|db| db.users.insert("u1".into(), sample_user()));
         assert_eq!(store.flush().unwrap(), 0, "内存后端落盘字节数必须为 0");
         assert!(!store.is_dirty());
+    }
+
+    /// M2 契约锁：`read`/`write` 必须真的把闭包跑一遍并原样交回结果。
+    ///
+    /// 这条测试的意义不是"再测一遍存取"，而是把 `Backend::with_read/with_write`
+    /// 的端口契约钉死：两个后端都不得跳过闭包。哪天新增第三个后端漏调闭包，
+    /// `Store::read` 会带着"Backend 端口违约"的日志崩，而不是静默返回空数据。
+    #[test]
+    fn read_write_always_invoke_closure_and_return_value() {
+        for kind in [StorageKind::Json, StorageKind::Memory] {
+            let store = match kind {
+                StorageKind::Json => Store::open(temp_path())
+                    .expect("JSON 后端应可打开"),
+                StorageKind::Memory => Store::in_memory(),
+            };
+            let mut hits = 0;
+            let got = store.read(|db| {
+                hits += 1;
+                db.users.len()
+            });
+            assert_eq!(hits, 1, "{kind:?}: 读闭包必须恰好执行一次");
+            assert_eq!(got, 0, "{kind:?}: 读闭包返回值必须原样交回");
+
+            let mut hits = 0;
+            let wrote = store.write(|db| {
+                hits += 1;
+                db.users.insert("u1".into(), sample_user());
+                db.users.len()
+            });
+            assert_eq!(hits, 1, "{kind:?}: 写闭包必须恰好执行一次");
+            assert_eq!(wrote, 1, "{kind:?}: 写闭包返回值必须原样交回");
+            assert_eq!(store.read(|db| db.users.len()), 1, "{kind:?}: 写入必须可见");
+        }
+    }
+
+    /// M2 中毒恢复：持锁线程 panic 一次，不能让锁永中毒、把后续每个请求都拖崩。
+    #[test]
+    fn poisoned_lock_recovers_instead_of_cascading_panic() {
+        use std::sync::Arc;
+        for kind in [StorageKind::Json, StorageKind::Memory] {
+            let store = Arc::new(match kind {
+                StorageKind::Json => Store::open(temp_path())
+                    .expect("JSON 后端应可打开"),
+                StorageKind::Memory => Store::in_memory(),
+            });
+            store.write(|db| db.users.insert("keep".into(), sample_user()));
+
+            // 在持写锁的闭包里 panic，让内在锁中毒。
+            let s = Arc::clone(&store);
+            let hooked = std::thread::spawn(move || {
+                let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    s.write(|_db| panic!("故意 panic，制造锁中毒"));
+                }));
+            });
+            hooked.join().expect("panic 应被 catch_unwind 吞掉");
+
+            // 中毒后仍必须可读可写：这是 recover_poison 的全部意义。
+            assert_eq!(
+                store.read(|db| db.users.len()),
+                1,
+                "{kind:?}: 锁中毒后读必须恢复，不得级联 panic"
+            );
+            store.write(|db| db.users.insert("after".into(), sample_user()));
+            assert_eq!(store.read(|db| db.users.len()), 2, "{kind:?}: 中毒后写必须生效");
+        }
     }
 
     fn dummy_memory() -> crate::domain::memory::MemoryEntry {

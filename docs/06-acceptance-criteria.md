@@ -227,7 +227,7 @@
 ## 3. 命令清单
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 
 # 一键全跑（推荐，日常就用这一条）
 python scripts/regress_all.py
@@ -326,7 +326,9 @@ python scripts/gen-ts-types.py
 | --- | --- | --- |
 | 存储仅 JSON 快照 / 内存 | 无 SQLite 等 ACID 后端；每次快照全量写 | 不阻塞。`Store` 端口已就位，属换件范畴 |
 | ~~SSE 无断点续传~~ **已具备，非缺口** | 带 `Last-Event-ID` 重连只补后续帧，不重推快照；非法锚点退回首次连接并计 `sa_sse_replay_gap_total`；补发为空且任务已终态则主动 EOF。门禁 17 的 A7 系列守此契约 | 无缺口。此前记为"未实现"是与源码不符的误记，已订正；剩余可做的是多副本/跨机续传（随集群"派得动"一并排） |
-| 无 OS 级沙箱配额 | 进程级约束，恶意脚本可吃满 CPU | 不阻塞。个人单机可接受，接 cgroup/Job Object 时只换 runner |
+| 多节点限流不共享（已收口） | 进程内令牌桶按节点各自计数，N 个节点等于配额 ×N；登录/注册限流是暴力破解的唯一防线，一旦放大即失效。**已做**：`Quota::shard()` 按活跃节点数等分配额（容量/补充速率同步切分，下限 1 防止"切到 0 变成全员拒绝"），`cluster_enabled` 默认 false，集群须显式 `SA_CLUSTER=1` 加入。**剩余**：节点数在启动时快照，运行中扩缩容不重算，需重启；Redis 共享计数器仍未接（`LimiterKind` 只认 memory/noop，`parse` 对未知值报错而非静默降级） |
+| 沙箱提权面（已收口） | `Member` 原可持有 `SandboxExec` / `CrossAgent`，等于给普通成员留了"执行任意脚本"与"跨 agent 调度"两条提权路。**已做**：Member 不再默认持有，提权须 Owner 显式授予；`executor` 对 `CrossAgent` 增加豁免角色校验 |
+| OS 级沙箱配额（资源项已收口，隔离项仍缺） | 进程级约束原有：脚本目录白名单 + 路径越界拒绝 + 单步硬超时 kill + 环境变量白名单透传。**已补**：Windows 下每个脚本进程 spawn 后立即挂进 Job Object（`runners/sandbox.rs`），带 `PROCESS_MEMORY` / `JOB_MEMORY`（默认 2048 MB，`SA_RUNNER_MEM_MB`）、`ACTIVE_PROCESS`（默认 8，`SA_RUNNER_MAX_PROCS`）、可选 `PROCESS_TIME`（`SA_RUNNER_CPU_SECS`）与 `KILL_ON_JOB_CLOSE`（后端退出连带收掉整棵进程树，不留孤儿）。挂不上不冒充受控：会打 warn 并如实标注"本步无沙箱"，`SA_RUNNER_SANDBOX=off` 是显式的关闸动作。**仍缺**：降权账户、网络隔离、文件系统隔离——恶意脚本仍可读当前用户可读的文件、可联网 | **仍列为发布阻断项**（阻断理由已从"资源可被吃满"收窄为"无身份与网络隔离"）。单机自用可接受。剩余解法＝`CreateProcessAsUser` / AppContainer + WFP 规则，只换 runner，不改业务代码 |
 | 前端零代码 | 只交付 openapi / TS 类型 / 契约文档 | 不阻塞。前端由你落地，见 `docs/30`、`docs/40` |
 | LLM 实测依赖本地模型 | `probe_llm_live.py` 需本地 Ollama 与具体模型 | 不阻塞主门禁。实测记录见 `docs/81` |
 

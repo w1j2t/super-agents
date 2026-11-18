@@ -20,7 +20,7 @@ C 产出 **29 条路径 / 33 个操作 / 51 个 schema**（其中 `/api/v1` 前�
 复跑命令：
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 python scripts\gen-ts-types.py                 # 重新生成前端类型（B）
 python scripts\gen-openapi.py                  # 重新生成接口契约（C）
 python scripts\check-contract.py               # 校验本文件与源码结构体字段一致
@@ -128,7 +128,7 @@ interface ProblemBody {
 
 | 端点 | 为什么免鉴权 | 前端注意 |
 |---|---|---|
-| `POST /auth/register` | 注册入口（可用 `SA_ALLOW_REGISTRATION=0` 关闭，关闭后返回 403） | 关闭时前端要能展示"实例已关闭注册" |
+| `POST /auth/register` | 注册入口（**默认关闭**，需显式 `SA_ALLOW_REGISTRATION=1` 打开；打开后空库首装自举放行一次，其余一律 403） | 403 时前端要能展示"实例已关闭注册"，别当成网络错误重试 |
 | `POST /auth/login` | 登录入口 | 有 IP 维度限流 |
 | `POST /auth/refresh` | 刷新对 | 用 `refresh_token` 换新对 |
 | `POST /auth/logout` | 只需 `refresh_token` | **不要**给它带 Bearer 头也可以调 |

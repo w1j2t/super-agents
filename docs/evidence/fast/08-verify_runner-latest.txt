@@ -3,7 +3,7 @@
 命令由 regress_all.py 编排执行，rc=0，耗时 4.2s
 （原始输出如下，未做删改）
 ======================================================================
-[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': 'C:\\Users\\94355\\AppData\\Local\\Temp\\sa-runner-verify-c93byvsk\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
+[OK  ] R1a 以 process 执行后端启动并就绪  -> /readyz {'audit': {'backend': 'memory', 'degraded': False, 'degraded_reason': None, 'durable': False}, 'data_dir': '%USERPROFILE%\\AppData\\Local\\Temp\\sa-runner-verify-c93byvsk\\data', 'ready': True, 'schema_version': 1, 'storage': 'json', 'storage_durable': True}
 [OK  ] R1b 账号初始化
 [OK  ] R2a 提交任务 201  -> 实际=201 {'id': '4e9d71e7-f7cd-451f-9cba-ddf6552202df', 'goal': '写一个把冒烟测试跑通的脚本并核对返回码', 'task_type': 'coding', 'status': 'succeeded', 'plan': [{'index': 0, 'nam
 [OK  ] R2b 步骤输出含脚本随机标记（证明真跑了外部进程）  -> 标记=RUNNER-REAL-D6DE805E68 命中=True
@@ -20,7 +20,7 @@
 [OK  ] R5b 非法 SA_RUNNER 值被拒（不是忽略）  -> 退出码=1
 --------------------------------------------------------------
 合计 15 项 | 通过 15 | 失败 0
-临时目录: C:\Users\94355\AppData\Local\Temp\sa-runner-verify-c93byvsk
+临时目录: C:\Users\<user>\AppData\Local\Temp\sa-runner-verify-c93byvsk
 
 Exception in thread Exception in thread Thread-1 (_readerthread)Thread-2 (_readerthread):
 :

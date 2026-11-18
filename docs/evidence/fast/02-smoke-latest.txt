@@ -3,7 +3,7 @@
 命令由 regress_all.py 编排执行，rc=0，耗时 10.5s
 （原始输出如下，未做删改）
 ======================================================================
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "%USERPROFILE%
 [OK  ] S01b 存储后端可识别  ->  storage=json durable=True
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -166,13 +166,13 @@
 合计 156 项 | 通过 156 | 失败 0
 
 服务日志尾部：
-[2m2026-11-12T14:18:37.649262Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493117\db.json
+[2m2026-11-12T14:18:37.649262Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493117\db.json
 [2m2026-11-12T14:18:37.649420Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:37.649441Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
 [2m2026-11-12T14:18:37.649877Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
 [2m2026-11-12T14:18:37.649899Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
 [2m2026-11-12T14:18:37.649911Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-12T14:18:37.650015Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794493117\cluster [3mnode_id[0m[2m=[0mWLM-20116 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
+[2m2026-11-12T14:18:37.650015Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\<user>\AppData\Local\Temp\sa-smoke-1794493117\cluster [3mnode_id[0m[2m=[0mWLM-20116 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
 [2m2026-11-12T14:18:37.654054Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
 [2m2026-11-12T14:18:42.273410Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0mdc954619-cc95-4c4c-af1e-19e467cd536a [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0mdc954619-cc95-4c4c-af1e-19e467cd536a [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
 [2m2026-11-12T14:18:43.769731Z[0m [31mERROR[0m 写穿落盘失败 [3merror[0m[2m=[0m存储读取失败: 系统找不到指定的文件。 (os error 2)

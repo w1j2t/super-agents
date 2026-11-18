@@ -1,7 +1,7 @@
 {
  "model": "minicpm5-2b:f16",
  "base": "http://127.0.0.1:11434/v1",
- "exe": "C:\\Users\\94355\\Desktop\\build_sa1\\target-gnu\\debug\\super-agents.exe",
+ "exe": "%USERPROFILE%\\Desktop\\build_sa1\\target-gnu\\debug\\super-agents.exe",
  "exe_mtime": "2026-11-13 17:51:03",
  "generated_at": "2026-11-13 21:08:42",
  "checks": [

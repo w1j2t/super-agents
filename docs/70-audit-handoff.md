@@ -19,7 +19,7 @@
 
 ## 1. 交付物清单（磁盘实况，可逐项 `dir` 验证）
 
-根目录：`C:\Users\94355\Desktop\新建文件夹(7)`
+根目录：`C:\Users\<user>\Desktop\新建文件夹(7)`
 
 | 路径 | 是什么 | 规模 | 真实性 |
 |---|---|---|---|
@@ -54,7 +54,7 @@
 在 PowerShell 里依次执行（第 2 条需要 Rust 工具链，见 `docs/50-build-and-verify.md`）：
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 
 # ① 契约是否与源码一致（<1 秒，不需要编译）
 python scripts\gen-openapi.py --check          # 期望：CHECK: 一致 | paths=24 operations=28 schemas=50
@@ -70,7 +70,7 @@ Set-Location $Dst
 cargo +stable-x86_64-pc-windows-gnu test --lib # 期望：80 passed; 0 failed
 
 # ③ 端到端是否真的通（需要 exe，约 2 分钟）
-Set-Location "C:\Users\94355\Desktop\新建文件夹(7)"
+Set-Location "C:\Users\<user>\Desktop\新建文件夹(7)"
 python scripts\smoke.py                        # 期望：合计 123 项 | 通过 123 | 失败 0
 ```
 
@@ -211,7 +211,7 @@ pnpm openapi-typescript ../docs/openapi.json -o src/shared/api/types.gen.ts
 ### 9.2 必跑门禁与当前真实数字
 
 ```powershell
-cd "C:\Users\94355\Desktop\新建文件夹(7)"
+cd "C:\Users\<user>\Desktop\新建文件夹(7)"
 python scripts\regress_all.py      # 一键跑 7 道门禁，本次：7/7 通过
 ```
 

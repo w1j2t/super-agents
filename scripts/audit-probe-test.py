@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import pathguard  # 清理一律过守卫：裸删除会把「参数少写一层」放大成删源码
 import time
 import urllib.error
 import urllib.request
@@ -250,7 +251,9 @@ def main():
         case_memory_sink(exe, root)
     finally:
         if not args.keep:
-            shutil.rmtree(root, ignore_errors=True)
+            pathguard.safe_rmtree(root, base=pathlib.Path(tempfile.gettempdir()),
+                                  allow_prefix="sa-audit-probe-", what="探针临时目录",
+                                  warn_only=True)
 
     failed = [r for r in rows if r[2] == FAIL]
     print("\n" + "=" * 74)

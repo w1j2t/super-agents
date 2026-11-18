@@ -1,9 +1,10 @@
 # 2 冒烟 json 后端
-生成时间: 2026-11-16 21:50:09
-命令由 regress_all.py 编排执行，rc=0，耗时 11.7s
+生成时间: 2026-11-18 16:16:18
+命令由 regress_all.py 编排执行，rc=0，耗时 51.2s
 （原始输出如下，未做删改）
 ======================================================================
-[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "C:\\Users\\9
+[exe] C:\Users\<user>\AppData\Local\sa-build\target-gnu\debug\super-agents.exe
+[OK  ] S01 服务在 60 秒内就绪  ->  /readyz {"audit": {"backend": "memory", "degraded": false, "degraded_reason": null, "durable": false}, "data_dir": "%USERPROFILE%
 [OK  ] S01b 存储后端可识别  ->  storage=json durable=True
 [OK  ] S02 healthz 200 且 status=ok  ->  实际=(200, 'ok') | 200
 [OK  ] S03 readyz 200 且 ready=true  ->  实际=(200, True)
@@ -20,10 +21,10 @@
 [OK  ] S14 重复用户名被拒  ->  实际=409 | {"code": "conflict", "message": "用户名已被占用"}
 [OK  ] S15 弱密码被拒（422）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"password": "密码至少 10 个字符"}}
 [OK  ] S16 正确密码登录 200  ->  实际=200
-[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-16T13:44:19.203447300Z
+[OK  ] S17 登录后 last_login_at 被写入  ->  实际=2026-11-18T08:03:27.455561200Z
 [OK  ] S18 错误密码 401  ->  实际=401 | {"code": "unauthorized", "message": "账号或密码不正确"}
 [OK  ] S19 带令牌取 /auth/me 200  ->  实际=200
-[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_174ddd5d
+[OK  ] S20 /auth/me 返回本人用户名  ->  实际=smoke_owner_4c302d4d
 [OK  ] S21 无令牌访问 /auth/me 必须 401  ->  实际=401
 [OK  ] S22 用 refresh_token 冒充 access_token 必须 401（类型校验）  ->  实际=401
 [OK  ] S23 刷新令牌 200  ->  实际=200
@@ -52,7 +53,7 @@
 [OK  ] S44c 记忆 q 过滤能排除  ->  共 0 条
 [OK  ] S44d scope=private 过滤真生效  ->  共 1 条
 [OK  ] S44f 关键词能命中 tags（不只是 key/content）  ->  命中 1 条
-[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['25a0ee84-54e2-44d0-853f-a3eb9e2d97f3'] / ['38397cc4-6fc1-455c-b500-e3c69d24f35b']
+[OK  ] S44e 记忆分页真翻页且两页不重叠  ->  ['dc4f6935-c736-4994-a602-fdeb706914cf'] / ['7bdbd721-8ef5-4639-9cb8-fd544d56db4d']
 [OK  ] S45 记忆详情 200  ->  实际=200
 [OK  ] S46 详情内容是 v2  ->  实际=v2
 [OK  ] S47 更新记忆 200  ->  实际=200
@@ -74,7 +75,7 @@
 [OK  ] S63 任务详情 200  ->  实际=200
 [OK  ] S64 任务 trace 200  ->  实际=200
 [OK  ] S65 trace 非空且含 execute 阶段  ->  条目数=8
-[OK  ] S66 trace 累计 tokens>0  ->  累计=6644
+[OK  ] S66 trace 累计 tokens>0  ->  累计=7080
 [OK  ] S67 任务列表 200  ->  实际=200
 [OK  ] S68 列表包含刚提交的任务  ->  共 1 个
 [OK  ] S68b status=succeeded 过滤真生效  ->  共 1 条
@@ -84,7 +85,7 @@
 [OK  ] S68f 任务 q 关键字过滤命中  ->  共 1 条
 [OK  ] S68g 任务 q 过滤能排除  ->  共 0 条
 [OK  ] S68h task_type=coding 过滤真生效  ->  共 1 条
-[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['2ec450c1-e461-421d-a8d2-99b9e2d56b2e'] / ['3a783bb6-b1a4-4c02-9678-b2f253147af3']
+[OK  ] S68i 任务分页真翻页且两页不重叠  ->  ['c083014e-d044-40e7-816b-a5878a223f5c'] / ['b1d2da1c-e358-44ae-a987-9e3fd1e4de38']
 [OK  ] S69 空目标被拒 422  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"goal": "任务目标至少 4 个字符"}}
 [OK  ] S70 未知任务 404  ->  实际=404 | {"code": "not_found", "message": "任务不存在"}
 [OK  ] S71a 预算低于下限（100<200）被 422 拒绝  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"budget_tokens": "预算过低（最少 200）"
@@ -96,7 +97,7 @@
 [OK  ] S74 member 读他人任务被拒（404 或 403）  ->  实际=403 期望=[403, 404] | {"code": "forbidden", "message": "无权访问他人的任务"}
 [OK  ] S75 member 可提交自己的任务 201  ->  实际=201
 [OK  ] S76 member 访问管理员概览被拒（403 或 422）  ->  实际=403 期望=[403, 422] | {"code": "forbidden", "message": "角色 member 缺少权限 admin"} ← 若返回 422 说明越权与校验仍共用错误码
-[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "ca3fd496-4601-4219-b610-e825e37f1f0e", "scope": "shared", "owner_
+[OK  ] S77b member 可写 shared 记忆（rbac 矩阵允许）  ->  实际=201 | {"created": true, "entry": {"id": "8281c660-f659-4eb2-b188-a55a0fc4e7ca", "scope": "shared", "owner_
 [OK  ] S77c member 写 system 记忆必须 403  ->  实际=403 | {"code": "forbidden", "message": "角色 member 缺少权限 memory_write_system"}
 [OK  ] S77d member 看不到 owner 的私有记忆  ->  返回 0 条
 [OK  ] S78 管理员概览 200  ->  实际=200
@@ -106,11 +107,11 @@
 [OK  ] S80b 概览报出当前审计部件（可插拔可视化）  ->  实际=memory
 [OK  ] S80c 概览报出当前执行部件（可插拔可视化）  ->  实际=sim
 [OK  ] S81 审计日志 200  ->  实际=200
-[OK  ] S82 审计日志非空（鉴权/任务都留痕）  ->  共 26 条，其中拒绝 1 条
-[OK  ] S82b decision=deny 过滤真生效（只看被拒）  ->  共 1 条
+[OK  ] S82 审计日志非空（鉴权/任务都留痕）  ->  共 27 条，其中拒绝 2 条
+[OK  ] S82b decision=deny 过滤真生效（只看被拒）  ->  共 2 条
 [OK  ] S82c decision=allow 过滤真生效  ->  共 25 条
 [OK  ] S82d 非法 decision 被 422 拒绝（与任务/记忆列表口径一致）  ->  实际=422 | {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"decision": "可选 allow / deny"}}
-[OK  ] S82e 审计分页 has_more 字段可信  ->  total=26 has_more=True
+[OK  ] S82e 审计分页 has_more 字段可信  ->  total=27 has_more=True
 [OK  ] S83 metrics 输出注册计数器（sa_registrations_total）  ->  由 services/auth.rs 打点
 [OK  ] S83b metrics 输出执行后端标签（证明 StepRunner 已接线）  ->  orchestration/executor.rs
 [OK  ] S83c metrics 输出任务启动计数器
@@ -119,14 +120,19 @@
 [OK  ] S83f 路由标签已折叠（不含 uuid 原值，避免监控序列爆炸）  ->  含 :id 折叠
 [OK  ] S83g 404 兜底也被计数（前端写错路径能查到）  ->  S12 已制造过 404
 [OK  ] S84 登出 200  ->  实际=200
-[OK  ] S85 登出撤销了会话（revoked_sessions>=1）  ->  实际=1
+[OK  ] S85 登出撤销了会话（revoked_sessions>=1）  ->  实际=2
 [OK  ] S86 登出后该 refresh_token 失效（401）  ->  实际=401
+[OK  ] S86b 旁路会话登录后 access 可用（对照组）  ->  实际=200
+[OK  ] S86c 登出旁路会话 200  ->  实际=200
+[OK  ] S86d 登出后旧 access 立即失效（401，而非硬撑到过期）  ->  实际=401 {"code": "unauthorized", "message": "会话已失效，请重新登录"}
+[OK  ] S86e 被登出的那条会话 access 也失效（401；撤销粒度是整条会话）  ->  实际=401
+[OK  ] S86f 重新登录立即生效（撤会话不影响后继登录）  ->  实际=200
 [OK  ] S93 分页 limit=0 明确 422 而非静默改成 1  ->  实际=422
 [OK  ] S94 分页越界错误回报允许范围（1..=200）  ->  {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "允许范围 1..=200，不传则默认 50；收到 0"}}
 [OK  ] S95 负数 limit 报中文字段级错误且不泄漏 serde 英文  ->  实际=422 {"code": "unprocessable_entity", "message": "请求参数校验未通过", "details": {"limit": "必须是非负整数"}}
 [OK  ] S96 超上限 limit 明确 422 并回报收到值  ->  实际=422
 [OK  ] S97 async 提交返回 202/201 且状态为 queued  ->  实际=202 status=queued
-[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "e83c4f50-c947-40aa-84bd-cf69ca400343", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
+[OK  ] S98 取消执行中的任务返回 202（立旗，不是假装已完成）  ->  实际=202 {"id": "eb854884-827d-4e8b-84b5-4bff4c840867", "goal": "slow-step 异步任务用于验证取消真能生效", "task_type": "coding", "sta
 [OK  ] S98b 取消请求写进了 trace（phase=cancel/requested）  ->  cancel 条目=1
 [OK  ] S99 取消后任务最终收敛为 cancelled（不是 succeeded/failed）  ->  实际终态=cancelled
 [OK  ] S99b 取消任务的 result_summary 讲清了原因  ->  任务「slow-step 异步任务用于验证取消真能生效」执行已取消（类型 coding，共 4 步）。
@@ -141,9 +147,9 @@
 [OK  ] S100 SSE 测试用户注册成功（拿到独立令牌）  ->  实际=201
 [OK  ] S100b 事件流用的异步任务已受理  ->  实际=202
 [OK  ] S101 SSE 建连成功且媒体类型是 text/event-stream  ->  实际状态=200 Content-Type=text/event-stream
-[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "f4d5a480-d6ea-428d-bb11-7b13d387949d", "status": "running", "at": "2026-11-16T13:44:24.625790400Z
-[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 19]
-[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'succeeded']
+[OK  ] S101b 首帧是连接时快照（seq=0，不是广播事件）  ->  首帧={"seq": 0, "task_id": "17ccaa95-6855-4b20-81b7-dde7fece0d34", "status": "running", "at": "2026-11-18T08:04:02.966270400Z
+[OK  ] S101c 事件序号从 1 起严格递增（前端可据此判断漏帧）  ->  seq=[0, 18, 19]
+[OK  ] S101d 事件流覆盖 running（真的看到执行中，不是只有终态）  ->  状态序列=['running', 'running', 'succeeded']
 [OK  ] S101e 事件流最终推送终态且与服务端状态一致  ->  末帧状态=succeeded
 [OK  ] S101f 终态之后服务端主动 EOF（不挂住连接）  ->  读到 HTTP EOF
 [OK  ] S101g 已终结任务订阅：先给快照再立刻 EOF  ->  实际状态=200 帧数=1 EOF=True
@@ -157,28 +163,28 @@
 [OK  ] S104 /metrics 暴露 SSE 丢事件计数器（慢消费者可被观测）  ->  实际状态=200
 [OK  ] S104b /metrics 暴露当前 SSE 订阅数（连接已全部结束时应为 0）  ->  实际=0
 [OK  ] S87 连续提交最终命中 429（限流生效）  ->  成功 53 次后命中
-[OK  ] S88 429 带 Retry-After 头（前端可据此退避）  ->  Retry-After=54
+[OK  ] S88 429 带 Retry-After 头（前端可据此退避）  ->  Retry-After=34
 [OK  ] S89 命中前的成功次数不超过 60  ->  实际成功=53（配额 60/h，前面已计入若干次）
 [OK  ] S90 限流按用户隔离（他人不受影响）  ->  实际=201 | 实际=201
 [OK  ] S91 限流计数器已接线（sa_task_submit_rate_limited_total 出现）
 [OK  ] S92 已限流用户即使请求非法也先返回 429（限流先于校验）  ->  实际=429（源码 task.rs 把限流放在校验之前，属于已知行为）
 
 ================================================================
-合计 157 项 | 通过 157 | 失败 0
+合计 162 项 | 通过 162 | 失败 0
 
 服务日志尾部：
-[2m2026-11-16T13:44:16.509603Z[0m [33m WARN[0m 未提供 SA_JWT_SECRET，已生成随机密钥并持久化；生产环境请显式注入 [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\secret.key
-[2m2026-11-16T13:44:16.510222Z[0m [32m INFO[0m 存储后端就绪 [3mstorage[0m[2m=[0mjson [3mpath[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\db.json
-[2m2026-11-16T13:44:16.510314Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
-[2m2026-11-16T13:44:16.510337Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
-[2m2026-11-16T13:44:16.510492Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
-[2m2026-11-16T13:44:16.510527Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
-[2m2026-11-16T13:44:16.510550Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
-[2m2026-11-16T13:44:16.510613Z[0m [32m INFO[0m 集群心跳就绪（共享目录模式：多节点把同一块目录挂到各机器即可） [3mdir[0m[2m=[0mC:\Users\94355\AppData\Local\Temp\sa-smoke-1794836656\cluster [3mnode_id[0m[2m=[0mWLM-39532 [3mevery_secs[0m[2m=[0m5 [3mttl_secs[0m[2m=[0m20
-[2m2026-11-16T13:44:16.514578Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
-[2m2026-11-16T13:44:21.304807Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
-[2m2026-11-16T13:44:23.423446Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m214e743f-8745-423e-af82-63fbe2867013 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0me83c4f50-c947-40aa-84bd-cf69ca400343 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m67be27aa-ea6a-4c9e-8253-4c7bb1379c1b
-[2m2026-11-16T13:44:26.481801Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m3d0cdf09-22b4-411b-8a26-ebad1f88bd2b [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m34ba8728-67cb-41d3-91e3-6f63b9beb5e5 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m88a305aa-ccc9-4153-bee5-38b7a84415fa
+[2m2026-11-18T08:03:15.677664Z[0m [32m INFO[0m 执行后端就绪 [3mrunner[0m[2m=[0msim
+[2m2026-11-18T08:03:15.677714Z[0m [33m WARN[0m 审计不落盘：进程退出即丢失，事后无法回溯；需要留证请设 SA_AUDIT=file [3maudit[0m[2m=[0mmemory
+[2m2026-11-18T08:03:15.677727Z[0m [32m INFO[0m 审计启动自检通过：boot 记录已写入并回读确认
+[2m2026-11-18T08:03:15.677734Z[0m [32m INFO[0m 限流后端就绪 [3mlimiter[0m[2m=[0mmemory
+[2m2026-11-18T08:03:15.677744Z[0m [32m INFO[0m 指标出口就绪 [3mmetrics[0m[2m=[0mprometheus
+[2m2026-11-18T08:03:15.677803Z[0m [32m INFO[0m 集群心跳已关闭：/cluster 只报本节点（SA_CLUSTER=off）
+[2m2026-11-18T08:03:15.681096Z[0m [32m INFO[0m personal super agents backend ready [3maddr[0m[2m=[0m127.0.0.1:18099 [3menv[0m[2m=[0mdev [3mstorage[0m[2m=[0mjson [3mrunner[0m[2m=[0msim
+[2m2026-11-18T08:03:39.245167Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0me324c0f8-bebe-4873-a307-dd9292a945cb [3maction[0m[2m=[0mauth.login [3mtarget[0m[2m=[0me324c0f8-bebe-4873-a307-dd9292a945cb [3mreason[0m[2m=[0m密码错误，累计 1 次 [3mrequest_id[0m[2m=[0m
+[2m2026-11-18T08:03:39.300091Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0me324c0f8-bebe-4873-a307-dd9292a945cb [3maction[0m[2m=[0mauth.refresh_reuse [3mtarget[0m[2m=[0md940b2e6-3f7d-4c28-a4f4-bbb77deed8fa [3mreason[0m[2m=[0mrefresh 令牌被重复使用（已拒绝，未连锁撤销） [3mrequest_id[0m[2m=[0mscope=session-only revoked_sessions=0
+[2m2026-11-18T08:03:45.378551Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0me324c0f8-bebe-4873-a307-dd9292a945cb [3maction[0m[2m=[0mauth.refresh_reuse [3mtarget[0m[2m=[0m7ab1e962-231f-4db4-b6d0-5ccef509e3be [3mreason[0m[2m=[0mrefresh 令牌被重复使用（已拒绝，未连锁撤销） [3mrequest_id[0m[2m=[0mscope=session-only revoked_sessions=0
+[2m2026-11-18T08:03:57.089173Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0me324c0f8-bebe-4873-a307-dd9292a945cb [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0meb854884-827d-4e8b-84b5-4bff4c840867 [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0mf3e10a87-1a0b-4a52-861a-64a6507d120b
+[2m2026-11-18T08:04:04.859729Z[0m [33m WARN[0m 审计：权限拒绝 [3mactor[0m[2m=[0m82a3300f-5ffd-4175-a289-c09fe3af4001 [3maction[0m[2m=[0mtask.finished_async [3mtarget[0m[2m=[0m54ae9c4e-59a6-4438-915f-35f6c975b7ad [3mreason[0m[2m=[0mcancelled [3mrequest_id[0m[2m=[0m97469bd8-69fd-414f-9ff8-43bf196cf16e
 ================================================================
 
 
